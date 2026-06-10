@@ -1,0 +1,38 @@
+{
+  "name": "bromate/rest-api-firewall",
+  "description": "Security, access control and data protection for the WordPress REST API.",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": ">=7.4",
+    "firebase/php-jwt": "^6.10",
+    "league/iso3166": "^4.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "Bromate\\RestApiFirewall\\": "inc/"
+    }
+  },
+  "config": {
+    "platform": {
+      "php": "7.4.33"
+    },
+    "sort-packages": true,
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
+  },
+  "require-dev": {
+    "brain/monkey": "^2.6",
+    "phpunit/phpunit": "^9.6",
+    "squizlabs/php_codesniffer": "^3.13",
+    "wp-coding-standards/wpcs": "^3.2"
+  },
+  "scripts": {
+    "build": [
+      "composer install --no-dev --optimize-autoloader"
+    ],
+    "lint": "phpcs inc/",
+    "fix": "phpcbf --standard=Wordpress --extensions=php inc/"
+  }
+}
