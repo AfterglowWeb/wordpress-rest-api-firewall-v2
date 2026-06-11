@@ -1,42 +1,8 @@
-<?php namespace Bromate\RestApiFirewall\Security\Network;
+<?php namespace Bromate\RestApiFirewall\Security\Ip;
 
 defined( 'ABSPATH' ) || exit;
 
 final class CidrMatcher {
-
-	public static function matches( string $ip, string $cidr ): bool {
-		list( $subnet, $mask ) = explode( '/', $cidr );
-
-		if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) &&
-			filter_var( $subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
-
-			$ip_long     = ip2long( $ip );
-			$subnet_long = ip2long( $subnet );
-			$mask_long   = -1 << ( 32 - (int) $mask );
-
-			return ( $ip_long & $mask_long ) === ( $subnet_long & $mask_long );
-		}
-
-		if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) &&
-			filter_var( $subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
-
-			$ip_bin     = inet_pton( $ip );
-			$subnet_bin = inet_pton( $subnet );
-			$mask       = (int) $mask;
-			$mask_bin   = str_repeat( "\xff", (int) ( $mask / 8 ) );
-
-			if ( $mask % 8 ) {
-				$mask_bin .= chr( 256 - pow( 2, 8 - ( $mask % 8 ) ) );
-			}
-
-			$mask_bin = str_pad( $mask_bin, 16, "\x00" );
-
-			return ( $ip_bin & $mask_bin ) === ( $subnet_bin & $mask_bin );
-		}
-
-		return false;
-	}
-
 
 	public static function ip_matches( string $ip, string $entry ): bool {
 		// Plain IP — exact match.
@@ -79,13 +45,6 @@ final class CidrMatcher {
 		return true;
 	}
 
-	/**
-	 * Sanitize a single IP address or CIDR notation entry for the absolute whitelist.
-	 * Called per-element via array_map() in sanitize_option().
-	 *
-	 * @param mixed $value Raw value.
-	 * @return string Valid IP/CIDR string, or empty string if invalid.
-	 */
 	public static function sanitize_ip_array( $value ): string {
 		$value = trim( (string) $value );
 
@@ -115,9 +74,8 @@ final class CidrMatcher {
 		return '';
 	}
 
-
 	public static function ip_in_cidr( string $ip, string $cidr ): bool {
-		return self::matches( $ip, $cidr );
+		return self::ip_matches( $ip, $cidr );
 	}
 
 	public static function is_valid_ip_or_cidr( string $entry ): bool {
@@ -154,5 +112,4 @@ final class CidrMatcher {
 		return false;
 	}
 
-	
 }

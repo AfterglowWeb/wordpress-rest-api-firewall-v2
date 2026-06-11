@@ -2,6 +2,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
+use Bromate\RestApiFirewall\Core\Settings\SettingsAjaxController;
 use WP_REST_Settings_Controller;
 use WP_REST_Terms_Controller;
 use WP_REST_Users_Controller;
@@ -46,6 +47,20 @@ class ModelsPropertiesRepository {
 			return self::settings_route_properties();
 		}
 		return self::model_properties( $object_type );
+	}
+
+	public function ajax_model_properties() {
+		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
+			wp_send_json_error( array( 'message' => __( 'Unauthorized.', 'bromate-rest-api-firewall' ) ), 403 );
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above via SettingsAjaxController::ajax_validate_has_firewall_admin_caps()
+		$object_type = sanitize_key( wp_unslash( $_POST['object_type'] ?? '' ) );
+		if ( empty( $object_type ) ) {
+			wp_send_json_error( array( 'message' => 'Missing object_type.' ), 400 );
+		}
+
+		wp_send_json_success( array( 'props' => ModelsPropertiesRepository::model_properties_for_type( $object_type ) ) );
 	}
 
 	public static function model_properties( string $post_type ): array {
@@ -572,8 +587,8 @@ class ModelsPropertiesRepository {
 		return array(
 			array(
 				'key'        => 'embed',
-				'tooltip'    => esc_html__( 'Resolve Object', 'bromate-rest-application-layer' ),
-				'label'      => esc_html__( 'Resolve Object', 'bromate-rest-application-layer' ),
+				'tooltip'    => esc_html__( 'Resolve Object', 'bromate-rest-api-firewall' ),
+				'label'      => esc_html__( 'Resolve Object', 'bromate-rest-api-firewall' ),
 				'properties' => array_merge(
 					array(
 						'featured_media',
@@ -584,14 +599,14 @@ class ModelsPropertiesRepository {
 			),
 			array(
 				'key'        => 'rendered',
-				'tooltip'    => esc_html__( 'Flatten Rendered', 'bromate-rest-application-layer' ),
-				'label'      => esc_html__( 'Flatten Rendered', 'bromate-rest-application-layer' ),
+				'tooltip'    => esc_html__( 'Flatten Rendered', 'bromate-rest-api-firewall' ),
+				'label'      => esc_html__( 'Flatten Rendered', 'bromate-rest-api-firewall' ),
 				'properties' => array(),
 			),
 			array(
 				'key'        => 'date_format',
-				'tooltip'    => esc_html__( 'Date Format', 'bromate-rest-application-layer' ),
-				'label'      => esc_html__( 'DateFormat', 'bromate-rest-application-layer' ),
+				'tooltip'    => esc_html__( 'Date Format', 'bromate-rest-api-firewall' ),
+				'label'      => esc_html__( 'DateFormat', 'bromate-rest-api-firewall' ),
 				'properties' => array(
 					'date',
 					'date_gmt',
@@ -602,8 +617,8 @@ class ModelsPropertiesRepository {
 			),
 			array(
 				'key'        => 'relative_url',
-				'tooltip'    => esc_html__( 'Relative URL', 'bromate-rest-application-layer' ),
-				'label'      => esc_html__( 'Relative URL', 'bromate-rest-application-layer' ),
+				'tooltip'    => esc_html__( 'Relative URL', 'bromate-rest-api-firewall' ),
+				'label'      => esc_html__( 'Relative URL', 'bromate-rest-api-firewall' ),
 				'properties' => array(
 					'file',
 					'link',
@@ -613,8 +628,8 @@ class ModelsPropertiesRepository {
 			),
 			array(
 				'key'        => 'remove_uploads_path',
-				'tooltip'    => esc_html__( 'Remove Uploads Path', 'bromate-rest-application-layer' ),
-				'label'      => esc_html__( 'Remove Uploads Path', 'bromate-rest-application-layer' ),
+				'tooltip'    => esc_html__( 'Remove Uploads Path', 'bromate-rest-api-firewall' ),
+				'label'      => esc_html__( 'Remove Uploads Path', 'bromate-rest-api-firewall' ),
 				'properties' => array(
 					'file',
 					'source_url',
@@ -625,8 +640,8 @@ class ModelsPropertiesRepository {
 			array(
 				'key'        => 'search_replace',
 				'type'       => 'search_replace',
-				'tooltip'    => esc_html__( 'Search & Replace', 'bromate-rest-application-layer' ),
-				'label'      => esc_html__( 'Search & Replace', 'bromate-rest-application-layer' ),
+				'tooltip'    => esc_html__( 'Search & Replace', 'bromate-rest-api-firewall' ),
+				'label'      => esc_html__( 'Search & Replace', 'bromate-rest-api-firewall' ),
 				'properties' => array(
 					'title',
 					'content',
@@ -829,7 +844,7 @@ class ModelsPropertiesRepository {
 		return array(
 			array(
 				'value'    => 'author',
-				'label'    => __( 'Author', 'bromate-rest-application-layer' ),
+				'label'    => __( 'Author', 'bromate-rest-api-firewall' ),
 				'public'   => true,
 				'_builtin' => false,
 				'type'     => 'author',

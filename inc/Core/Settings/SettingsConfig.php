@@ -1,7 +1,7 @@
 <?php namespace Bromate\RestApiFirewall\Core\Settings;
 
-use Bromate\RestApiFirewall\Security\Network\CidrMatcher;
-use Bromate\RestApiFirewall\Security\Network\GeoIpApi;
+use Bromate\RestApiFirewall\Security\Ip\CidrMatcher;
+use Bromate\RestApiFirewall\Security\Ip\GeoIpApi;
 
 final class SettingsConfig {
 
@@ -14,8 +14,8 @@ final class SettingsConfig {
 
 	public function register_settings(): void {
 		register_setting(
-			'rest_api_firewall_options_group',
-			'rest_api_firewall_options',
+			'bromate_rest_api_firewall_options_group',
+			'bromate_rest_api_firewall_options',
 			array(
 				'sanitize_callback' => array( self::class, 'sanitize_options' ),
 				'default'           => self::default_options(),
@@ -27,8 +27,8 @@ final class SettingsConfig {
 
 		$options = array(
 			'auth_enforce' => array(
-				'label' => esc_html__( 'Require authentication for all API routes', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'When enabled, all REST API routes require authentication unless explicitly allowed by route policies.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Require authentication for all API routes', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'When enabled, all REST API routes require authentication unless explicitly allowed by route policies.', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
@@ -36,26 +36,41 @@ final class SettingsConfig {
 			),
 
 			'auth_methods'                        => array(
-				'label' => esc_html__( 'Authentication method', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Choose how API clients authenticate with the REST API.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Authentication method', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Choose how API clients authenticate with the REST API.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 'wp_auth',
+				'ui'   => 'select',
+				'choices' => array(
+					'wp_auth' => esc_html__( 'WordPress Auth', 'bromate-rest-api-firewall' ),
+					'jwt'     =>  esc_html__( 'JWT', 'bromate-rest-api-firewall' ),
+				),
 				'type'              => 'string',
 				'sanitize_callback' => static fn( $v ) => in_array( $v, array( 'wp_auth', 'jwt' ), true ) ? $v : 'wp_auth',
 				'group'             => 'auth',
 			),
 
 			'auth_jwt_algorithm'                      => array(
-				'label' => esc_html__( 'JWT algorithm', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Cryptographic algorithm used to verify JWT tokens.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'JWT algorithm', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Cryptographic algorithm used to verify JWT tokens.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 'RS256',
+				'ui' => 'select',
+				'choices' => array(
+					'HS256',
+					'HS384',
+					'HS512',
+					'RS256',
+					'RS384',
+					'RS512',
+					'ES256'
+				),
 				'type'              => 'string',
 				'sanitize_callback' => static fn( $v ) => in_array( $v, array( 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512', 'ES256' ), true ) ? $v : 'RS256',
 				'group'             => 'auth',
 			),
 
 			'auth_jwt_public_key'                     => array(
-				'label' => esc_html__( 'JWT public key', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Public key used to validate signed JWT tokens.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'JWT public key', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Public key used to validate signed JWT tokens.', 'bromate-rest-api-firewall' ),
 				'default_value'     => '',
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_textarea_field',
@@ -63,8 +78,8 @@ final class SettingsConfig {
 			),
 
 			'auth_jwt_audience'                       => array(
-				'label' => esc_html__( 'JWT audience', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Expected audience claim for incoming JWT tokens.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'JWT audience', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Expected audience claim for incoming JWT tokens.', 'bromate-rest-api-firewall' ),
 				'default_value'     => '',
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
@@ -72,8 +87,8 @@ final class SettingsConfig {
 			),
 
 			'auth_jwt_issuer'                         => array(
-				'label' => esc_html__( 'JWT issuer', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Expected issuer claim for incoming JWT tokens.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'JWT issuer', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Expected issuer claim for incoming JWT tokens.', 'bromate-rest-api-firewall' ),
 				'default_value'     => '',
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
@@ -81,8 +96,8 @@ final class SettingsConfig {
 			),
 
 			'auth_user_ids'                            => array(
-				'label' => esc_html__( 'Authorized API users', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Restrict API access to specific WordPress user accounts.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Authorized API users', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Restrict API access to specific WordPress user accounts.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 0,
 				'type'              => 'integer',
 				'sanitize_callback' => 'sanitize_array_int',
@@ -92,8 +107,8 @@ final class SettingsConfig {
 
 
 			'rate_limit_enabled'                          => array(
-				'label' => esc_html__( 'Enable API rate limiting', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Protect the API against excessive requests and abuse.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Enable API rate limiting', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Protect the API against excessive requests and abuse.', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
@@ -101,8 +116,8 @@ final class SettingsConfig {
 			),
 
 			'rate_limit_max'                                  => array(
-				'label' => esc_html__( 'Maximum requests', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Number of requests allowed during the configured time window.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Maximum requests', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Number of requests allowed during the configured time window.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 30,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
@@ -110,8 +125,8 @@ final class SettingsConfig {
 			),
 
 			'rate_limit_time'                             => array(
-				'label' => esc_html__( 'Time window (seconds)', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Period used to count requests before the limit resets.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Time window (seconds)', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Period used to count requests before the limit resets.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 60,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
@@ -119,8 +134,8 @@ final class SettingsConfig {
 			),
 
 			'rate_limit_block_duration'                          => array(
-				'label' => esc_html__( 'Temporary block duration (seconds)', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'How long a client remains blocked after exceeding the rate limit.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Temporary block duration (seconds)', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'How long a client remains blocked after exceeding the rate limit.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 300,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
@@ -128,8 +143,8 @@ final class SettingsConfig {
 			),
 
 			'rate_limit_blacklist_threshold'                        => array(
-				'label' => esc_html__( 'Blacklist threshold', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Number of rate-limit violations before automatic blacklisting.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Blacklist threshold', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Number of rate-limit violations before automatic blacklisting.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 5,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
@@ -137,8 +152,8 @@ final class SettingsConfig {
 			),
 
 			'rate_limit_whitelist'                          => array(
-				'label' => esc_html__( 'Rate limit whitelist', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'IP addresses or CIDR ranges exempt from rate limiting.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Rate limit whitelist', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'IP addresses or CIDR ranges exempt from rate limiting.', 'bromate-rest-api-firewall' ),
 				'default_value'     => array(),
 				'type'              => 'array',
 				'sanitize_callback' => array( CidrMatcher::class, 'sanitize_ip_array' ),
@@ -148,11 +163,11 @@ final class SettingsConfig {
 			'rate_limit_countries' => array(
 				'label' => esc_html__(
 					'Blocked countries',
-					'bromate-rest-application-layer'
+					'bromate-rest-api-firewall'
 				),
 				'info'  => esc_html__(
 					'Requests originating from these countries will be denied access to the REST API.',
-					'bromate-rest-application-layer'
+					'bromate-rest-api-firewall'
 				),
 				'default_value'     => array(),
 				'type'              => 'array',
@@ -161,8 +176,8 @@ final class SettingsConfig {
 			),
 
 			'rate_limit_emergency_token_hash'                        => array(
-				'label' => esc_html__( 'Emergency bypass token', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Hashed token allowing emergency access when clients are rate limited.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Emergency bypass token', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Hashed token allowing emergency access when clients are rate limited.', 'bromate-rest-api-firewall' ),
 				'default_value'     => '',
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
@@ -172,8 +187,8 @@ final class SettingsConfig {
 
 			// Routes Policies.
 			'routes_policy_enabled'              => array(
-				'label' => esc_html__( 'Enable route policies', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Control route visibility and authentication requirements on a per-route basis.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Enable route policies', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Control route visibility and authentication requirements on a per-route basis.', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
@@ -181,8 +196,8 @@ final class SettingsConfig {
 			),
 
 			'routes_policy_rules'                             => array(
-				'label' => esc_html__( 'Per-route policies', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Custom visibility and authentication rules applied to individual routes.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Per-route policies', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Custom visibility and authentication rules applied to individual routes.', 'bromate-rest-api-firewall' ),
 				'default_value'     => array(
 					'nodes'  => array(),
 					'routes' => array(),
@@ -194,8 +209,8 @@ final class SettingsConfig {
 
 
 			'routes_policy_hidden_routes'                            => array(
-				'label' => esc_html__( 'Hidden routes', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Routes removed from discovery and unavailable to public clients.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Hidden routes', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Routes removed from discovery and unavailable to public clients.', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
 				'type'              => 'array',
 				'options' => [
@@ -210,8 +225,8 @@ final class SettingsConfig {
 
 			// Auth hardening.
 			'login_rate_limit_enabled'                    => array(
-				'label' => esc_html__( 'Protect login page', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Limit failed login attempts to reduce brute-force attacks.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Protect login page', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Limit failed login attempts to reduce brute-force attacks.', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
@@ -219,8 +234,8 @@ final class SettingsConfig {
 			),
 
 			'login_rate_limit_attempts'                   => array(
-				'label' => esc_html__( 'Maximum login attempts', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Number of failed login attempts allowed before blocking the client.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Maximum login attempts', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Number of failed login attempts allowed before blocking the client.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 5,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
@@ -228,8 +243,8 @@ final class SettingsConfig {
 			),
 
 			'login_rate_limit_window'                     => array(
-				'label' => esc_html__( 'Login attempt window (seconds)', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Time period used to count failed login attempts.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Login attempt window (seconds)', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Time period used to count failed login attempts.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 300,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
@@ -237,8 +252,8 @@ final class SettingsConfig {
 			),
 
 			'login_rate_limit_blacklist_time'             => array(
-				'label' => esc_html__( 'Login block duration (seconds)', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'How long an IP remains blocked after exceeding login limits.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Login block duration (seconds)', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'How long an IP remains blocked after exceeding login limits.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 3600,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
@@ -246,8 +261,8 @@ final class SettingsConfig {
 			),
 
 			'login_rate_limit_promote_after'              => array(
-				'label' => esc_html__( 'Permanent blacklist threshold', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Number of temporary blocks before promoting an IP to the blacklist.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Permanent blacklist threshold', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Number of temporary blocks before promoting an IP to the blacklist.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 0,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
@@ -256,7 +271,7 @@ final class SettingsConfig {
 
 			// API Models response
 			'models_enabled'                         => array(
-				'label' => esc_html__( 'Transform REST API responses', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Transform REST API responses', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
@@ -349,8 +364,8 @@ final class SettingsConfig {
 
 			
 			'wordpress_application_only_mode'                      => array(
-				'label' => esc_html__( 'Application-only mode', 'bromate-rest-application-layer' ),
-				'info'  => esc_html__( 'Redirect front-end pages and use WordPress primarily as a REST API backend.', 'bromate-rest-application-layer' ),
+				'label' => esc_html__( 'Application-only mode', 'bromate-rest-api-firewall' ),
+				'info'  => esc_html__( 'Redirect front-end pages and use WordPress primarily as a REST API backend.', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
@@ -479,6 +494,43 @@ final class SettingsConfig {
 		);
 
 		return apply_filters( 'bromate_rest_application_layer_core_options', $options );
+	}
+
+	public static function groups_config(): array
+	{
+    	return array(
+
+			'auth' => array(
+				'label' => __( 'Authentication', 'bromate-rest-api-firewall' ),
+				'icon'  => 'lock'
+			),
+
+			'rate' => array(
+				'label' => __( 'Rate Limiting', 'bromate-rest-api-firewall' ),
+				'icon'  => 'speed'
+			),
+
+			'routes_policy' => array(
+				'label' => __( 'Route Policies', 'bromate-rest-api-firewall' ),
+				'icon'  => 'route'
+			),
+
+			'login' => array(
+				'label' => __( 'Login Protection', 'bromate-rest-api-firewall' ),
+				'icon'  => 'shield'
+			),
+
+			'models' => array(
+				'label' => __( 'Response Models', 'bromate-rest-api-firewall' ),
+				'icon'  => 'data_object'
+			),
+
+			'wordpress' => array(
+				'label' => __( 'WordPress Hardening', 'bromate-rest-api-firewall' ),
+				'icon'  => 'wordpress'
+			),
+
+		);
 	}
 
 	public static function default_options(): array {

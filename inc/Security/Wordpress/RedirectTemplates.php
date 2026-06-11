@@ -21,9 +21,9 @@ class RedirectTemplates {
 
 	public static function redirect_preset_url_options() {
 		return [
-				['value' => 'front_page', 'label' => esc_html__('Front Page', 'bromate-rest-application-layer')],
-				['value' => 'blog_page', 'label' => esc_html__('Blog Page', 'bromate-rest-application-layer')],
-				['value' => 'login_page', 'label' => esc_html__('Login Page', 'bromate-rest-application-layer')],
+				['value' => 'front_page', 'label' => esc_html__('Front Page', 'bromate-rest-api-firewall')],
+				['value' => 'blog_page', 'label' => esc_html__('Blog Page', 'bromate-rest-api-firewall')],
+				['value' => 'login_page', 'label' => esc_html__('Login Page', 'bromate-rest-api-firewall')],
 			];
 	}
 

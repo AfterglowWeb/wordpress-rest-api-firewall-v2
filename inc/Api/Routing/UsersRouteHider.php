@@ -47,7 +47,7 @@ class UsersRouteHider {
 		if ( preg_match( '#^/wp/v2/users(?:/|$)#i', $route ) ) {
 			return new WP_Error(
 				'rest_forbidden',
-				esc_html__( 'User routes are not available.', 'bromate-rest-application-layer' ),
+				esc_html__( 'User routes are not available.', 'bromate-rest-api-firewall' ),
 				array( 'status' => 403 )
 			);
 		}

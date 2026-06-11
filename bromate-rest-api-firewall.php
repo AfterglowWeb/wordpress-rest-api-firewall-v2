@@ -35,7 +35,7 @@ if ( file_exists( BROMATE_REST_API_FIREWALL_DIR . '/vendor/autoload.php' ) ) {
 		'admin_notices',
 		function (): void {
 			echo '<div class="notice notice-error"><p>';
-			echo esc_html__( 'Bromate Application Layer encountered an error and could not be activated.', 'bromate-rest-application-layer' );
+			echo esc_html__( 'Bromate Application Layer encountered an error and could not be activated.', 'bromate-rest-api-firewall' );
 			echo '</p></div>';
 		}
 	);
@@ -58,7 +58,7 @@ add_action(
 	'init',
 	function (): void {
 		load_plugin_textdomain(
-			'bromate-rest-application-layer',
+			'bromate-rest-api-firewall',
 			false,
 			dirname( plugin_basename( __FILE__ ) ) . '/languages'
 		);
@@ -70,65 +70,10 @@ add_filter(
 	function ( array $links ): array {
 		$settings_link = sprintf(
 			'<a href="%s">%s</a>',
-			admin_url( 'admin.php?page=bromate-rest-application-layer' ),
-			esc_html__( 'Settings', 'bromate-rest-application-layer' )
+			admin_url( 'admin.php?page=bromate-rest-api-firewall' ),
+			esc_html__( 'Settings', 'bromate-rest-api-firewall' )
 		);
 		array_unshift( $links, $settings_link );
 		return $links;
-	}
-);
-
-add_action(
-	'admin_notices',
-	function (): void {
-		if ( ! function_exists( 'get_plugin_data' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		}
-
-		$plugin_data = get_plugin_data( BROMATE_REST_API_FIREWALL_FILE );
-
-		if ( ! is_array( $plugin_data ) ) {
-			return;
-		}
-
-		$requires_wp  = $plugin_data['RequiresWP'] ?? '';
-		$requires_php = $plugin_data['RequiresPHP'] ?? '';
-
-		if ( empty( $requires_wp ) && empty( $requires_php ) ) {
-			return;
-		}
-
-
-		$admin_screen = get_current_screen();
-
-		if ( ! $admin_screen instanceof \WP_Screen ) {
-			return;
-		}
-
-		if( ! in_array(
-			$screen_name,
-			array(
-				$admin_screen->base,
-				$admin_screen->parent_base,
-				$admin_screen->id,
-			),
-			true
-		) ) {
-			return;
-		}
-
-		if ( $requires_wp && version_compare( get_bloginfo( 'version' ), $requires_wp, '<' ) ) {
-			echo '<div class="notice notice-error"><p>';
-			/* translators: %s is the WordPress version */
-			printf( esc_html__( 'Bromate Application Layer requires WordPress version %s.', 'bromate-rest-application-layer' ), esc_html( $requires_wp ) );
-			echo '</p></div>';
-		}
-
-		if ( $requires_php && version_compare( PHP_VERSION, $requires_php, '<' ) ) {
-			echo '<div class="notice notice-error"><p>';
-			/* translators: %s is the PHP version */
-			printf( esc_html__( 'Bromate Application Layer requires PHP version %s.', 'bromate-rest-application-layer' ), esc_html( $requires_php ) );
-			echo '</p></div>';
-		}
 	}
 );

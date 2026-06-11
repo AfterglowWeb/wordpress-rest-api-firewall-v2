@@ -111,11 +111,11 @@ class Theme {
 		$handle = false;
 
 		if ( defined( 'WP_LANG_DIR' ) ) {
-			$handle = load_theme_textdomain( 'bromate-rest-application-layer' );
+			$handle = load_theme_textdomain( 'bromate-rest-api-firewall' );
 		}
 
 		if ( false === $handle ) {
-			load_theme_textdomain( 'bromate-rest-application-layer', get_stylesheet_directory() . '/languages' );
+			load_theme_textdomain( 'bromate-rest-api-firewall', get_stylesheet_directory() . '/languages' );
 		}
 	}
 }

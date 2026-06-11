@@ -32,25 +32,25 @@ class FilePermissions {
 
 	public function ajax_update_file_permissions(): void {
 		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
-			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-application-layer' ) ), 403 );
+			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-api-firewall' ) ), 403 );
 		}
 
 		$permissions = $this->read_wp_config_permissions();
 
 		if ( ! $permissions ) {
-			wp_send_json_error( array( 'message' => esc_html__( 'wp-config.php is not readable.', 'bromate-rest-application-layer' ) ), 500 );
+			wp_send_json_error( array( 'message' => esc_html__( 'wp-config.php is not readable.', 'bromate-rest-api-firewall' ) ), 500 );
 			return;
 		}
 
 		if ( '440' === $permissions ) {
-			wp_send_json_success( array( 'message' => esc_html__( 'wp-config.php permissions are already secure (440).', 'bromate-rest-application-layer' ) ) );
+			wp_send_json_success( array( 'message' => esc_html__( 'wp-config.php permissions are already secure (440).', 'bromate-rest-api-firewall' ) ) );
 			return;
 		}
 
 		if ( $this->change_wp_config_permissions() ) {
-			wp_send_json_success( array( 'message' => esc_html__( 'wp-config.php permissions set to 440 successfully.', 'bromate-rest-application-layer' ) ) );
+			wp_send_json_success( array( 'message' => esc_html__( 'wp-config.php permissions set to 440 successfully.', 'bromate-rest-api-firewall' ) ) );
 		} else {
-			wp_send_json_error( array( 'message' => esc_html__( 'Failed to update wp-config.php permissions. Check that the web server user owns the file.', 'bromate-rest-application-layer' ) ), 500 );
+			wp_send_json_error( array( 'message' => esc_html__( 'Failed to update wp-config.php permissions. Check that the web server user owns the file.', 'bromate-rest-api-firewall' ) ), 500 );
 		}
 	}
 
@@ -76,7 +76,7 @@ class FilePermissions {
 
 	public function ajax_get_file_status(): void {
 		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
-			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-application-layer' ) ), 403 );
+			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-api-firewall' ) ), 403 );
 		}
 
 		$wpconfig_perms  = $this->read_wp_config_permissions();
@@ -99,14 +99,14 @@ class FilePermissions {
 
 	public function ajax_protect_uploads_dir(): void {
 		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
-			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-application-layer' ) ), 403 );
+			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-api-firewall' ) ), 403 );
 		}
 
 		$upload_dir   = wp_upload_dir();
 		$uploads_path = trailingslashit( $upload_dir['basedir'] );
 
 		if ( ! FileUtils::is_dir( $uploads_path ) ) {
-			wp_send_json_error( array( 'message' => esc_html__( 'Uploads directory not found.', 'bromate-rest-application-layer' ) ), 500 );
+			wp_send_json_error( array( 'message' => esc_html__( 'Uploads directory not found.', 'bromate-rest-api-firewall' ) ), 500 );
 			return;
 		}
 
@@ -119,11 +119,11 @@ class FilePermissions {
 		$htaccess_existing = FileUtils::read_file( $htaccess_path );
 
 		if ( false !== strpos( (string) $htaccess_existing, '# REST API Firewall' ) ) {
-			$results[] = esc_html__( 'Apache: .htaccess rules already present.', 'bromate-rest-application-layer' );
+			$results[] = esc_html__( 'Apache: .htaccess rules already present.', 'bromate-rest-api-firewall' );
 		} elseif ( FileUtils::write_file( $htaccess_path, $htaccess_content ) ) {
-			$results[] = esc_html__( 'Apache: .htaccess created successfully.', 'bromate-rest-application-layer' );
+			$results[] = esc_html__( 'Apache: .htaccess created successfully.', 'bromate-rest-api-firewall' );
 		} else {
-			$errors[] = esc_html__( 'Apache: could not write .htaccess — check directory permissions.', 'bromate-rest-application-layer' );
+			$errors[] = esc_html__( 'Apache: could not write .htaccess — check directory permissions.', 'bromate-rest-api-firewall' );
 		}
 
 		// IIS.
@@ -132,14 +132,14 @@ class FilePermissions {
 		$webconfig_existing = FileUtils::read_file( $webconfig_path );
 
 		if ( false !== strpos( (string) $webconfig_existing, 'REST API Firewall' ) ) {
-			$results[] = esc_html__( 'IIS: web.config rules already present.', 'bromate-rest-application-layer' );
+			$results[] = esc_html__( 'IIS: web.config rules already present.', 'bromate-rest-api-firewall' );
 		} elseif ( FileUtils::write_file( $webconfig_path, $webconfig_content ) ) {
-			$results[] = esc_html__( 'IIS: web.config created successfully.', 'bromate-rest-application-layer' );
+			$results[] = esc_html__( 'IIS: web.config created successfully.', 'bromate-rest-api-firewall' );
 		} else {
-			$results[] = esc_html__( 'IIS: web.config could not be written (non-fatal if not running IIS).', 'bromate-rest-application-layer' );
+			$results[] = esc_html__( 'IIS: web.config could not be written (non-fatal if not running IIS).', 'bromate-rest-api-firewall' );
 		}
 
-		$results[] = esc_html__( 'Nginx: .htaccess files are ignored by Nginx. Add the following block to your server configuration:', 'bromate-rest-application-layer' );
+		$results[] = esc_html__( 'Nginx: .htaccess files are ignored by Nginx. Add the following block to your server configuration:', 'bromate-rest-api-firewall' );
 
 		if ( ! empty( $errors ) ) {
 			wp_send_json_error(

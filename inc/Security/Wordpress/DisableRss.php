@@ -33,6 +33,6 @@ class DisableRss {
 	}
 
 	public function disable_all_feeds() {
-		wp_die( esc_html__( 'No feed available.', 'bromate-rest-application-layer' ), 404 );
+		wp_die( esc_html__( 'No feed available.', 'bromate-rest-api-firewall' ), 404 );
 	}
 }
