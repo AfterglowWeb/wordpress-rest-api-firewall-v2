@@ -19,12 +19,12 @@ class AdminPage {
 			}
 		);
 		add_action( 'admin_menu', array( $self, 'register_admin_page' ) );
-		add_action( 'admin_enqueue_scripts', array( $self, 'enqueue_scripts', 10, 1 ) );
+		add_action( 'admin_enqueue_scripts', array( $self, 'enqueue_scripts' ), 10, 1 );
 		add_action( 'admin_footer', array( $self, 'print_inline_styles' ), 20 );
 		add_action( 'admin_notices', array( $self, 'admin_notices' ) );
 	}
 
-	public function register_admin_page() {
+	public function register_admin_page(): void {
 		add_menu_page(
 			__( 'Bromate REST API Firewall', 'bromate-rest-api-firewall' ),
 			__( 'Bromate REST API Firewall', 'bromate-rest-api-firewall' ),
@@ -36,11 +36,11 @@ class AdminPage {
 		);
 	}
 
-	public function render_admin_page() {
+	public function render_admin_page(): void {
 		echo '<div id="bromate-rest-api-firewall-page"></div>';
 	}
 
-	public function enqueue_scripts( $hook ) {
+	public function enqueue_scripts( $hook ): void {
 		if ( 'toplevel_page_bromate-rest-api-firewall' !== $hook ) {
 			return;
 		}
@@ -82,7 +82,7 @@ class AdminPage {
 		);
 	}
 
-	public function print_inline_styles() {
+	public function print_inline_styles(): void {
 		$hook = get_current_screen();
 		if ( 'toplevel_page_bromate-rest-api-firewall' !== $hook->id ) {
 			return;

@@ -6,7 +6,6 @@ defined( 'ABSPATH' ) || exit;
 
 use Bromate\RestApiFirewall\Security\Authentication\AuthenticationManager;
 use Bromate\RestApiFirewall\Security\RateLimit\RateLimiter;
-use WP_Error;
 use WP_REST_Request;
 
 final class RestRequestBootstrap {
@@ -16,23 +15,29 @@ final class RestRequestBootstrap {
 		add_action(
 			'rest_pre_serve_request',
 			array( self::class, 'remove_cache_headers' ),
-			5
+			10,
+			1
 		);
 
 		add_filter(
 			'rest_json_encode_options',
-			array( self::class, 'json_encode_options' )
+			array( self::class, 'json_encode_options' ),
+			10,
+			1
 		);
 
 		add_filter(
 			'application_password_is_api_request',
-			'__return_true'
+			'__return_true',
+			10,
+			1
 		);
 
 		add_filter(
 			'rest_authentication_errors',
 			array( self::class, 'authenticate_request' ),
-			99
+			10,
+			1
 		);
 
 		add_filter(
