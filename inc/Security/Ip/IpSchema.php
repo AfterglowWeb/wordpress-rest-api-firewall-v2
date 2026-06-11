@@ -1,4 +1,5 @@
-<?php namespace Bromate\RestApiFirewall\Security\Network;
+<?php namespace Bromate\RestApiFirewall\Security\Ip;
+
 
 defined( 'ABSPATH' ) || exit;
 
@@ -7,7 +8,7 @@ use wpdb;
 class IpSchema {
 
 	const SCHEMA_VERSION = '1.1.0';
-	const OPTION_KEY     = 'rest_api_firewall_ip_schema_version';
+	const OPTION_KEY     = 'bromate_rest_api_firewall_ip_schema_version';
 
 	public static function install(): void {
 		global $wpdb;
@@ -24,19 +25,19 @@ class IpSchema {
 	}
 
 	private static function maybe_alter_list_type_enum( wpdb $wpdb ): void {
-		$table = $wpdb->prefix . 'rest_api_firewall_ip_entries';
+		$table = $wpdb->prefix . 'bromate_rest_api_firewall_ip_entries';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- DDL statement, $table is $wpdb->prefix-derived, not user input
 		$wpdb->query( "ALTER TABLE {$table} MODIFY list_type ENUM('whitelist','blacklist','global_blacklist') NOT NULL DEFAULT 'blacklist'" );
 	}
 
 	private static function create_tables( wpdb $wpdb ): void {
 		$charset_collate = $wpdb->get_charset_collate();
-		$table           = $wpdb->prefix . 'rest_api_firewall_ip_entries';
+		$table           = $wpdb->prefix . 'bromate_rest_api_firewall_ip_entries';
 
 		$sql = "CREATE TABLE {$table} (
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			ip VARCHAR(45) NOT NULL,
-			list_type ENUM('whitelist','blacklist','global_blacklist') NOT NULL DEFAULT 'blacklist',
+			list_type ENUM('whitelist','blacklist') NOT NULL DEFAULT 'blacklist',
 			entry_type ENUM('manual','rate_limit') NOT NULL DEFAULT 'manual',
 			agent VARCHAR(255) NULL,
 			country_code CHAR(2) NULL,

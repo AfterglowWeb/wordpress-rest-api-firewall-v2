@@ -491,10 +491,10 @@ class RoutesPolicyTest {
 			$opts['enforce_auth'] = false;
 			return $opts;
 		};
-		add_filter( 'rest_api_firewall_runtime_options', $filter );
+		add_filter( 'bromate_rest_api_firewall_runtime_options', $filter );
 		RoutesResolver::clear_cache();
 		$policy = $this->get_policy_for_route( $route, $method );
-		remove_filter( 'rest_api_firewall_runtime_options', $filter );
+		remove_filter( 'bromate_rest_api_firewall_runtime_options', $filter );
 		RoutesResolver::clear_cache();
 		return (bool) ( $policy['protect'] ?? false );
 	}

@@ -39,52 +39,52 @@ class Documentation {
 		$pages = array(
 			array(
 				'slug'  => 'presentation',
-				'title' => __( 'Presentation', 'bromate-rest-application-layer' ),
+				'title' => __( 'Presentation', 'bromate-rest-api-firewall' ),
 				'html'  => '',
 			),
 			array(
 				'slug'  => 'getting-started',
-				'title' => __( 'Getting Started', 'bromate-rest-application-layer' ),
+				'title' => __( 'Getting Started', 'bromate-rest-api-firewall' ),
 				'html'  => '',
 			),
 			array(
 				'slug'  => 'hooks',
-				'title' => __( 'Hooks', 'bromate-rest-application-layer' ),
+				'title' => __( 'Hooks', 'bromate-rest-api-firewall' ),
 				'html'  => '',
 			),
 			array(
 				'slug'  => 'applications',
-				'title' => __( 'Applications', 'bromate-rest-application-layer' ),
+				'title' => __( 'Applications', 'bromate-rest-api-firewall' ),
 				'html'  => '',
 			),
 			array(
 				'slug'  => 'users',
-				'title' => __( 'Auth. & Rate Limit', 'bromate-rest-application-layer' ),
+				'title' => __( 'Auth. & Rate Limit', 'bromate-rest-api-firewall' ),
 				'html'  => '',
 			),
 			array(
 				'slug'  => 'models',
-				'title' => __( 'Properties', 'bromate-rest-application-layer' ),
+				'title' => __( 'Properties', 'bromate-rest-api-firewall' ),
 				'html'  => '',
 			),
 			array(
 				'slug'  => 'collections',
-				'title' => __( 'Collections', 'bromate-rest-application-layer' ),
+				'title' => __( 'Collections', 'bromate-rest-api-firewall' ),
 				'html'  => '',
 			),
 			array(
 				'slug'  => 'automations',
-				'title' => __( 'Automations', 'bromate-rest-application-layer' ),
+				'title' => __( 'Automations', 'bromate-rest-api-firewall' ),
 				'html'  => '',
 			),
 			array(
 				'slug'  => 'webhooks',
-				'title' => __( 'Webhooks', 'bromate-rest-application-layer' ),
+				'title' => __( 'Webhooks', 'bromate-rest-api-firewall' ),
 				'html'  => '',
 			),
 			array(
 				'slug'  => 'mails',
-				'title' => __( 'Emails', 'bromate-rest-application-layer' ),
+				'title' => __( 'Emails', 'bromate-rest-api-firewall' ),
 				'html'  => '',
 			),
 		);

@@ -2,8 +2,11 @@
 
 defined( 'ABSPATH' ) || exit;
 
-use Bromate\RestApiFirewall\Security\SecurityBootstrap;
-use Bromate\RestApiFirewall\Admin\AdminBootstrap;
+use Bromate\RestApiFirewall\Api\Routing\RestRequestBootstrap;
+
+use Bromate\RestApiFirewall\Security\Ip\IpEntryAjaxController;
+use Bromate\RestApiFirewall\Admin\AdminPage;
+use Bromate\RestApiFirewall\Admin\Documentation;
 use Bromate\RestApiFirewall\Core\Settings\SettingsAjaxController;
 
 final class Bootstrap {
@@ -11,15 +14,17 @@ final class Bootstrap {
 	private function __construct() {}
 	
 	public static function register(): void {
-        
-		SecurityBootstrap::register();
-		
+
+		RestRequestBootstrap::register();
+
 		if ( is_admin() ) {
-			AdminBootstrap::register();
+			AdminPage::register();
     		SettingsAjaxController::register();
+			IpEntryAjaxController::register();
+			Documentation::register();
 		}
 
-        do_action('rest_api_firewall_loaded');
+        do_action('bromate_rest_api_firewall_loaded');
     }
 
 	public static function activate(): void {
@@ -28,15 +33,15 @@ final class Bootstrap {
 			return;
 		}
 
-		$caps = array( 'rest_api_firewall_edit_options' );
+		$caps = array( 'bromate_rest_api_firewall_edit_options' );
 
 		foreach ( $caps as $cap ) {
 			$role->add_cap( $cap );
 		}
 
-		if ( false === get_option( 'rest_api_firewall_options' ) ) {
+		if ( false === get_option( 'bromate_rest_api_firewall_options' ) ) {
 			update_option(
-				'rest_api_firewall_options',
+				'bromate_rest_api_firewall_options',
 				array(
 					'version' => BROMATE_REST_API_FIREWALL_VERSION,
 				),
@@ -53,13 +58,13 @@ final class Bootstrap {
 			return;
 		}
 
-		$caps = array( 'rest_api_firewall_edit_options' );
+		$caps = array( 'bromate_rest_api_firewall_edit_options' );
 
 		foreach ( $caps as $cap ) {
 			$role->remove_cap( $cap );
 		}
 
-		delete_transient( 'rest_api_firewall_routes_list' );
+		delete_transient( 'bromate_rest_api_firewall_routes_list' );
 
 		flush_rewrite_rules();
 	}
@@ -69,7 +74,7 @@ final class Bootstrap {
 			return;
 		}
 
-		$caps  = array( 'rest_api_firewall_edit_options', 'rest_firewall_api_access' );
+		$caps  = array( 'bromate_rest_api_firewall_edit_options', 'rest_firewall_api_access' );
 		$roles = wp_roles()->roles;
 
 		foreach ( array_keys( $roles ) as $role_name ) {
@@ -81,8 +86,8 @@ final class Bootstrap {
 			}
 		}
 
-		delete_option( 'rest_api_firewall_options' );
-		delete_transient( 'rest_api_firewall_routes_list' );
+		delete_option( 'bromate_rest_api_firewall_options' );
+		delete_transient( 'bromate_rest_api_firewall_routes_list' );
 
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching

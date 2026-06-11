@@ -1,0 +1,113 @@
+<?php namespace Bromate\RestApiFirewall\Security\RateLimit;
+
+defined( 'ABSPATH' ) || exit;
+
+use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
+use Bromate\RestApiFirewall\Security\Ip\ClientIpResolver;
+use Bromate\RestApiFirewall\Security\RateLimit\AutoBlacklist;
+use Bromate\RestApiFirewall\Security\RateLimit\ViolationTracker;
+use WP_REST_Request;
+use WP_Error;
+
+class RateLimiter {
+
+    private const REQUEST_KEY_PREFIX = 'rest_firewall_requests_';
+
+    public static function inspect( WP_REST_Request $request ) {
+
+        $options = SettingsRepository::read_options();
+
+        if ( empty( $options['rate_limit_enabled'] ) ) {
+            return true;
+        }
+
+        $client_id = self::resolve_client_id( $request );
+        $client_ip = ClientIpResolver::get_client_ip();
+
+        if ( AutoBlacklist::is_auto_blacklisted( $client_ip ) ) {
+            return new WP_Error(
+                'rest_firewall_ip_blacklisted',
+                __( 'Your IP has been temporarily blocked.', 'bromate-rest-api-firewall' ),
+                array( 'status' => 403 )
+            );
+        }
+
+        $max_requests      = (int) $options['rate_limit'];
+        $time_window       = (int) $options['rate_limit_time'];
+        $max_violations    = (int) $options['rate_limit_blacklist'];
+        $violation_window  = (int) $options['rate_limit_violation_window'];
+        $blacklist_time    = (int) $options['rate_limit_blacklist_time'];
+
+        $count = self::increment_request_count(
+            $client_id,
+            $time_window
+        );
+
+        if ( $count <= $max_requests ) {
+            return true;
+        }
+
+        $violations = ViolationTracker::record_violation(
+            $client_id,
+            $violation_window
+        );
+
+        if ( $violations >= $max_violations ) {
+
+            AutoBlacklist::auto_blacklist_ip(
+                $client_ip,
+                $blacklist_time
+            );
+
+            ViolationTracker::clear_violations(
+                $client_id
+            );
+
+            return new WP_Error(
+                'rest_firewall_ip_blacklisted',
+                __( 'Your IP has been temporarily blocked.', 'bromate-rest-api-firewall' ),
+                array( 'status' => 403 )
+            );
+        }
+
+        return new WP_Error(
+            'rest_firewall_rate_limited',
+            __( 'Too many requests.', 'bromate-rest-api-firewall' ),
+            array( 'status' => 429 )
+        );
+    }
+
+    private static function increment_request_count(
+        string $client_id,
+        int $window
+    ): int {
+
+        $key = self::REQUEST_KEY_PREFIX . md5( $client_id );
+
+        $count = (int) get_transient( $key );
+
+        ++$count;
+
+        set_transient(
+            $key,
+            $count,
+            $window
+        );
+
+        return $count;
+    }
+
+    private static function resolve_client_id(
+        WP_REST_Request $request
+    ): string {
+
+        $user = wp_get_current_user();
+
+        if ( $user && $user->exists() ) {
+            return 'user_' . $user->ID;
+        }
+
+        return 'ip_' . ClientIpResolver::get_client_ip();
+    }
+}
+

@@ -73,7 +73,7 @@ class RoutesResolver {
 
 			if ( ! $is_custom ) {
 				$opts        = SettingsRepository::read_options();
-				$opts        = apply_filters( 'rest_api_firewall_runtime_options', $opts );
+				$opts        = apply_filters( 'bromate_rest_api_firewall_runtime_options', $opts );
 				$dis_methods = isset( $opts['disabled_methods'] ) ? (array) $opts['disabled_methods'] : array();
 
 				if (
@@ -161,7 +161,7 @@ class RoutesResolver {
 		 *
 		 * @param array $firewall_options Merged global + per-app options.
 		 */
-		$firewall_options = apply_filters( 'rest_api_firewall_runtime_options', $firewall_options );
+		$firewall_options = apply_filters( 'bromate_rest_api_firewall_runtime_options', $firewall_options );
 
 		$global_enforce_auth    = (bool) ( $firewall_options['enforce_auth'] ?? false );
 		$global_enforce_rate    = (bool) ( $firewall_options['enforce_rate_limit'] ?? false );
@@ -233,7 +233,7 @@ class RoutesResolver {
 		 *
 		 * @param bool $has Whether at least one user is configured (free-tier default).
 		 */
-		return (bool) apply_filters( 'rest_api_firewall_has_configured_users', $has );
+		return (bool) apply_filters( 'bromate_rest_api_firewall_has_configured_users', $has );
 	}
 
 	private static function merge_settings( array $base, array $override ): array {

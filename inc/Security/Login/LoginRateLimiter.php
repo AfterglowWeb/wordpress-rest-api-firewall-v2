@@ -3,9 +3,9 @@
 defined( 'ABSPATH' ) || exit;
 
 use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
-use Bromate\RestApiFirewall\Security\Network\IpEntryRepository;
-use Bromate\RestApiFirewall\Security\Network\CidrMatcher;
-use Bromate\RestApiFirewall\Security\Network\ClientIpResolver;
+use Bromate\RestApiFirewall\Security\Ip\IpEntryRepository;
+use Bromate\RestApiFirewall\Security\Ip\CidrMatcher;
+use Bromate\RestApiFirewall\Security\Ip\ClientIpResolver;
 
 final class LoginRateLimiter {
 
@@ -40,7 +40,7 @@ final class LoginRateLimiter {
 		if ( get_transient( self::BLOCK_PREFIX . self::ip_hash( $ip ) ) ) {
 			return new \WP_Error(
 				'too_many_login_attempts',
-				__( 'Too many failed login attempts. Please try again later.', 'bromate-rest-application-layer' )
+				__( 'Too many failed login attempts. Please try again later.', 'bromate-rest-api-firewall' )
 			);
 		}
 
@@ -143,46 +143,5 @@ final class LoginRateLimiter {
 
 		return false;
 	}
-
-	public static function get_active_blocks(): array {
-		global $wpdb;
-
-		$transient_prefix = '_transient_' . self::BLOCK_PREFIX;
-		$timeout_prefix   = '_transient_timeout_' . self::BLOCK_PREFIX;
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s",
-				$wpdb->esc_like( $transient_prefix ) . '%'
-			),
-			ARRAY_A
-		);
-
-		if ( ! is_array( $rows ) || empty( $rows ) ) {
-			return array();
-		}
-
-		$blocks = array();
-
-		foreach ( $rows as $row ) {
-			$hash = substr( $row['option_name'], strlen( $transient_prefix ) );
-			$ip   = $row['option_value'];
-
-			$timeout   = (int) get_option( $timeout_prefix . $hash, 0 );
-			$remaining = $timeout > 0 ? max( 0, $timeout - time() ) : 0;
-
-			$blocks[] = array(
-				'ip'        => $ip,
-				'remaining' => $remaining,
-			);
-		}
-
-		// Sort by most time remaining first.
-		usort( $blocks, static fn( $a, $b ) => $b['remaining'] <=> $a['remaining'] );
-
-		return $blocks;
-	}
-
 
 }

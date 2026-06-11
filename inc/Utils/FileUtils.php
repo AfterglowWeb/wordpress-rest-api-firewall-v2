@@ -170,7 +170,7 @@ class FileUtils {
 		$wp_filesystem = self::wp_filesystem();
 
 		if ( ! $wp_filesystem ) {
-			return new WP_Error( 'filesystem', __( 'WordPress filesystem not available.', 'bromate-rest-application-layer' ) );
+			return new WP_Error( 'filesystem', __( 'WordPress filesystem not available.', 'bromate-rest-api-firewall' ) );
 		}
 
 		$copied_files = array();
@@ -178,7 +178,7 @@ class FileUtils {
 		$files = $wp_filesystem->dirlist( $source );
 
 		if ( false === $files ) {
-			return new WP_Error( 'read_error', __( 'Could not read source directory.', 'bromate-rest-application-layer' ) );
+			return new WP_Error( 'read_error', __( 'Could not read source directory.', 'bromate-rest-api-firewall' ) );
 		}
 
 		foreach ( $files as $filename => $file_info ) {
@@ -192,7 +192,7 @@ class FileUtils {
 							'mkdir_error',
 							sprintf(
 								/* translators: %s is the directory target path */
-								__( 'Failed to create directory: %s', 'bromate-rest-application-layer' ),
+								__( 'Failed to create directory: %s', 'bromate-rest-api-firewall' ),
 								$target_path
 							)
 						);
@@ -215,7 +215,7 @@ class FileUtils {
 						'read_error',
 						sprintf(
 							/* translators: %s is the file path */
-							__( 'Failed to read file: %s', 'bromate-rest-application-layer' ),
+							__( 'Failed to read file: %s', 'bromate-rest-api-firewall' ),
 							$source_path
 						)
 					);
@@ -226,7 +226,7 @@ class FileUtils {
 						'write_error',
 						sprintf(
 							/* translators: %s is the file path */
-							__( 'Failed to write file: %s', 'bromate-rest-application-layer' ),
+							__( 'Failed to write file: %s', 'bromate-rest-api-firewall' ),
 							$target_path
 						)
 					);

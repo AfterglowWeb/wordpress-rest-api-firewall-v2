@@ -17,7 +17,7 @@ class RoutesPolicyRepository {
 	}
 
 	public static function is_pro_active(): bool {
-		return (bool) apply_filters( 'rest_api_firewall_pro_active', false );
+		return (bool) apply_filters( 'bromate_rest_api_firewall_pro_active', false );
 	}
 
 	private function __construct() {
@@ -59,7 +59,7 @@ class RoutesPolicyRepository {
 		if ( ! isset( $_POST['tree'] ) ) {
 			wp_send_json_error(
 				array(
-					'message' => __( 'Bad request error', 'bromate-rest-application-layer' ),
+					'message' => __( 'Bad request error', 'bromate-rest-api-firewall' ),
 				),
 				400
 			);
@@ -71,7 +71,7 @@ class RoutesPolicyRepository {
 		if ( ! is_array( $tree ) ) {
 			wp_send_json_error(
 				array(
-					'message' => __( 'Bad request error', 'bromate-rest-application-layer' ),
+					'message' => __( 'Bad request error', 'bromate-rest-api-firewall' ),
 				),
 				400
 			);
@@ -94,7 +94,7 @@ class RoutesPolicyRepository {
 		if ( ! $saved ) {
 			wp_send_json_error(
 				array(
-					'message' => __( 'Failed to save policy', 'bromate-rest-application-layer' ),
+					'message' => __( 'Failed to save policy', 'bromate-rest-api-firewall' ),
 				),
 				500
 			);
@@ -102,7 +102,7 @@ class RoutesPolicyRepository {
 
 		wp_send_json_success(
 			array(
-				'message' => __( 'Policy saved successfully', 'bromate-rest-application-layer' ),
+				'message' => __( 'Policy saved successfully', 'bromate-rest-api-firewall' ),
 			),
 			200
 		);
@@ -123,7 +123,7 @@ class RoutesPolicyRepository {
 		 * @param array $diff  The policy diff to save.
 		 * @return bool True if saved successfully.
 		 */
-		$saved = apply_filters( 'rest_api_firewall_save_policy', false, $diff );
+		$saved = apply_filters( 'bromate_rest_api_firewall_save_policy', false, $diff );
 
 		if ( ! $saved ) {
 			SettingsRepository::update_option( 'policy', $diff );
@@ -147,7 +147,7 @@ class RoutesPolicyRepository {
 		 * @param array $default Default empty policy.
 		 * @return array Policy with 'nodes' and 'routes' keys.
 		 */
-		$policy = apply_filters( 'rest_api_firewall_get_policy', $default );
+		$policy = apply_filters( 'bromate_rest_api_firewall_get_policy', $default );
 
 		if ( $policy === $default ) {
 			$saved = SettingsRepository::read_option( 'policy' );
