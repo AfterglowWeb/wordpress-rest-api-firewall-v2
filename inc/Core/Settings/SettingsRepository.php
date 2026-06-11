@@ -5,12 +5,12 @@ class SettingsRepository {
 	private function __construct() {}
 
 	public static function read_options(): array {
-		return self::sanitize_options( get_option( 'rest_api_firewall_options', array() ) );
+		return self::sanitize_options( get_option( 'bromate_rest_api_firewall_options', array() ) );
 	}
 
 	public static function read_option( string $option_key ) {
 		$option_key = sanitize_key( $option_key );
-		$options    = self::sanitize_options( get_option( 'rest_api_firewall_options', array() ) );
+		$options    = self::sanitize_options( get_option( 'bromate_rest_api_firewall_options', array() ) );
 		return isset( $options[ $option_key ] ) ? $options[ $option_key ] : false;
 	}
 
@@ -19,7 +19,7 @@ class SettingsRepository {
 		$old_options       = self::read_options();
 		$sanitized_options = self::sanitize_options( $new_options, false );
 
-		update_option( 'rest_api_firewall_options', $sanitized_options );
+		update_option( 'bromate_rest_api_firewall_options', $sanitized_options );
 
 		do_action( 'rest_firewall_admin_options_updated', $sanitized_options, $old_options );
 
@@ -39,7 +39,7 @@ class SettingsRepository {
 		$options                = self::read_options();
 		$options[ $option_key ] = $sanitized_option;
 
-		update_option( 'rest_api_firewall_options', $options );
+		update_option( 'bromate_rest_api_firewall_options', $options );
 
 		do_action( 'rest_firewall_admin_option_updated', $option_key, $sanitized_option, $old_option );
 
@@ -48,7 +48,7 @@ class SettingsRepository {
 
 	public static function sanitize_options( array $options, bool $use_defaults = true ): array {
 		$options_config = SettingsConfig::options_config();
-		$base_values    = $use_defaults ? SettingsConfig::default_options() : get_option( 'rest_api_firewall_options', SettingsConfig::default_options() );
+		$base_values    = $use_defaults ? SettingsConfig::default_options() : get_option( 'bromate_rest_api_firewall_options', SettingsConfig::default_options() );
 
 		$options   = wp_parse_args( $options, $base_values );
 		$sanitized = array();

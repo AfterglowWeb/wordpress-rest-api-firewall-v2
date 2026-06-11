@@ -1,4 +1,4 @@
-<?php namespace Bromate\RestApiFirewall\Security\Network;
+<?php namespace Bromate\RestApiFirewall\Security\Ip;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -6,7 +6,7 @@ class IpEntryRepository {
 
 	protected static function table(): string {
 		global $wpdb;
-		return $wpdb->prefix . 'rest_api_firewall_ip_entries';
+		return $wpdb->prefix . 'bromate_rest_api_firewall_ip_entries';
 	}
 
 	public static function entry_config(): array {
@@ -71,6 +71,22 @@ class IpEntryRepository {
 				'type'     => 'datetime',
 				'sortable' => true,
 			),
+		);
+	}
+
+	protected static function normalize( array $row ): array {
+		return array(
+			'id'           => (int) $row['id'],
+			'ip'           => $row['ip'],
+			'list_type'    => $row['list_type'],
+			'entry_type'   => $row['entry_type'],
+			'agent'        => $row['agent'],
+			'country_code' => $row['country_code'],
+			'country_name' => $row['country_name'],
+			'blocked_at'   => $row['blocked_at'],
+			'expires_at'   => $row['expires_at'],
+			'created_at'   => $row['created_at'],
+			'updated_at'   => $row['updated_at'],
 		);
 	}
 
@@ -161,22 +177,11 @@ class IpEntryRepository {
 		return $row ? self::normalize( $row ) : null;
 	}
 
-	public static function ip_exists( string $ip, string $list_type = 'blacklist' ): bool {
-		global $wpdb;
-
-		$sql = 'SELECT COUNT(*) FROM ' . self::table() . '
-				WHERE ip = %s AND list_type = %s
-				AND (expires_at IS NULL OR expires_at > NOW())';
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
-		return (int) $wpdb->get_var( $wpdb->prepare( $sql, $ip, $list_type ) ) > 0;
-	}
-
 	public static function ip_in_list( string $ip, string $list_type = 'blacklist' ): bool {
 		global $wpdb;
 
 		// Fast path: exact IP match.
-		if ( self::ip_exists( $ip, $list_type ) ) {
+		if ( self::find_by_ip( $ip, $list_type ) ) {
 			return true;
 		}
 
@@ -186,7 +191,7 @@ class IpEntryRepository {
 		$cidrs = $wpdb->get_col( $wpdb->prepare( $sql, $list_type, '%/%' ) );
 
 		foreach ( $cidrs as $cidr ) {
-			if ( CidrMatcher::matches( $ip, $cidr ) ) {
+			if ( CidrMatcher::ip_matches( $ip, $cidr ) ) {
 				return true;
 			}
 		}
@@ -251,49 +256,6 @@ class IpEntryRepository {
 		return (int) $wpdb->query( $wpdb->prepare( $sql, $ids ) );
 	}
 
-	public static function update_expiry_for_ids( array $ids, int $expiry_seconds ): int {
-		global $wpdb;
-
-		if ( empty( $ids ) ) {
-			return 0;
-		}
-
-		$expires_at   = $expiry_seconds > 0
-			? gmdate( 'Y-m-d H:i:s', time() + $expiry_seconds )
-			: null;
-		$now          = current_time( 'mysql' );
-		$ids          = array_map( 'absint', $ids );
-		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
-
-		if ( null === $expires_at ) {
-			$values = array_merge( array( $now ), $ids );
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			return (int) $wpdb->query( $wpdb->prepare( 'UPDATE ' . self::table() . " SET expires_at = NULL, updated_at = %s WHERE id IN ({$placeholders})", $values ) );
-		}
-
-		$values = array_merge( array( $expires_at, $now ), $ids );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
-		return (int) $wpdb->query( $wpdb->prepare( 'UPDATE ' . self::table() . " SET expires_at = %s, updated_at = %s WHERE id IN ({$placeholders})", $values ) );
-	}
-
-	public static function update_expiry_for_list( string $list_type, int $expiry_seconds ): int {
-		global $wpdb;
-
-		$expires_at = $expiry_seconds > 0
-			? gmdate( 'Y-m-d H:i:s', time() + $expiry_seconds )
-			: null;
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		return (int) $wpdb->update(
-			self::table(),
-			array(
-				'expires_at' => $expires_at,
-				'updated_at' => current_time( 'mysql' ),
-			),
-			array( 'list_type' => $list_type )
-		);
-	}
-
 	public static function delete_expired(): int {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- static SQL, no user input
@@ -342,55 +304,11 @@ class IpEntryRepository {
 			$sanitized[ $key ] = $value;
 		}
 
-		if ( $require_ip && ( empty( $sanitized['ip'] ) || ! self::is_valid_ip_or_cidr( $sanitized['ip'] ) ) ) {
+		if ( $require_ip && ( empty( $sanitized['ip'] ) || ! CidrMatcher::is_valid_ip_or_cidr( $sanitized['ip'] ) ) ) {
 			return null;
 		}
 
 		return $sanitized;
 	}
 
-	protected static function normalize( array $row ): array {
-		return array(
-			'id'           => (int) $row['id'],
-			'ip'           => $row['ip'],
-			'list_type'    => $row['list_type'],
-			'entry_type'   => $row['entry_type'],
-			'agent'        => $row['agent'],
-			'country_code' => $row['country_code'],
-			'country_name' => $row['country_name'],
-			'blocked_at'   => $row['blocked_at'],
-			'expires_at'   => $row['expires_at'],
-			'created_at'   => $row['created_at'],
-			'updated_at'   => $row['updated_at'],
-		);
-	}
-
-	public static function is_valid_ip_or_cidr( string $entry ): bool {
-		if ( strpos( $entry, '/' ) !== false ) {
-			$parts = explode( '/', $entry );
-			if ( count( $parts ) !== 2 ) {
-				return false;
-			}
-
-			list( $ip, $mask ) = $parts;
-
-			if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-				return false;
-			}
-
-			$mask = (int) $mask;
-
-			if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
-				return $mask >= 0 && $mask <= 32;
-			}
-
-			if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
-				return $mask >= 0 && $mask <= 128;
-			}
-
-			return false;
-		}
-
-		return filter_var( $entry, FILTER_VALIDATE_IP ) !== false;
-	}
 }

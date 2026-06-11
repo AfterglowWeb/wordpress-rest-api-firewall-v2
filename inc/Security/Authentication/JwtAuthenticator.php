@@ -8,17 +8,6 @@ use Firebase\JWT\Key;
 
 class JwtAuthenticator {
 
-	/**
-	 * Validate a Bearer JWT from the current request against the provided config.
-	 *
-	 * @param array $config {
-	 *   @type string $algorithm  JWT algorithm (HS256, RS256, …). Default 'RS256'.
-	 *   @type string $public_key PEM public key or HMAC shared secret.
-	 *   @type string $audience   Expected aud claim (optional).
-	 *   @type string $issuer     Expected iss claim (optional).
-	 * }
-	 * @return bool True when the token is valid, false otherwise.
-	 */
 	public static function validate_bearer_jwt( array $config ): bool {
 
 		$token = self::extract_bearer_token();
@@ -53,11 +42,6 @@ class JwtAuthenticator {
 		return true;
 	}
 
-	/**
-	 * Extract the raw Bearer token string from the Authorization header.
-	 *
-	 * @return string|null The token, or null if no Bearer header is present.
-	 */
 	public static function extract_bearer_token(): ?string {
 
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized below
@@ -77,13 +61,6 @@ class JwtAuthenticator {
 		return trim( substr( $auth, 7 ) );
 	}
 
-	/**
-	 * Decode and return the JWT payload without verifying the signature.
-	 * Useful for debugging — do not use for authentication decisions.
-	 *
-	 * @param string $token Raw JWT string.
-	 * @return array|null Decoded payload, or null if the token is malformed.
-	 */
 	public static function extract_payload( string $token ): ?array {
 
 		$parts = explode( '.', $token );

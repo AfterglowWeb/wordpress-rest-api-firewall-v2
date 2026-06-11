@@ -1,4 +1,4 @@
-<?php namespace Bromate\RestApiFirewall\Security\Network;
+<?php namespace Bromate\RestApiFirewall\Security\Ip;
 
 defined( 'ABSPATH' ) || exit;
 

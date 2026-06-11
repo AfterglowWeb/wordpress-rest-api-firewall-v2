@@ -27,13 +27,13 @@ class DisableComments {
 				if ( empty( SettingsRepository::read_option( 'theme_disable_comments' ) ) ) {
 					return;
 				}
-				$settings_url = admin_url( 'admin.php?page=bromate-rest-application-layer#global_security' );
+				$settings_url = admin_url( 'admin.php?page=bromate-rest-api-firewall#global_security' );
 				printf(
 					'<div class="notice notice-error"><p>%s <a href="%s">%s</a>. %s</p></div>',
-					esc_html__( 'Comments are globally disabled by the WordPress Application Layer plugin.', 'bromate-rest-application-layer' ),
+					esc_html__( 'Comments are globally disabled by the WordPress Application Layer plugin.', 'bromate-rest-api-firewall' ),
 					esc_url( $settings_url ),
-					esc_html__( 'Global Security tab', 'bromate-rest-application-layer' ),
-					esc_html__( 'Changes made on this page will have no effect while that setting is active.', 'bromate-rest-application-layer' )
+					esc_html__( 'Global Security tab', 'bromate-rest-api-firewall' ),
+					esc_html__( 'Changes made on this page will have no effect while that setting is active.', 'bromate-rest-api-firewall' )
 				);
 			}
 		);

@@ -2,22 +2,15 @@
 
 defined( 'ABSPATH' ) || exit;
 
+use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
 use Bromate\RestApiFirewall\Security\Authentication\ApplicationPasswordAuthenticator;
 use Bromate\RestApiFirewall\Security\Authentication\JwtAuthenticator;
 
-class AuthContext {
+class AuthenticationManager {
 
-	protected static ?self $instance = null;
+	public static function is_authenticated() {
 
-	public static function get_instance(): self {
-		if ( null === static::$instance ) {
-			static::$instance = new static();
-		}
-		return static::$instance;
-	}
-
-	public function is_authenticated() {
-
+		$options = SettingsRepository::read_options();
 		$method = $options['firewall_auth_method'] ?? 'wp_auth';
 
 		if ( 'jwt' === $method ) {
@@ -33,6 +26,5 @@ class AuthContext {
 
 		return ApplicationPasswordAuthenticator::validate_wp_application_password();
 	}
-
 
 }
