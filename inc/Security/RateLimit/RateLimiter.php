@@ -6,14 +6,13 @@ use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
 use Bromate\RestApiFirewall\Security\Ip\ClientIpResolver;
 use Bromate\RestApiFirewall\Security\RateLimit\AutoBlacklist;
 use Bromate\RestApiFirewall\Security\RateLimit\ViolationTracker;
-use WP_REST_Request;
 use WP_Error;
 
 class RateLimiter {
 
     private const REQUEST_KEY_PREFIX = 'rest_firewall_requests_';
 
-    public static function inspect( WP_REST_Request $request ) {
+    public static function inspect() {
 
         $options = SettingsRepository::read_options();
 
@@ -21,16 +20,7 @@ class RateLimiter {
             return true;
         }
 
-        $client_id = self::resolve_client_id( $request );
         $client_ip = ClientIpResolver::get_client_ip();
-
-        if ( AutoBlacklist::is_auto_blacklisted( $client_ip ) ) {
-            return new WP_Error(
-                'rest_firewall_ip_blacklisted',
-                __( 'Your IP has been temporarily blocked.', 'bromate-rest-api-firewall' ),
-                array( 'status' => 403 )
-            );
-        }
 
         $max_requests      = (int) $options['rate_limit'];
         $time_window       = (int) $options['rate_limit_time'];
@@ -39,7 +29,7 @@ class RateLimiter {
         $blacklist_time    = (int) $options['rate_limit_blacklist_time'];
 
         $count = self::increment_request_count(
-            $client_id,
+            $client_ip,
             $time_window
         );
 
@@ -48,7 +38,7 @@ class RateLimiter {
         }
 
         $violations = ViolationTracker::record_violation(
-            $client_id,
+            $client_ip,
             $violation_window
         );
 
@@ -60,7 +50,7 @@ class RateLimiter {
             );
 
             ViolationTracker::clear_violations(
-                $client_id
+                $client_ip
             );
 
             return new WP_Error(
@@ -86,7 +76,7 @@ class RateLimiter {
 
         $count = (int) get_transient( $key );
 
-        ++$count;
+        $count++;
 
         set_transient(
             $key,
@@ -97,9 +87,7 @@ class RateLimiter {
         return $count;
     }
 
-    private static function resolve_client_id(
-        WP_REST_Request $request
-    ): string {
+    private static function resolve_client_id(): string {
 
         $user = wp_get_current_user();
 

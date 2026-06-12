@@ -8,7 +8,7 @@ use Bromate\RestApiFirewall\Security\Authentication\JwtAuthenticator;
 
 class AuthenticationManager {
 
-	public static function is_authenticated() {
+	public static function authenticate() {
 
 		$options = SettingsRepository::read_options();
 		$method = $options['firewall_auth_method'] ?? 'wp_auth';
