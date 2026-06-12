@@ -6,6 +6,7 @@ defined( 'ABSPATH' ) || exit;
 
 use Bromate\RestApiFirewall\Security\Authentication\AuthenticationManager;
 use Bromate\RestApiFirewall\Security\RateLimit\RateLimiter;
+use Bromate\RestApiFirewall\Security\Ip\IpAccessControl;
 use WP_REST_Request;
 
 final class RestRequestBootstrap {
@@ -15,13 +16,6 @@ final class RestRequestBootstrap {
 		add_action(
 			'rest_pre_serve_request',
 			array( self::class, 'remove_cache_headers' ),
-			10,
-			1
-		);
-
-		add_filter(
-			'rest_json_encode_options',
-			array( self::class, 'json_encode_options' ),
 			10,
 			1
 		);
@@ -37,7 +31,7 @@ final class RestRequestBootstrap {
 			'rest_authentication_errors',
 			array( self::class, 'authenticate_request' ),
 			10,
-			1
+			100
 		);
 
 		add_filter(
@@ -57,17 +51,13 @@ final class RestRequestBootstrap {
 		return $served;
 	}
 
-	public static function json_encode_options(): int {
-		return JSON_UNESCAPED_SLASHES;
-	}
-
 	public static function authenticate_request( $result ) {
 
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
 
-		$auth_result = AuthenticationManager::is_authenticated();
+		$auth_result = AuthenticationManager::authenticate();
 
 		if ( is_wp_error( $auth_result ) ) {
 			return $auth_result;
@@ -86,7 +76,13 @@ final class RestRequestBootstrap {
 			return $result;
 		}
 
-		$limit_result = RateLimiter::inspect( $request );
+		$blacklist_result = IpAccessControl::inspect();
+
+		if ( is_wp_error( $blacklist_result ) ) {
+			return $blacklist_result;
+		}
+
+		$limit_result = RateLimiter::inspect();
 
 		if ( is_wp_error( $limit_result ) ) {
 			return $limit_result;
