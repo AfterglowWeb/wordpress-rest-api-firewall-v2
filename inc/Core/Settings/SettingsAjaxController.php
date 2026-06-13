@@ -2,6 +2,7 @@
 
 use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
 use Bromate\RestApiFirewall\Core\Settings\SettingsConfig;
+use Bromate\RestApiFirewall\Api\Routing\RoutesPolicyRepository;
 
 class SettingsAjaxController {
 	
@@ -14,6 +15,8 @@ class SettingsAjaxController {
        	add_action( 'wp_ajax_bromate_rest_api_firewall_update_options', array( $self , 'ajax_update_options' ) );
 		add_action( 'wp_ajax_bromate_rest_api_firewall_update_option', array( $self , 'ajax_update_option' ) );
 		add_action( 'wp_ajax_bromate_rest_api_firewall_flush_rewrite_rules', array( $self , 'ajax_flush_rewrite_rules' ) );
+		add_action( 'wp_ajax_bromate_get_routes_policy_tree', array( $$self , 'ajax_get_routes_policy_tree' ) );
+		add_action( 'wp_ajax_bromate_save_routes_policy_tree', array( $$self , 'ajax_save_routes_policy_tree' ) );
     }
 
 	public function ajax_read_config(): void {
@@ -103,6 +106,66 @@ class SettingsAjaxController {
 		} else {
 			wp_send_json_error( 'Unknown parameter', 422 );
 		}
+	}
+
+		public function ajax_get_routes_policy_tree(): void {
+		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
+		}
+
+		$routes_tree = RoutesPolicyRepository::get_routes_policy_tree();
+		wp_send_json_success(
+			array(
+				'tree'       => $routes_tree,
+			),
+			200
+		);
+	}
+
+	public function ajax_save_routes_policy_tree(): void {
+		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in SettingsAjaxController::ajax_validate_has_firewall_admin_caps()
+		if ( ! isset( $_POST['tree'] ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Bad request error', 'bromate-rest-api-firewall' ),
+				),
+				400
+			);
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in SettingsAjaxController::ajax_validate_has_firewall_admin_caps()
+		$tree = json_decode( sanitize_text_field( wp_unslash( $_POST['tree'] ) ), true );
+
+		if ( ! is_array( $tree ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Bad request error', 'bromate-rest-api-firewall' ),
+				),
+				400
+			);
+		}
+
+		$saved = RoutesPolicyRepository::save_routes_policy_tree( $tree );
+
+		if ( ! $saved ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Failed to save policy', 'bromate-rest-api-firewall' ),
+				),
+				500
+			);
+		}
+
+		wp_send_json_success(
+			array(
+				'message' => __( 'Policy saved successfully', 'bromate-rest-api-firewall' ),
+			),
+			200
+		);
 	}
 
 	public static function ajax_validate_has_firewall_admin_caps(): bool {

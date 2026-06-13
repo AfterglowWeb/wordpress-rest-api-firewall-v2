@@ -20,7 +20,8 @@
       "@layouts/*": ["./src/layouts/*"],
       "@pages/*": ["./src/pages/*"],
       "@services/*": ["./src/services/*"],
-      "@app-types/*": ["./src/app-types/*"]
+      "@app-types/*": ["./src/app-types/*"],
+      "@constants/*": ["./src/constants/*"]
     }
   },
   "include": ["./src/**/*"]

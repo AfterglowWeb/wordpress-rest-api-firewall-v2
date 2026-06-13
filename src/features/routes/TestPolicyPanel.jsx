@@ -1,9 +1,7 @@
 import { useState, useEffect } from '@wordpress/element';
-import { useAdminData } from '../../../contexts/AdminDataContext';
-import { useLicense } from '../../../contexts/LicenseContext';
-import { useApplication } from '../../../contexts/ApplicationContext';
-import CopyButton from '../../shared/CopyButton';
-import DownloadJsonButton from '../../shared/DownloadJsonButton';
+import { useAdminData } from '@contexts/AdminDataContext';
+import CopyButton from '@components/CopyButton';
+import DownloadJsonButton from '@components/DownloadJsonButton';
 
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -54,7 +52,7 @@ function DataPanel( { label, data, bgcolor, downloadFilename } ) {
 				<Typography variant="caption" fontWeight={ 600 } sx={ { flex: 1 } }>
 					{ label }
 				</Typography>
-				{ data?.status && <StatusBadge status={ data.status } /> }
+				{ data?.status && <Chip label={ data.status || '—' } size="small" variant="outlined"/> }
 				<CopyButton toCopy={ bodyText } />
 				{ data?.body !== undefined && (
 					<DownloadJsonButton data={ data.body } filename={ downloadFilename || 'result.json' } />
@@ -552,7 +550,11 @@ export default function TestPolicyPanel( {
 									<Typography variant="caption" fontWeight={ 600 } sx={ { flex: 1 } }>
 										{ __( 'Raw', 'bromate-rest-api-firewall' ) }
 									</Typography>
-									{ result.raw_data?.status && <StatusBadge status={ result.raw_data.status } /> }
+									{ result.raw_data?.status && <Chip
+										label={ result.raw_data.status || '' }
+										size="small"
+										variant="outlined"
+									/> }
 									<CopyButton toCopy={ JSON.stringify( result.raw_data?.body, null, 2 ) } />
 									<DownloadJsonButton data={ result.raw_data?.body } filename={ `raw-${ result.method }.json` } />
 								</Stack>
@@ -566,7 +568,11 @@ export default function TestPolicyPanel( {
 									<Typography variant="caption" fontWeight={ 600 } sx={ { flex: 1 } }>
 										{ __( 'Result', 'bromate-rest-api-firewall' ) }
 									</Typography>
-									{ result.result_data?.status && <StatusBadge status={ result.result_data.status } /> }
+									{ result.result_data?.status && <Chip
+										label={ result.result_data.status || '' }
+										size="small"
+										variant="outlined"
+									/> }
 									<CopyButton toCopy={ JSON.stringify( result.result_data?.body, null, 2 ) } />
 									<DownloadJsonButton data={ result.result_data?.body } filename={ `result-${ result.method }.json` } />
 								</Stack>

@@ -3,7 +3,6 @@
 defined( 'ABSPATH' ) || exit;
 
 use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
-use Bromate\RestApiFirewall\Core\Settings\SettingsAjaxController;
 
 class RoutesPolicyRepository {
 
@@ -16,15 +15,6 @@ class RoutesPolicyRepository {
 		return static::$instance;
 	}
 
-	public static function is_pro_active(): bool {
-		return (bool) apply_filters( 'bromate_rest_api_firewall_pro_active', false );
-	}
-
-	private function __construct() {
-		add_action( 'wp_ajax_bromate_get_routes_policy_tree', array( $this, 'ajax_get_routes_policy_tree' ) );
-		add_action( 'wp_ajax_bromate_save_routes_policy_tree', array( $this, 'ajax_save_routes_policy_tree' ) );
-	}
-
 	public static function get_routes_policy_tree(): array {
 		$flat   = self::list_all_rest_routes();
 		$tree   = self::build_policy_tree( $flat );
@@ -33,101 +23,18 @@ class RoutesPolicyRepository {
 		return $result;
 	}
 
-	public function ajax_get_routes_policy_tree(): void {
-		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
-			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
-		}
-
-		$routes_tree = self::get_routes_policy_tree();
-		wp_send_json_success(
-			array(
-				'tree'       => $routes_tree,
-			),
-			200
-		);
-	}
-
-	public function ajax_save_routes_policy_tree(): void {
-		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
-			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
-		}
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in SettingsAjaxController::ajax_validate_has_firewall_admin_caps()
-		if ( ! isset( $_POST['tree'] ) ) {
-			wp_send_json_error(
-				array(
-					'message' => __( 'Bad request error', 'bromate-rest-api-firewall' ),
-				),
-				400
+	public static function save_routes_policy_tree( array $tree ): bool {
+		
+		$diff = self::extract_diff_from_tree( $tree );
+		$now      = current_time( 'mysql', true );
+		$data = array(
+				'routes'     => wp_json_encode( $diff['routes'] ?? array() ),
+				'nodes'      => wp_json_encode( $diff['nodes'] ?? array() ),
+				'updated_at' => $now,
 			);
-		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in SettingsAjaxController::ajax_validate_has_firewall_admin_caps()
-		$tree = json_decode( sanitize_text_field( wp_unslash( $_POST['tree'] ) ), true );
-
-		if ( ! is_array( $tree ) ) {
-			wp_send_json_error(
-				array(
-					'message' => __( 'Bad request error', 'bromate-rest-api-firewall' ),
-				),
-				400
-			);
-		}
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in SettingsAjaxController::ajax_validate_has_firewall_admin_caps()
-		$users_raw = isset( $_POST['users'] ) ? sanitize_text_field( wp_unslash( $_POST['users'] ) ) : '[]';
-		$users     = json_decode( $users_raw, true );
-		if ( ! is_array( $users ) ) {
-			$users = array();
-		}
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified above.
-		$application_id = isset( $_POST['application_id'] ) ? sanitize_text_field( wp_unslash( $_POST['application_id'] ) ) : '';
-
-		$diff                   = self::extract_diff_from_tree( $tree );
-		$diff['users']          = self::normalize_users( $users );
-		$diff['application_id'] = $application_id;
-		$saved                  = self::save_diff( $diff );
-
-		if ( ! $saved ) {
-			wp_send_json_error(
-				array(
-					'message' => __( 'Failed to save policy', 'bromate-rest-api-firewall' ),
-				),
-				500
-			);
-		}
-
-		wp_send_json_success(
-			array(
-				'message' => __( 'Policy saved successfully', 'bromate-rest-api-firewall' ),
-			),
-			200
-		);
-	}
-
-	public static function save_diff( array $diff ): bool {
-		$diff = array(
-			'nodes'  => $diff['nodes'] ?? array(),
-			'routes' => $diff['routes'] ?? array(),
-			'users'  => $diff['users'] ?? array(),
-		);
-
-		/**
-		 * Filter to handle policy saving.
-		 * Pro plugin hooks here to save to its own storage.
-		 *
-		 * @param bool  $saved Whether the policy was saved.
-		 * @param array $diff  The policy diff to save.
-		 * @return bool True if saved successfully.
-		 */
-		$saved = apply_filters( 'bromate_rest_api_firewall_save_policy', false, $diff );
-
-		if ( ! $saved ) {
-			SettingsRepository::update_option( 'policy', $diff );
-			return true;
-		}
-
-		return $saved;
+	
+		return SettingsRepository::update_option( 'policy', $data );
 	}
 
 	public static function get_diff(): array {
