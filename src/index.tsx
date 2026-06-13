@@ -4,15 +4,8 @@ import App from './App';
 <<<<<<< HEAD
 import AppTheme from './AppTheme';
 
-import { AdminDataProvider } from './contexts/AdminDataContext';
-import { DocumentationProvider } from './contexts/DocumentationContext';
-
-declare global {
-	interface Window {
-		restApiFirewallAdminData?: Record<string, unknown>;
-		restApiFirewallPro?: Record<string, unknown>;
-	}
-}
+import { AdminDataProvider, type AdminData } from '@contexts/AdminDataContext';
+import { DocumentationProvider } from '@contexts/DocumentationContext';
 
 document.addEventListener('DOMContentLoaded', () => {
 	const container = document.getElementById(
@@ -23,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		return;
 	}
 
-	const adminData = window.restApiFirewallAdminData ?? {};
+	const adminData:AdminData | undefined = window.restApiFirewallAdminData;
 
 	createRoot(container).render(
 		<AdminDataProvider adminData={adminData}>

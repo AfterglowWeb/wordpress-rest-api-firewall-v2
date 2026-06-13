@@ -5,7 +5,7 @@ import {
 	useEffect,
 	useRef,
 } from '@wordpress/element';
-import { useAdminData } from '../../../contexts/AdminDataContext';
+import { useAdminData } from '@contexts/AdminDataContext';
 
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
@@ -25,7 +25,7 @@ import SettingsBackupRestoreOutlinedIcon from '@mui/icons-material/SettingsBacku
 
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 
-import { treeReducer } from './routesPolicyReducer';
+import { treeReducer } from '@features/routes/routesPolicyReducer';
 import {
 	findNodeById,
 	normalizeTree,
@@ -46,7 +46,7 @@ function collectAncestorIds( nodes, targetPath ) {
 	return null;
 }
 
-export default function RoutesPolicyTree( { form, setField, selectedApplicationId, onNavigate, focusRoute } ) {
+export default function RoutesPolicyTree( { settings, onChange } ) {
 	
 	const { adminData } = useAdminData();
 	const nonce = adminData.nonce;
@@ -55,7 +55,6 @@ export default function RoutesPolicyTree( { form, setField, selectedApplicationI
 	const [ loading, setLoading ] = useState( false );
 	const [ errorMessage, setErrorMessage ] = useState( '' );
 	const [ expandedItems, setExpandedItems ] = useState( [] );
-
 
 	const loadRoutes = useCallback( async () => {
 		setLoading( true );
@@ -96,8 +95,6 @@ export default function RoutesPolicyTree( { form, setField, selectedApplicationI
 		treeData || [],
 		normalizeTree
 	);
-
-
 
 	const handleToggle = ( id, key, effectiveValues ) =>
 		dispatch( { type: 'TOGGLE_NODE', id, key, effectiveValues } );

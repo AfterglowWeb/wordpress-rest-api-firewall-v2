@@ -1,6 +1,5 @@
 import { forwardRef } from '@wordpress/element';
-import { useLicense } from '../../../contexts/LicenseContext';
-import { useAdminData } from '../../../contexts/AdminDataContext';
+import { useAdminData } from '@contexts/AdminDataContext';
 
 import { styled, alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -25,7 +24,7 @@ import { useTreeItem } from '@mui/x-tree-view/useTreeItem';
 
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
-import CopyButton from '../../shared/CopyButton';
+import CopyButton from '@components/CopyButton';
 import {
 	isNodeCustom,
 	countModifiedDescendants,
