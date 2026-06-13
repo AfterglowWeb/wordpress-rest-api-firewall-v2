@@ -21,8 +21,8 @@ class RoutesPolicyRepository {
 	}
 
 	private function __construct() {
-		add_action( 'wp_ajax_get_routes_policy_tree', array( $this, 'ajax_get_routes_policy_tree' ) );
-		add_action( 'wp_ajax_save_routes_policy_tree', array( $this, 'ajax_save_routes_policy_tree' ) );
+		add_action( 'wp_ajax_bromate_get_routes_policy_tree', array( $this, 'ajax_get_routes_policy_tree' ) );
+		add_action( 'wp_ajax_bromate_save_routes_policy_tree', array( $this, 'ajax_save_routes_policy_tree' ) );
 	}
 
 	public static function get_routes_policy_tree(): array {
@@ -39,12 +39,9 @@ class RoutesPolicyRepository {
 		}
 
 		$routes_tree = self::get_routes_policy_tree();
-		$diff        = self::get_diff();
 		wp_send_json_success(
 			array(
 				'tree'       => $routes_tree,
-				'pro_active' => self::is_pro_active(),
-				'users'      => $diff['users'] ?? array(),
 			),
 			200
 		);

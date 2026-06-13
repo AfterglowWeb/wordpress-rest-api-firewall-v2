@@ -9,8 +9,8 @@ import Authentication from '@pages/Authentication';
 import AccessControl from '@pages/AccessControl';
 import RateLimiting from '@pages/RateLimiting';
 import Routes from '@pages/Routes';
-import Wordpress from '@pages/Wordpress';
-import Logs from '@pages/Logs';
+//import Wordpress from '@pages/Wordpress';
+//import Logs from '@pages/Logs';
 
 export default function AdminLayout() {
 	const { panel } = useNavigation();
@@ -36,9 +36,9 @@ export default function AdminLayout() {
 
 				{panel === 'routes' && <Routes />}
 
-				{panel === 'wordpress' && <Wordpress />}
+				{/*panel === 'wordpress' && <Wordpress />*/}
 
-				{panel === 'logs' && <Logs />}
+				{/*panel === 'logs' && <Logs />*/}
 			</Box>
 		</Box>
 	);
