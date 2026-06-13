@@ -14,11 +14,14 @@ class IpEntryAjaxController {
 
 	public static function register(): void {
 		$self = new self();
-		add_action( 'wp_ajax_get_global_ip_filter', array( $self, 'ajax_get_ip_filter' ) );
-		add_action( 'wp_ajax_save_global_ip_filter', array( $self, 'ajax_save_ip_filter' ) );
+		add_action('wp_ajax_bromate_add_ip_entry', [$self, 'ajax_add_ip_entry']);
+		add_action('wp_ajax_bromate_get_ip_entries', [$self, 'ajax_add_ip_entries']);
+		add_action('wp_ajax_bromate_delete_ip_entry', [$self, 'ajax_delete_ip_entry']);
+		add_action('wp_ajax_bromate_delete_ip_entries', [$self, 'ajax_delete_ip_entries']);
+		add_action('wp_ajax_bromate_get_country_stats', [$self, 'ajax_get_country_stats']);
 	}
 
-	public function ajax_get_ip_entries(): void {
+	public function ajax_add_ip_entries(): void {
 
 		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
