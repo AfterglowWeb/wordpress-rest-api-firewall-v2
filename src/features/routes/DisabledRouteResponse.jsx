@@ -1,7 +1,5 @@
 import { useState, useEffect } from '@wordpress/element';
-import { useLicense } from '../../../contexts/LicenseContext';
-import { useAdminData } from '../../../contexts/AdminDataContext';
-import { useApplication } from '../../../contexts/ApplicationContext';
+import { useAdminData } from '@contexts/AdminDataContext';
 
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
@@ -16,51 +14,9 @@ import ListItemText from '@mui/material/ListItemText';
 import ListSubheader from '@mui/material/ListSubheader';
 import OutlinedInput from '@mui/material/OutlinedInput';
 
-const getDisableBehaviors = ( __ ) => [
-	{ value: '404',      label: __( '404 Not Found',                   'bromate-rest-api-firewall' ), desc: __( 'Returns a standard not-found response. The route appears to never have existed.',                       'bromate-rest-api-firewall' ) },
-	{ value: '410',      label: __( '410 Gone',                        'bromate-rest-api-firewall' ), desc: __( 'Signals the resource was intentionally and permanently removed.',                                        'bromate-rest-api-firewall' ) },
-	{ value: '301_url',  label: __( '301 Custom URL Redirect',         'bromate-rest-api-firewall' ), desc: __( 'Permanently redirects to a custom URL.',                                                                 'bromate-rest-api-firewall' ) },
-	{ value: '301_page', label: __( '301 WordPress Page Redirect',     'bromate-rest-api-firewall' ), desc: __( 'Permanently redirects to a WordPress page.',                                                             'bromate-rest-api-firewall' ) },
-	{ value: 'empty',    label: __( 'Empty (no response)',             'bromate-rest-api-firewall' ), desc: __( 'Closes the connection without a response body. The server appears to not exist on this route.',         'bromate-rest-api-firewall' ) },
-];
-
-/**
- * "Disabled Route Response" section.
- *
- * @param {Object}   props
- * @param {Object}   props.proSettings    - { disable_behavior, disable_redirect_url, disable_redirect_page_id }
- * @param {Function} props.onChange       - onChange handler for proSettings fields (receives a synthetic-like event with { target: { name, value } })
- * @param {Function} props.onSave         - save routine provided by the parent panel
- * @param {boolean}  props.canSave        - whether the Save button should be enabled
- * @param {boolean}  props.isModuleEnabled
- */
 export default function DisabledRouteResponse( { proSettings, onChange, onSave, canSave, isModuleEnabled } ) {
-	const { hasValidLicense, proNonce } = useLicense();
 	const { adminData } = useAdminData();
-	const { selectedApplicationId } = useApplication();
-	const nonce = proNonce || adminData?.nonce;
 	const { __ } = wp.i18n || {};
-
-	const [ wpPages, setWpPages ] = useState( { special_pages: [], wordpress_pages: [] } );
-
-	const behavior = proSettings.disable_behavior || '404';
-	const DISABLE_BEHAVIORS = getDisableBehaviors( __ );
-
-	useEffect( () => {
-		if ( behavior !== '301_page' ) return;
-		fetch( adminData.ajaxurl, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-			body: new URLSearchParams( {
-				action: 'get_wordpress_pages',
-				nonce,
-				id: selectedApplicationId,
-			} ),
-		} )
-			.then( ( r ) => r.json() )
-			.then( ( result ) => setWpPages( result?.data?.pages || { special_pages: [], wordpress_pages: [] } ) )
-			.catch( () => {} );
-	}, [ behavior, adminData, nonce, selectedApplicationId ] );
 
 	return (
 		<Tooltip

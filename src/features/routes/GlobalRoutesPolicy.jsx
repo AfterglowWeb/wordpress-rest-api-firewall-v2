@@ -1,5 +1,3 @@
-import { useLicense } from '../../../contexts/LicenseContext';
-
 import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -10,47 +8,19 @@ import Tooltip from '@mui/material/Tooltip';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 
-import ObjectTypeSelect from '../../shared/ObjectTypeSelect';
-import DisabledRouteResponse from './DisabledRouteResponse';
+import ObjectTypeSelect from '@components/ObjectTypeSelect';
+import DisabledRouteResponse from '@features/routes/DisabledRouteResponse';
 
+//import HTTP_METHODS from '@constants/http-methods';
 const HTTP_METHODS = [ 'GET', 'POST', 'PUT', 'DELETE', 'PATCH' ];
 
-export default function GlobalRoutesPolicy( { form, setField, proSettings, onProChange, onMethodToggle, onSave, canSave, isModuleEnabled } ) {
-	const { hasValidLicense } = useLicense();
+export default function GlobalRoutesPolicy( { settings, onChange } ) {
 	const { __ } = wp.i18n || {};
 
 	return (
 		<Stack spacing={ 2 } maxWidth={ 640 }>
 
-			<Stack spacing={ 2 }>
-
-				<Stack spacing={ 0 }>
-					<Typography variant="subtitle1" fontWeight={ 600 }>
-						{ __( 'Auth. & Rate Limiting', 'bromate-rest-api-firewall' ) }
-					</Typography>
-				</Stack>
-
-				<FormControl>
-					<FormControlLabel
-						disabled={ ! isModuleEnabled }
-						control={
-							<Switch
-								checked={ hasValidLicense ? !! proSettings.enforce_auth : !! form.enforce_auth }
-								name="enforce_auth"
-								size="small"
-								onChange={ hasValidLicense ? onProChange : setField }
-							/>
-						}
-						label={ __( 'Enforce Authentication on All Routes', 'bromate-rest-api-firewall' ) }
-					/>
-					<FormHelperText>{ __( 'Applies to WordPress core routes only (wp, oembed, batch). Third-party plugin routes (e.g. WooCommerce) are not affected.', 'bromate-rest-api-firewall' ) }</FormHelperText>
-				</FormControl>
-
-
-			</Stack>
-	
-			<Divider />
-
+			
 			<Stack spacing={ 2 }>
 
 				<Stack spacing={ 0 }>
@@ -64,33 +34,28 @@ export default function GlobalRoutesPolicy( { form, setField, proSettings, onPro
 
 				<FormControl>
 					<FormControlLabel
-						disabled={ ! isModuleEnabled }
 						control={
 							<Switch
-								checked={ hasValidLicense ? !! proSettings.hide_user_routes : !! form.hide_user_routes }
+								checked={ !! settings.routes_policy_hidden_routes }
 								name="hide_user_routes"
 								size="small"
-								onChange={ hasValidLicense ? onProChange : setField }
+								onChange={ setField }
 							/>
 						}
 						label={ __( 'Disable /wp/v2/users/* Routes', 'bromate-rest-api-firewall' ) }
 					/>
 				</FormControl>
 
-				<Tooltip
-					title={ ! hasValidLicense ? __( 'License required', 'bromate-rest-api-firewall' ) : '' }
-					followCursor
-				>
+	
 					<Stack spacing={ 2 }>
 						<FormControl>
 							<FormControlLabel
-								disabled={ ! hasValidLicense || ! isModuleEnabled }
 								control={
 									<Switch
-										checked={ !! proSettings.hide_oembed_routes }
+										checked={ !! settings.routes_policy_hidden_routes }
 										name="hide_oembed_routes"
 										size="small"
-										onChange={ onProChange }
+										onChange={ setField }
 									/>
 								}
 								label={ __( 'Disable oembed/1.0/* Routes', 'bromate-rest-api-firewall' ) }
@@ -99,20 +64,19 @@ export default function GlobalRoutesPolicy( { form, setField, proSettings, onPro
 
 						<FormControl>
 							<FormControlLabel
-								disabled={ ! hasValidLicense || ! isModuleEnabled }
 								control={
 									<Switch
-										checked={ proSettings.hide_batch_routes }
+										checked={ !! settings.routes_policy_hidden_routes }
 										name="hide_batch_routes"
 										size="small"
-										onChange={ onProChange }
+										onChange={ setField }
 									/>
 								}
 								label={ __( 'Disable batch/v1 Routes', 'bromate-rest-api-firewall' ) }
 							/>
 						</FormControl>
 					</Stack>
-				</Tooltip>
+			
 
 
 			</Stack>
@@ -120,24 +84,13 @@ export default function GlobalRoutesPolicy( { form, setField, proSettings, onPro
 			<Divider />
 
 			<DisabledRouteResponse
-				proSettings={ proSettings }
-				onChange={ onProChange }
 				onSave={ onSave }
-				canSave={ canSave }
-				isModuleEnabled={ isModuleEnabled }
 			/>
 
 			<Divider />
 
 			<Stack spacing={ 2 }>
-				<Tooltip
-					title={
-						! hasValidLicense
-							? __( 'License required', 'bromate-rest-api-firewall' )
-							: ''
-					}
-					followCursor
-				>
+				
 					<Stack spacing={ 2 }>
 						
 						<Stack spacing={ 0 }>
@@ -164,12 +117,11 @@ export default function GlobalRoutesPolicy( { form, setField, proSettings, onPro
 							{ HTTP_METHODS.map( ( method ) => (
 								<FormControlLabel
 									key={ method }
-									disabled={ ! hasValidLicense || ! isModuleEnabled }
 									control={
 										<Switch
 											size="small"
 											checked={ (
-											proSettings.disabled_methods || []
+											setting.routes_policy_hidden_methods || []
 											).includes( method.toLowerCase() ) }
 											onChange={ onMethodToggle(
 												method
@@ -187,20 +139,13 @@ export default function GlobalRoutesPolicy( { form, setField, proSettings, onPro
 							) ) }
 						</Stack>
 					</Stack>
-				</Tooltip>
+			
 			</Stack>
 
 			<Divider />
 
 			<Stack spacing={ 2 }>
-				<Tooltip
-					title={
-						! hasValidLicense
-							? __( 'License required', 'bromate-rest-api-firewall' )
-							: ''
-					}
-					followCursor
-				>
+			
 					<Stack spacing={ 2 }>
 						<Stack spacing={ 0 }>
 							<Typography variant="subtitle1" fontWeight={ 600 }>
@@ -219,31 +164,20 @@ export default function GlobalRoutesPolicy( { form, setField, proSettings, onPro
 						</Stack>
 						<Stack>
 							<ObjectTypeSelect
-								disabled={ ! hasValidLicense || ! isModuleEnabled }
 								name="disabled_post_types"
 								label={ __(
 									'Disable Object Types',
 									'bromate-rest-api-firewall'
 								) }
-								value={ proSettings.disabled_post_types || [] }
-								onChange={ onProChange }
+								value={ settings.routes_policy_hidden_post_types || [] }
+								onChange={ setField }
 							/>
 						</Stack>
 					</Stack>
-				</Tooltip>
+			
 			</Stack>
 
-			<Stack direction="row">
-				<Button
-					variant="contained"
-					disableElevation
-					size="small"
-					disabled={ ! canSave }
-					onClick={ onSave }
-				>
-					{ __( 'Save Global Settings', 'bromate-rest-api-firewall' ) }
-				</Button>
-			</Stack>
+
 		</Stack>
 	);
 }
