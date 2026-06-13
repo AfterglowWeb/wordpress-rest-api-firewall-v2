@@ -1,9 +1,11 @@
 {
-  "main": "./src/index.js",
+  "private": true,
+  "main": "./src/index.tsx",
   "license": "GPL-2.0-or-later",
   "scripts": {
     "start": "wp-scripts start --webpack-copy-php",
     "build": "wp-scripts build --webpack-copy-php",
+    "typecheck": "tsc --noEmit",
     "plugin-zip": "wp-scripts plugin-zip",
     "format": "wp-scripts format",
     "lint:css": "wp-scripts lint-style",
@@ -24,23 +26,25 @@
     "@mui/utils": "^7.3.3",
     "@mui/x-data-grid": "^8.27.0",
     "@mui/x-tree-view": "^8.0.0",
-    "@wordpress/element": "^6.18.0",
-    "@wordpress/i18n": "^5.18.0",
-    "@wordpress/scripts": "^31.1.0",
-    "babel-loader": "^9.2.1",
+    "@wordpress/api-fetch": "^7.48.0",
+    "@wordpress/element": "^8.0.0",
+    "@wordpress/i18n": "^6.21.0",
+    "@wordpress/scripts": "^32.4.0",
     "country-flag-icons": "^1.6.15",
     "dayjs": "^1.11.18",
     "dompurify": "^3.2.7"
   },
   "devDependencies": {
-    "vitepress": "^1.6.3",
-    "css-loader": "^6.11.0",
-    "css-minimizer-webpack-plugin": "^5.0.1",
-    "dependency-cruiser": "^17.3.10",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "sass": "^1.80.2",
-    "style-loader": "^3.3.3",
+    "@types/react": "18.2.79",
+    "@types/react-dom": "18.2.25",
+    "typescript": "5.8",
+    "vitepress": "^1.6.3",
     "webpack-bundle-analyzer": "^4.10.2"
+  },
+  "resolutions": {
+    "@types/react": "18.2.79",
+    "@types/react-dom": "18.2.25"
   }
 }

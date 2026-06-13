@@ -87,15 +87,5 @@ class RateLimiter {
         return $count;
     }
 
-    private static function resolve_client_id(): string {
-
-        $user = wp_get_current_user();
-
-        if ( $user && $user->exists() ) {
-            return 'user_' . $user->ID;
-        }
-
-        return 'ip_' . ClientIpResolver::get_client_ip();
-    }
 }
 
