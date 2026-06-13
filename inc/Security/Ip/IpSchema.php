@@ -27,7 +27,7 @@ class IpSchema {
 	private static function maybe_alter_list_type_enum( wpdb $wpdb ): void {
 		$table = $wpdb->prefix . 'bromate_rest_api_firewall_ip_entries';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- DDL statement, $table is $wpdb->prefix-derived, not user input
-		$wpdb->query( "ALTER TABLE {$table} MODIFY list_type ENUM('whitelist','blacklist','global_blacklist') NOT NULL DEFAULT 'blacklist'" );
+		$wpdb->query( "ALTER TABLE {$table} MODIFY list_type ENUM('whitelist','blacklist') NOT NULL DEFAULT 'blacklist'" );
 	}
 
 	private static function create_tables( wpdb $wpdb ): void {

@@ -10,10 +10,10 @@ class SettingsAjaxController {
 	public static function register(): void {
         $self = new self();
 
-		add_action( 'wp_ajax_rest_api_firewall_read_options', array( $self , 'ajax_read_options' ) );
-       	add_action( 'wp_ajax_rest_api_firewall_update_options', array( $self , 'ajax_update_options' ) );
-		add_action( 'wp_ajax_rest_api_firewall_update_option', array( $self , 'ajax_update_option' ) );
-		add_action( 'wp_ajax_rest_api_firewall_flush_rewrite_rules', array( $self , 'ajax_flush_rewrite_rules' ) );
+		add_action( 'wp_ajax_bromate_rest_api_firewall_read_options', array( $self , 'ajax_read_options' ) );
+       	add_action( 'wp_ajax_bromate_rest_api_firewall_update_options', array( $self , 'ajax_update_options' ) );
+		add_action( 'wp_ajax_bromate_rest_api_firewall_update_option', array( $self , 'ajax_update_option' ) );
+		add_action( 'wp_ajax_bromate_rest_api_firewall_flush_rewrite_rules', array( $self , 'ajax_flush_rewrite_rules' ) );
     }
 
 	public function ajax_read_config(): void {
@@ -48,7 +48,7 @@ class SettingsAjaxController {
 			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-api-firewall' ) ), 403 );
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in self::ajax_validate_has_firewall_admin_caps()
-		if ( isset( $_POST['action'] ) && 'bromate_rest_api_firewall_update_options' === $_POST['action'] && isset( $_POST['options'] ) ) {
+		if ( isset( $_POST['options'] ) ) {
 
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in self::ajax_validate_has_firewall_admin_caps()
 			$options = json_decode( sanitize_text_field( wp_unslash( $_POST['options'] ) ), true );
@@ -77,7 +77,7 @@ class SettingsAjaxController {
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in self::ajax_validate_has_firewall_admin_caps()
-		if ( isset( $_POST['action'] ) && 'bromate_rest_api_firewall_update_option' === $_POST['action'] && isset( $_POST['option'] ) ) {
+		if ( isset( $_POST['option'] ) ) {
 
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in self::ajax_validate_has_firewall_admin_caps()
 			$option = json_decode( sanitize_text_field( wp_unslash( $_POST['option'] ) ), true );

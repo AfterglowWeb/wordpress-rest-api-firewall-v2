@@ -1,0 +1,58 @@
+const contentStyles = {
+	'&': { fontSize: '0.9rem' },
+	'& h1': { fontSize: '1.5rem', mt: 2, mb: 1 },
+	'& h2': { fontSize: '1.25rem', mt: 2, mb: 1 },
+	'& h3': { fontSize: '1.1rem', mt: 1.5, mb: 1, color: '#1976d2' },
+	'& h4': { fontSize: '1rem', mt: 1, mb: 0.5, fontWeight: 600 },
+	'& h5': { fontSize: '0.9rem', mt: 1, mb: 0.5, fontWeight: 600 },
+	'& p': { margin: '0 0 1.5em 0', lineHeight: 1.5, fontSize: '0.9rem' },
+	'& ul, & ol': { margin: '0 0 1em 1.5em' },
+	'& li': { margin: '0.25em 0', listStyleType: 'disc', fontSize: '0.9rem' },
+	'& a': { color: '#1976d2', textDecoration: 'underline' },
+	'& a:hover': { textDecoration: 'underline' },
+	'& code': {
+		backgroundColor: '#171717',
+		color: '#f8f8f2',
+		padding: '2px 6px',
+		borderRadius: '3px',
+		fontSize: '0.85em',
+		fontFamily: 'monospace',
+	},
+	'& pre': {
+		backgroundColor: '#171717',
+		color: '#f8f8f2',
+		padding: '12px',
+		borderRadius: '5px',
+		overflowX: 'auto',
+		fontSize: '0.85em',
+		mb: 2,
+	},
+	'& blockquote': {
+		borderLeft: '4px solid #1976d2',
+		paddingLeft: '16px',
+		color: '#555',
+		margin: '0 0 1em 0',
+		fontStyle: 'italic',
+		backgroundColor: '#f8f9fa',
+		padding: '8px 16px',
+		borderRadius: '0 4px 4px 0',
+	},
+	'& strong': { fontWeight: 600, color: '#333' },
+	'& table': {
+		width: '100%',
+		borderCollapse: 'collapse',
+		margin: '1em 0',
+		border: '1px solid #e0e0e0',
+	},
+	'& th, & td': {
+		padding: '8px 12px',
+		border: '1px solid #e0e0e0',
+		textAlign: 'left',
+	},
+	'& th': {
+		backgroundColor: '#f5f5f5',
+		fontWeight: 600,
+	},
+};
+
+export default contentStyles;
