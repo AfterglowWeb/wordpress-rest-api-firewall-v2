@@ -70,7 +70,7 @@ class AdminPage {
 
 		wp_localize_script(
 			'bromate-rest-api-firewall',
-			'BromateRestApiFirewall',
+			'bromateRestApiFirewall',
 			array(
 				'nonce'   => wp_create_nonce( 'bromate_rest_api_firewall_update_options_nonce' ),
 				'ajaxurl' => admin_url( 'admin-ajax.php' ),
