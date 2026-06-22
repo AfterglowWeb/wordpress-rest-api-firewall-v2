@@ -1,3 +1,4 @@
+const path = require('path');
 const defaultConfig = require( '@wordpress/scripts/config/webpack.config' );
 
 const extraPlugins = [];
@@ -34,4 +35,19 @@ module.exports = {
 		},
 	},
 	plugins: [ ...defaultConfig.plugins, ...extraPlugins ],
+	devtool: 'source-map',
+	resolve: {
+		...defaultConfig.resolve,
+		alias: {
+			...defaultConfig.resolve.alias,
+			'@components': path.resolve(__dirname, './src/components'),
+			'@contexts': path.resolve(__dirname, './src/contexts'),
+			'@features': path.resolve(__dirname, './src/features'),
+			'@layouts': path.resolve(__dirname, './src/layouts'),
+			'@pages': path.resolve(__dirname, './src/pages'),
+			'@services': path.resolve(__dirname, './src/services'),
+			'@app-types': path.resolve(__dirname, './src/app-types'),
+			'@app-utils': path.resolve(__dirname, './src/utils'),
+		},
+	},
 };

@@ -1,0 +1,445 @@
+[
+  {
+    "title": "La peau",
+    "subtitle": "Anatomie, physiologie, vieillissement cutané et bases immunologiques",
+    "sessionNumber": "Session 01",
+    "videos": [
+      {
+        "title": "Immunologie",
+        "author": "Pr Marie-Sylvie Doutre",
+        "src": "https://player.vimeo.com/video/1125810121?h=21e95b5609"
+      },
+      {
+        "title": "Vieillissement cutané, facteurs endogènes et exogènes",
+        "author": "Pr Marie Beylot-Barry",
+        "src": "https://player.vimeo.com/video/1125586231?h=0fd91f9d2d"
+      },
+      {
+        "title": "Le système pigmentaire",
+        "author": "Pr Thierry Passeron",
+        "src": "https://player.vimeo.com/video/1125586176?h=fa1c339b92"
+      },
+      {
+        "title": "Anatomie et physiologie de la peau",
+        "author": "Pr Marie-Aleth Richard",
+        "src": "https://player.vimeo.com/video/1125585769?h=6a4a8f7ac2"
+      },
+      {
+        "title": "Anatomie des mains et comblement",
+        "author": "Pr Vincent Casoli",
+        "src": "https://player.vimeo.com/video/1125576316?h=6fefec17a8"
+      },
+      {
+        "title": "Anatomie des lèvres, menton, pommettes",
+        "author": "Dr Philippe Garcia",
+        "src": "https://player.vimeo.com/video/1123229208?h=1defc8c114"
+      },
+      {
+        "title": "Anatomie des paupières, région périorbitaire et front",
+        "author": "Pr Ali Mojallal",
+        "src": "https://player.vimeo.com/video/1123228761?h=3485102403"
+      },
+      {
+        "title": "Les tissus sous-cutanés : rappel anatomique et vieillissement",
+        "author": "Dr Thierry Michaud",
+        "src": "https://player.vimeo.com/video/1123227847?h=cc3244cc7d"
+      }
+    ]
+  },
+  {
+    "title": "La consultation esthétique",
+    "subtitle": "Éthique, aspects psychologiques, consentement et pratique en cabinet",
+    "sessionNumber": "Session 02",
+    "videos": [
+      {
+        "title": "Information et consentement au droit à l'image – Modalités légales",
+        "author": "Dr Adel Louafi",
+        "src": "https://player.vimeo.com/video/1175816100?h=d40327b526"
+      },
+      {
+        "title": "Éthique et chirurgie esthétique",
+        "author": "Pr Baptiste Bertrand",
+        "src": "https://player.vimeo.com/video/1175815806?h=c43830b934"
+      },
+      {
+        "title": "Les aspects psychologiques et la communication en pratique",
+        "author": "Pr Jean-Paul Meningaud",
+        "src": "https://player.vimeo.com/video/1175815640?h=6864ce16f1"
+      },
+      {
+        "title": "La médecine esthétique en cabinet de médecine générale : opportunités et défis",
+        "author": "Pr Jean-Paul Meningaud",
+        "src": "https://player.vimeo.com/video/1175815558?h=be5a96c40b"
+      },
+      {
+        "title": "La consultation de médecine esthétique – Vision du dermatologue",
+        "author": "Dr Martine Baspeyras",
+        "src": "https://player.vimeo.com/video/1166121091?h=506ae9cea4"
+      },
+      {
+        "title": "Sécurité, hygiène en cosmétologie et dermatologie esthétique",
+        "author": "Dr Martine Baspeyras",
+        "src": "https://player.vimeo.com/video/1166120867?h=28b8d08275"
+      }
+    ]
+  },
+  {
+    "title": "Les lasers et dispositifs à énergie 1",
+    "subtitle": "Sécurité laser, KTP, lumière pulsée, épilation photonique",
+    "sessionNumber": "Session 03",
+    "videos": [
+      {
+        "title": "Laser et sécurité",
+        "author": "Dr Cyril Maire",
+        "src": "https://player.vimeo.com/video/1174723842?h=43b26941cf"
+      },
+      {
+        "title": "Laser vert KTP",
+        "author": "Gérard Toubel",
+        "src": "https://player.vimeo.com/video/1174723567?h=46d65cd308"
+      },
+      {
+        "title": "Lumière pulsée (IPL) : protocoles de traitement pigmentaire",
+        "author": "Dr Marc Patarin",
+        "src": "https://player.vimeo.com/video/1174551320?h=b698e6b43d"
+      },
+      {
+        "title": "Les différentes techniques d'épilation photonique : lasers et lampes flash",
+        "author": "Dr Marc Patarin",
+        "src": "https://player.vimeo.com/video/1174550707?h=7527ab8f84"
+      },
+      {
+        "title": "De la théorie à la pratique : lasers vasculaires et fractionnés",
+        "author": "Dr Jean-Michel Mazer",
+        "src": "https://player.vimeo.com/video/1174550001?h=79621c2fd1"
+      },
+      {
+        "title": "Épilation laser – Indications, contre-indications, complications",
+        "author": "Nathalie Gral",
+        "src": "https://player.vimeo.com/video/1174549386?h=38717990ec"
+      }
+    ]
+  },
+  {
+    "title": "Les lasers et dispositifs à énergie 2",
+    "subtitle": "Lasers pigmentaires, fractionnés ablatifs, HIFU, LED, hyperhidrose",
+    "sessionNumber": "Session 04",
+    "videos": [
+      {
+        "title": "Lasers pigmentaires – La cible mélanocytaire",
+        "author": "Dr Florence Le Duff",
+        "src": "https://player.vimeo.com/video/1183471062?h=07ed595de8"
+      },
+      {
+        "title": "Lasers fractionnés ablatifs et non ablatifs",
+        "author": "Dr Séverine Lafaye",
+        "src": "https://player.vimeo.com/video/1183470979?h=fb7743a6c3"
+      },
+      {
+        "title": "Traitement de l'hyperhidrose axillaire par micro-ondes",
+        "author": "Dr Yvon Perrillat",
+        "src": "https://player.vimeo.com/video/1182752461?h=e554f92856"
+      },
+      {
+        "title": "Tatouage et détatouage",
+        "author": "Dr Yvon Perrillat",
+        "src": "https://player.vimeo.com/video/1182751524?h=977709aaf3"
+      },
+      {
+        "title": "Les lasers ablatifs fractionnés",
+        "author": "Dr Nathalie Gral",
+        "src": "https://player.vimeo.com/video/1182750489?h=3d4fc6adda"
+      },
+      {
+        "title": "Les HIFU",
+        "author": "Dr Muriel Creusot",
+        "src": "https://player.vimeo.com/video/1182750334?h=9ef5b99033"
+      },
+      {
+        "title": "Les lampes LED",
+        "author": "Dr Muriel Creusot",
+        "src": "https://player.vimeo.com/video/1182750117?h=807e3d4795"
+      }
+    ]
+  },
+  {
+    "title": "Les lasers et dispositifs à énergie 3",
+    "subtitle": "Cosmétologie anti-âge, cryolipolyse, plasma, radiofréquences",
+    "sessionNumber": "Session 05",
+    "videos": [
+      {
+        "title": "Cosmétologie anti-âge – Exemples de prescriptions",
+        "author": "Dr Isabelle Gallay",
+        "src": "https://player.vimeo.com/video/1196472510?h=85ad3de10e"
+      },
+      {
+        "title": "Cryolipolyse sélective",
+        "author": "Dr Hans Laubac",
+        "src": "https://player.vimeo.com/video/1196439636?h=cd112d8fd6"
+      },
+      {
+        "title": "Cryolipolyse – Le point de vue du chirurgien",
+        "author": "Pr Barbara Hersant",
+        "src": "https://player.vimeo.com/video/1196322748?h=fa69d08278"
+      },
+      {
+        "title": "Analyse de la peau du visage",
+        "author": "Dr Martine Darchy",
+        "src": "https://player.vimeo.com/video/1196322747?h=b2b8e9e8a3"
+      },
+      {
+        "title": "La blépharoplastie esthétique médicale par plasma",
+        "author": "Pr Jean-Paul Meningaud",
+        "src": "https://player.vimeo.com/video/1186322112?h=0746877172"
+      },
+      {
+        "title": "Les radiofréquences en dermatologie",
+        "author": "Serge Dahan",
+        "src": "https://player.vimeo.com/video/1186322111?h=2f24b23de9"
+      }
+    ]
+  },
+  {
+    "title": "Les toxines botuliques 1",
+    "subtitle": "Contenu en cours de mise en ligne",
+    "sessionNumber": "Session 06",
+    "videos": []
+  },
+  {
+    "title": "Les toxines botuliques 2",
+    "subtitle": "Techniques d'injection, vaginisme, fillers et harmonisation du visage",
+    "sessionNumber": "Session 07",
+    "videos": [
+      {
+        "title": "La toxine botulique",
+        "author": "Magali Dubois",
+        "src": "https://player.vimeo.com/video/1199037768?h=0df0e94479"
+      },
+      {
+        "title": "Atelier toxines",
+        "author": "Pr Barbara Hersant et Catherine Raimbault",
+        "src": "https://player.vimeo.com/video/1199037767?h=42fb99a9b5"
+      },
+      {
+        "title": "La toxine botulique dans le traitement du vaginisme",
+        "author": "Pr Barbara Hersant",
+        "src": "https://player.vimeo.com/video/1196347933?h=114892ab46"
+      },
+      {
+        "title": "La toxine botulique – Autres lieux d'injections",
+        "author": "Pr Barbara Hersant",
+        "src": "https://player.vimeo.com/video/1196347798?h=5dc9596749"
+      },
+      {
+        "title": "Filler injection : complication & management",
+        "author": "Christophe Desouches",
+        "src": "https://player.vimeo.com/video/1196347583?h=bd16af2676"
+      },
+      {
+        "title": "Lips",
+        "author": "Christophe Desouches",
+        "src": "https://player.vimeo.com/video/1196347440?h=96cb5cc565"
+      },
+      {
+        "title": "L'acide hyaluronique : restaurer la lumière, relever l'harmonie",
+        "author": "Christophe Desouches",
+        "src": "https://player.vimeo.com/video/1196347334?h=f41efa276c"
+      },
+      {
+        "title": "Vieillissement facial : de l'anatomie à la restauration",
+        "author": "Christophe Desouches",
+        "src": "https://player.vimeo.com/video/1196346643?h=aa6c078d45"
+      },
+      {
+        "title": "Profiloplastie médicale : stratégie d'harmonisation sagitale",
+        "author": "Christophe Desouches",
+        "src": "https://player.vimeo.com/video/1196346642?h=3b0e4d84dd"
+      },
+      {
+        "title": "Anatomie artistique et philosophie de correction",
+        "author": "Christophe Desouches",
+        "src": "https://player.vimeo.com/video/1196346640?h=c165687ebd"
+      }
+    ]
+  },
+  {
+    "title": "Les peelings et produits de comblement",
+    "subtitle": "Peelings superficiels et moyens, acide hyaluronique, complications",
+    "sessionNumber": "Session 08",
+    "videos": [
+      {
+        "title": "Complications des produits de comblement",
+        "author": "Dr Brice Tchakerian",
+        "src": "https://player.vimeo.com/video/1175622534?h=7ee2b66460"
+      },
+      {
+        "title": "Caractérisation rhéologique des produits de comblement",
+        "author": "Pr Jean-Paul Meningaud",
+        "src": "https://player.vimeo.com/video/1175622258?h=184c373b70"
+      },
+      {
+        "title": "Les différents acides hyaluroniques, pharmacologie, contre-indications",
+        "author": "Pr Jean-Paul Meningaud",
+        "src": "https://player.vimeo.com/video/1175620211?h=173d097c68"
+      },
+      {
+        "title": "Peelings dépigmentants",
+        "author": "Dr Isabelle Gallay",
+        "src": "https://player.vimeo.com/video/1175617616?h=460f2a452f"
+      },
+      {
+        "title": "Peelings moyens",
+        "author": "Dr Martine Baspeyras",
+        "src": "https://player.vimeo.com/video/1175616394?h=c8030f79f4"
+      },
+      {
+        "title": "Peelings superficiels",
+        "author": "Dr Martine Baspeyras",
+        "src": "https://player.vimeo.com/video/1175614421?h=f5870f2b2d"
+      },
+      {
+        "title": "Sémiologie clinique du vieillissement facial",
+        "author": "Dr Patrick Bui, Dr Christophe Lepage",
+        "src": "https://player.vimeo.com/video/1175612620?h=9055212189"
+      }
+    ]
+  },
+  {
+    "title": "Comblement 2 et 3",
+    "subtitle": "Injections d'acide hyaluronique faciale et corporelle, gestion des effets secondaires",
+    "sessionNumber": "Session 09",
+    "videos": [
+      {
+        "title": "Gestion des effets secondaires des injectables",
+        "author": "Dr Martine Baspeyras",
+        "src": "https://player.vimeo.com/video/1175824700?h=d4988ade2b"
+      },
+      {
+        "title": "Les injections d'acide hyaluronique pour le corps",
+        "author": "Pr Barbara Hersant",
+        "src": "https://player.vimeo.com/video/1165478047?h=add1696b26"
+      },
+      {
+        "title": "Les injections d'acide hyaluronique faciale zone par zone",
+        "author": "Pr Barbara Hersant",
+        "src": "https://player.vimeo.com/video/1165477501?h=9f0cf7e20a"
+      },
+      {
+        "title": "Les complications de l'acide hyaluronique",
+        "author": "Serge Dahan",
+        "src": "https://player.vimeo.com/video/1165477365?h=176fcf2306"
+      }
+    ]
+  },
+  {
+    "title": "Méthodes complémentaires",
+    "subtitle": "Peelings, cosmétologie, inducteurs tissulaires, compléments alimentaires, cas cliniques",
+    "sessionNumber": "Session 10",
+    "videos": [
+      {
+        "title": "Peelings",
+        "author": "Dr Catherine Raimbault",
+        "src": "https://player.vimeo.com/video/1174728114?h=6ad8678730"
+      },
+      {
+        "title": "La place de la cosmétologie dans la prise en charge du vieillissement cutané",
+        "author": "Dr Isabelle Gallay",
+        "src": "https://player.vimeo.com/video/1174566863?h=d15de5d83b"
+      },
+      {
+        "title": "Le maquillage correcteur pour une meilleure qualité de vie des patients",
+        "author": "Dr Philippe Deshayes",
+        "src": "https://player.vimeo.com/video/1174566665?h=4746c9a581"
+      },
+      {
+        "title": "Prise en charge des complications vasculaires",
+        "author": "Pr Jean-Paul Meningaud",
+        "src": "https://player.vimeo.com/video/1174550953?h=1e8630f0d8"
+      },
+      {
+        "title": "Cas cliniques : injection acide hyaluronique",
+        "author": "Pr Barbara Hersant",
+        "src": "https://player.vimeo.com/video/1174550262?h=ca369fdc46"
+      },
+      {
+        "title": "Les inducteurs tissulaires",
+        "author": "Dr Muriel Creusot",
+        "src": "https://player.vimeo.com/video/1174549738?h=9264a465af"
+      },
+      {
+        "title": "Intérêt des compléments alimentaires en médecine esthétique",
+        "author": "Dr Martine Baspeyras",
+        "src": "https://player.vimeo.com/video/1174549523?h=c3d70876a5"
+      }
+    ]
+  },
+  {
+    "title": "Complications et cas cliniques 1",
+    "subtitle": "Complications liftings, sécurité laser, myomodulation, vigilance esthétique",
+    "sessionNumber": "Session 11",
+    "videos": [
+      {
+        "title": "Gestion des souffrances cutanées et complications des liftings",
+        "author": "Dr Catherine Bergeret-Galley",
+        "src": "https://player.vimeo.com/video/1183696680?h=0885374c0b"
+      },
+      {
+        "title": "Sécurité laser",
+        "author": "Dr Denis Perrin",
+        "src": "https://player.vimeo.com/video/1183695054?h=be8ea5f454"
+      },
+      {
+        "title": "Lasers et traitements combinés – Combiner les techniques",
+        "author": "Dr Serge Dahan",
+        "src": "https://player.vimeo.com/video/1183694619?h=3711d0c31b"
+      },
+      {
+        "title": "Myomodulation et harmonie du visage",
+        "author": "Dr Marie-Pierre Loustalan",
+        "src": "https://player.vimeo.com/video/1182751261?h=f620e35cba"
+      },
+      {
+        "title": "Complications en médecine esthétique",
+        "author": "Pr Jean-Paul Meningaud",
+        "src": "https://player.vimeo.com/video/1182750720?h=c01c02bc6f"
+      },
+      {
+        "title": "Quoi de neuf en vigilance esthétique",
+        "author": "Dr Martine Baspeyras",
+        "src": "https://player.vimeo.com/video/1175824779?h=30a8d22b1a"
+      }
+    ]
+  },
+  {
+    "title": "Déontologie et cas cliniques 2",
+    "subtitle": "Histoire de la chirurgie esthétique, responsabilité civile, éthique, réglementation",
+    "sessionNumber": "Session 12",
+    "videos": [
+      {
+        "title": "Histoire de la chirurgie esthétique en France et à travers le monde",
+        "author": "Pr Baptiste Bertrand",
+        "src": "https://player.vimeo.com/video/1197391133?h=7c9de53f7e"
+      },
+      {
+        "title": "La responsabilité civile",
+        "author": "Pr Jean-Paul Meningaud",
+        "src": "https://player.vimeo.com/video/1197391129?h=42a0184f5f"
+      },
+      {
+        "title": "Éthique et médecine esthétique",
+        "author": "Pr Pierre Wolkensteim",
+        "src": "https://player.vimeo.com/video/1196447202?h=b739cdc215"
+      },
+      {
+        "title": "Déontologie et réglementation",
+        "author": "Pr Jean-François Delahay",
+        "src": "https://player.vimeo.com/video/1196335737?h=545605926e"
+      },
+      {
+        "title": "Mésothérapie et injections superficielles",
+        "author": "Dr Martine Baspeyras",
+        "src": "https://player.vimeo.com/video/1196335736?h=e49b9bcc68"
+      }
+    ]
+  }
+]

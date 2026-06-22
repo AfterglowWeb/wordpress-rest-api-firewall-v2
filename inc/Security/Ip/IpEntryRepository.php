@@ -167,26 +167,43 @@ class IpEntryRepository {
 		);
 	}
 
-	public static function find_by_ip( string $ip, string $list_type = 'blacklist' ): ?array {
+	public static function find_by_ip( string $ip, string $list_type = 'blacklist' ): array {
 		global $wpdb;
 
-		$sql = 'SELECT * FROM ' . self::table() . ' WHERE ip = %s AND list_type = %s LIMIT 1';
+		$sql = '
+			SELECT *
+			FROM ' . self::table() . '
+			WHERE ip = %s
+			AND list_type = %s
+			AND (
+				expires_at IS NULL
+				OR expires_at > NOW()
+			)
+			LIMIT 1
+			';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$row = $wpdb->get_row( $wpdb->prepare( $sql, $ip, $list_type ), ARRAY_A );
 
-		return $row ? self::normalize( $row ) : null;
+		return $row ? self::normalize( $row ) : array();
 	}
 
 	public static function ip_in_list( string $ip, string $list_type = 'blacklist' ): bool {
 		global $wpdb;
 
-		// Fast path: exact IP match.
 		if ( self::find_by_ip( $ip, $list_type ) ) {
 			return true;
 		}
 
-		// Slow path: CIDR entries.
-		$sql = 'SELECT ip FROM ' . self::table() . ' WHERE list_type = %s AND ip LIKE %s AND (expires_at IS NULL OR expires_at > NOW())';
+		$sql = '
+			SELECT ip 
+			FROM ' . self::table() . ' 
+			WHERE list_type = %s 
+			AND ip LIKE %s 
+			AND (
+				expires_at IS NULL 
+				OR expires_at > NOW()
+			)
+			';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$cidrs = $wpdb->get_col( $wpdb->prepare( $sql, $list_type, '%/%' ) );
 
@@ -262,6 +279,27 @@ class IpEntryRepository {
 		return (int) $wpdb->query( 'DELETE FROM ' . self::table() . ' WHERE expires_at IS NOT NULL AND expires_at < NOW()' );
 	}
 
+	public static function country_in_list( string $country_code, string $list_type = 'blacklist' ): bool {
+
+		global $wpdb;
+
+		$sql = '
+			SELECT 1
+			FROM ' . self::table() . '
+			WHERE country_code = %s
+			AND list_type = %s
+			LIMIT 1
+		';
+
+		return (bool) $wpdb->get_var(
+			$wpdb->prepare(
+				$sql,
+				strtoupper( $country_code ),
+				$list_type
+			)
+		);
+	}
+
 	public static function get_country_stats( string $list_type = 'blacklist' ): array {
 		global $wpdb;
 
@@ -310,5 +348,4 @@ class IpEntryRepository {
 
 		return $sanitized;
 	}
-
 }

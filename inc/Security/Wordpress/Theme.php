@@ -1,4 +1,5 @@
-<?php namespace Bromate\RestApiFirewall\Security\Wordpress;
+<?php namespace Bromate\RestApiFirewall\Security\WordPress;
+
 defined( 'ABSPATH' ) || exit;
 
 use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
@@ -31,18 +32,17 @@ class Theme {
 			add_filter(
 				'acf/settings/save_json',
 				function () {
-					return BROMATE_REST_API_FIREWALL_DIR . '/config';
+					return BROMATE_REST_API_FIREWALL_DIR . 'config';
 				}
 			);
 
 			add_filter(
 				'acf/settings/load_json',
 				function () {
-					return BROMATE_REST_API_FIREWALL_DIR . '/config';
+					return BROMATE_REST_API_FIREWALL_DIR . 'config';
 				}
 			);
 		}
-
 	}
 
 	public function theme_supports(): void {
@@ -77,11 +77,10 @@ class Theme {
 			remove_action( 'admin_print_scripts', 'print_emoji_detection_script', 20 );
 			remove_action( 'admin_print_scripts', 'print_emoji_detection_script', 20 );
 		}
-
 	}
 
 	public function theme_menus(): void {
-		$json_file = get_stylesheet_directory() . '/config/menus.json';
+		$json_file    = get_stylesheet_directory() . '/config/menus.json';
 		$json_content = FileUtils::read_file( $json_file );
 
 		if ( ! $json_content ) {

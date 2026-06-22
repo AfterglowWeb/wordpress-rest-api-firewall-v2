@@ -5,9 +5,8 @@ use League\ISO3166\ISO3166;
 class GeoIpApi {
 
 	private const CACHE_KEY_PREFIX = 'rest_api_fw_geoip_';
-	private const CACHE_TTL        = 86400 * 7; // 7 days.
-	private const API_ENDPOINT     = 'https://ipapi.co/{ip}/json/';
-
+	private const CACHE_TTL        = 86400 * 7;
+	private const API_ENDPOINT     = 'https://ipapi.co/%s/json/';
 
 	public static function get_all_countries(): array {
 		$custom_names = array(
@@ -41,7 +40,28 @@ class GeoIpApi {
 		return $countries;
 	}
 
-	public static function get_geoip( string $ip ): ?array {
+	public static function is_country_blocked( string $ip ): bool {
+
+		$country_code = self::get_country_code( $ip );
+
+		if ( empty( $country_code ) ) {
+			return false;
+		}
+
+		return IpEntryRepository::country_in_list(
+			$country_code,
+			'global_blacklist'
+		);
+	}
+
+	public static function get_country_code( string $ip ): string {
+
+		$geoip = self::get_geoip( $ip );
+
+		return isset( $geoip['country'] ) ? $geoip['country'] : '';
+	}
+
+	public static function get_geoip( string $ip ): array {
 
 		$cached = self::get_cached( $ip );
 		if ( $cached ) {
@@ -50,16 +70,23 @@ class GeoIpApi {
 
 		$geoip = self::fetch_from_api( $ip );
 
-		if ( $geoip ) {
+		if ( ! empty( $geoip ) ) {
 			self::cache_result( $ip, $geoip );
 			return $geoip;
 		}
 
-		return null;
+		return array();
 	}
 
-	private static function fetch_from_api( string $ip ): ?array {
-		$url = str_replace( '{ip}', $ip, self::API_ENDPOINT );
+	private static function build_api_url( string $ip ): string {
+		return sprintf(
+			self::API_ENDPOINT,
+			rawurlencode( $ip )
+		);
+	}
+
+	private static function fetch_from_api( string $ip ): array {
+		$url = self::build_api_url( $ip );
 
 		$response = wp_remote_get(
 			$url,
@@ -70,14 +97,14 @@ class GeoIpApi {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			return null;
+			return array();
 		}
 
 		$body = wp_remote_retrieve_body( $response );
 		$data = json_decode( $body, true );
 
 		if ( ! is_array( $data ) ) {
-			return null;
+			return array();
 		}
 
 		return array(
