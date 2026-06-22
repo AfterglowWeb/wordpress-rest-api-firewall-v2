@@ -11,7 +11,7 @@ class AuthenticationManager {
 	public static function authenticate() {
 
 		$options = SettingsRepository::read_options();
-		$method = $options['firewall_auth_method'] ?? 'wp_auth';
+		$method  = $options['firewall_auth_method'] ?? 'wp_auth';
 
 		if ( 'jwt' === $method ) {
 			return JwtAuthenticator::validate_bearer_jwt(
@@ -26,5 +26,4 @@ class AuthenticationManager {
 
 		return ApplicationPasswordAuthenticator::validate_wp_application_password();
 	}
-
 }

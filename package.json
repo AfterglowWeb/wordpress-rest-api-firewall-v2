@@ -13,10 +13,7 @@
     "packages-update": "wp-scripts packages-update",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs",
-    "graph": "depcruise src --config .dependency-cruiser.cjs --output-type mermaid --output-to .github/graphs/js-modules.mmd",
-    "graph:svg": "depcruise src --config .dependency-cruiser.cjs --output-type dot | dot -T svg > .github/graphs/js-modules.svg",
-    "graph:lint": "depcruise src --config .dependency-cruiser.cjs --output-type err"
+    "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

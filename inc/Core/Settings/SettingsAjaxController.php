@@ -5,11 +5,11 @@ use Bromate\RestApiFirewall\Core\Settings\SettingsConfig;
 use Bromate\RestApiFirewall\Api\Routing\RoutesPolicyRepository;
 
 class SettingsAjaxController {
-	
+
 	private function __construct() {}
 
 	public static function register(): void {
-        $self = new self();
+		$self = new self();
 
 		add_action( 'wp_ajax_bromate_rest_api_firewall_read_options', array( $self , 'ajax_read_options' ) );
        	add_action( 'wp_ajax_bromate_rest_api_firewall_update_options', array( $self , 'ajax_update_options' ) );
@@ -174,7 +174,6 @@ class SettingsAjaxController {
 
 		$valid = wp_verify_nonce( $nonce, 'bromate_rest_api_firewall_update_options_nonce' );
 
-
 		return (bool) $valid
 			&& is_user_logged_in()
 			&& current_user_can( 'bromate_rest_api_firewall_edit_options' );
@@ -188,5 +187,4 @@ class SettingsAjaxController {
 		flush_rewrite_rules( false );
 		wp_send_json_success( array( 'message' => esc_html__( 'Rewrite rules flushed successfully.', 'bromate-rest-api-firewall' ) ) );
 	}
-
 }

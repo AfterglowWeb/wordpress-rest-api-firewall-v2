@@ -54,7 +54,7 @@ class IpEntryAjaxController {
 			wp_send_json_error( array( 'message' => __( 'IP already in list', 'bromate-rest-api-firewall' ) ), 400 );
 		}
 
-		$expiry_seconds = (int) SettingsRepository::read_option('expiry_seconds');
+		$expiry_seconds = (int) SettingsRepository::read_option( 'expiry_seconds' );
 		$expires_at     = $expiry_seconds > 0
 			? gmdate( 'Y-m-d H:i:s', time() + $expiry_seconds )
 			: null;

@@ -36,11 +36,11 @@ class FileUtils {
 	public static function is_readable( string $file_path ): bool {
 		$wp_filesystem = self::wp_filesystem();
 
-		if ( ! $wp_filesystem ) {
-			return false;
+		if ( $wp_filesystem ) {
+			return $wp_filesystem->is_readable( $file_path );
 		}
 
-		return $wp_filesystem->is_readable( $file_path );
+		return is_readable( $file_path );
 	}
 
 	/**

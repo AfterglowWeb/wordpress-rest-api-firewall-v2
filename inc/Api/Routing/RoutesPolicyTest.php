@@ -12,8 +12,8 @@ class RoutesPolicyTest {
 
 	protected static $instance = null;
 
-	private string $current_test_application_id = '';
-	public static ?int $internal_test_user_id = null;
+	private string $current_test_application_id         = '';
+	public static ?int $internal_test_user_id           = null;
 	public static ?string $internal_test_application_id = null;
 
 	public static function get_instance() {
@@ -291,7 +291,6 @@ class RoutesPolicyTest {
 		$enforce_auth_global = (bool) SettingsRepository::read_option( 'enforce_auth' );
 		$is_protected        = (bool) ( $policy['protect'] ?? false );
 
-
 		if ( ! $enforce_auth_global && ! $is_protected ) {
 			return array(
 				'skip'   => true,
@@ -472,7 +471,6 @@ class RoutesPolicyTest {
 		if ( $is_admin && ! $is_test ) {
 			return $result;
 		}
-
 
 		$auth_check = ApplicationPasswordAuthenticator::validate_wp_application_password();
 		if ( is_wp_error( $auth_check ) ) {
