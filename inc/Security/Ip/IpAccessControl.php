@@ -34,13 +34,9 @@ class IpAccessControl {
             );
         }
 
-        if ( AutoBlacklist::is_auto_blacklisted( $ip ) ) {
-            return new WP_Error(
-                'rest_firewall_ip_blacklisted',
-                __( 'Your IP has been temporarily blocked.', 'bromate-rest-api-firewall' ),
-                array( 'status' => 403 )
-            );
-        }
+		if ( IpEntryRepository::ip_in_list( $ip, 'whitelist' ) ) {
+			return true;
+		}
 
         if ( IpEntryRepository::ip_in_list( $ip, 'blacklist' ) ) {
             return new WP_Error(
