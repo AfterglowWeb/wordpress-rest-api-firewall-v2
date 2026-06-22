@@ -57,7 +57,7 @@ class GeoIpApi {
 <<<<<<< HEAD
 	public static function get_country_code( string $ip): string {
 
-        $geoip = self::get_geoip( $ip );
+		$geoip = self::get_geoip( $ip );
 
         return isset( $geoip['country'] ) ? $geoip['country'] : '';
     }

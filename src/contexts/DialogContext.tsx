@@ -92,3 +92,55 @@ export function useDialog(): DialogContextValue {
     }
     return context;
 }
+
+// ─── State initiale ───────────────────────────────────────────────────────────
+
+const initialState: DialogState = {
+    open:         false,
+    type:         DIALOG_TYPES.CONFIRM,
+    title:        '',
+    content:      '',
+    confirmLabel: null,
+    cancelLabel:  null,
+    onConfirm:    null,
+    onCancel:     null,
+    autoClose:    null,
+};
+
+// ─── Context ──────────────────────────────────────────────────────────────────
+
+const DialogContext = createContext<DialogContextValue | null>(null);
+
+export function DialogProvider({ children }: ChildrenProps): JSX.Element {
+    const [dialog, setDialog] = useState<DialogState>(initialState);
+
+    const openDialog = useCallback((options: OpenDialogOptions = {}) => {
+        setDialog({ ...initialState, ...options, open: true });
+    }, []);
+
+    const updateDialog = useCallback((options: Partial<DialogState>) => {
+        setDialog((prev) => ({ ...prev, ...options }));
+    }, []);
+
+    const closeDialog = useCallback(() => {
+        setDialog((prev) => ({ ...prev, open: false }));
+    }, []);
+
+    const resetDialog = useCallback(() => {
+        setDialog(initialState);
+    }, []);
+
+    return (
+        <DialogContext.Provider value={{ dialog, openDialog, updateDialog, closeDialog, resetDialog }}>
+            {children}
+        </DialogContext.Provider>
+    );
+}
+
+export function useDialog(): DialogContextValue {
+    const context = useContext(DialogContext);
+    if (!context) {
+        throw new Error('useDialog must be used within a DialogProvider');
+    }
+    return context;
+}

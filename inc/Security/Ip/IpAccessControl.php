@@ -15,21 +15,21 @@ class IpAccessControl {
             return true;
         }
 
-        if ( GeoIpApi::is_country_blocked( $ip ) ) {
-            return new WP_Error(
-                'rest_firewall_country_blocked',
-                __( 'Access from your country is not allowed.', 'bromate-rest-api-firewall' ),
-                array( 'status' => 403 )
-            );
-        }
+		if ( GeoIpApi::is_country_blocked( $ip ) ) {
+			return new WP_Error(
+				'rest_firewall_country_blocked',
+				__( 'Access from your country is not allowed.', 'bromate-rest-api-firewall' ),
+				array( 'status' => 403 )
+			);
+		}
 
-        if ( AutoBlacklist::is_auto_blacklisted( $ip ) ) {
-            return new WP_Error(
-                'rest_firewall_ip_blacklisted',
-                __( 'Your IP has been temporarily blocked.', 'bromate-rest-api-firewall' ),
-                array( 'status' => 403 )
-            );
-        }
+		if ( AutoBlacklist::is_auto_blacklisted( $ip ) ) {
+			return new WP_Error(
+				'rest_firewall_ip_blacklisted',
+				__( 'Your IP has been temporarily blocked.', 'bromate-rest-api-firewall' ),
+				array( 'status' => 403 )
+			);
+		}
 
         if ( IpEntryRepository::ip_in_list( $ip, 'blacklist' ) ) {
             return new WP_Error(
