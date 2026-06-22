@@ -35,10 +35,15 @@ module.exports = {
 		},
 	},
 	plugins: [ ...defaultConfig.plugins, ...extraPlugins ],
+<<<<<<< HEAD
+=======
+	devtool: 'source-map',
+>>>>>>> d78a3463b54610a29cf4b03016ae1c0da59bf6ae
 	resolve: {
 		...defaultConfig.resolve,
 		alias: {
 			...defaultConfig.resolve.alias,
+<<<<<<< HEAD
 			'@components': path.resolve(__dirname, 'src/components'),
 			'@contexts': path.resolve(__dirname, 'src/contexts'),
 			'@features': path.resolve(__dirname, 'src/features'),
@@ -46,6 +51,16 @@ module.exports = {
 			'@pages': path.resolve(__dirname, 'src/pages'),
 			'@services': path.resolve(__dirname, 'src/services'),
 			'@types': path.resolve(__dirname, 'src/types'),
+=======
+			'@components': path.resolve(__dirname, './src/components'),
+			'@contexts': path.resolve(__dirname, './src/contexts'),
+			'@features': path.resolve(__dirname, './src/features'),
+			'@layouts': path.resolve(__dirname, './src/layouts'),
+			'@pages': path.resolve(__dirname, './src/pages'),
+			'@services': path.resolve(__dirname, './src/services'),
+			'@app-types': path.resolve(__dirname, './src/app-types'),
+			'@app-utils': path.resolve(__dirname, './src/utils'),
+>>>>>>> d78a3463b54610a29cf4b03016ae1c0da59bf6ae
 		},
 	},
 };

@@ -42,7 +42,7 @@ final class RestRequestBootstrap {
 		);
 	}
 
-	public static function remove_cache_headers( $served ): mixed {
+	public static function remove_cache_headers( $served ) {
 
 		header_remove( 'Cache-Control' );
 		header_remove( 'Expires' );

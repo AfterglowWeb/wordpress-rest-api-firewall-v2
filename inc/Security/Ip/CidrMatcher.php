@@ -111,5 +111,4 @@ final class CidrMatcher {
 
 		return false;
 	}
-
 }

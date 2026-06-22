@@ -16,10 +16,10 @@ final class LoginRateLimiter {
 	protected static ?self $instance = null;
 
 	public static function get_instance(): self {
-		if ( null === static::$instance ) {
-			static::$instance = new static();
+		if ( null === self::$instance ) {
+			self::$instance = new self();
 		}
-		return static::$instance;
+		return self::$instance;
 	}
 
 	private function __construct() {
@@ -143,5 +143,4 @@ final class LoginRateLimiter {
 
 		return false;
 	}
-
 }

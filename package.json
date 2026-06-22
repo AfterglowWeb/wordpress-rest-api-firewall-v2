@@ -13,10 +13,7 @@
     "packages-update": "wp-scripts packages-update",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs",
-    "graph": "depcruise src --config .dependency-cruiser.cjs --output-type mermaid --output-to .github/graphs/js-modules.mmd",
-    "graph:svg": "depcruise src --config .dependency-cruiser.cjs --output-type dot | dot -T svg > .github/graphs/js-modules.svg",
-    "graph:lint": "depcruise src --config .dependency-cruiser.cjs --output-type err"
+    "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -35,6 +32,7 @@
     "dompurify": "^3.2.7"
   },
   "devDependencies": {
+<<<<<<< HEAD
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "@types/react": "18.2.79",
@@ -46,5 +44,16 @@
   "resolutions": {
     "@types/react": "18.2.79",
     "@types/react-dom": "18.2.25"
+=======
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^6.0.3"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+>>>>>>> d78a3463b54610a29cf4b03016ae1c0da59bf6ae
   }
 }

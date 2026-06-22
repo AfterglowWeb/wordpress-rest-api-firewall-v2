@@ -15,8 +15,11 @@ import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 
+<<<<<<< HEAD
 import contentStyles from './contentStyles';
 
+=======
+>>>>>>> d78a3463b54610a29cf4b03016ae1c0da59bf6ae
 export default function Documentation( { page } ) {
 	const { __ } = wp.i18n || {};
 	const { open, openDoc, closeDoc, currentLocation, docs } =
@@ -87,7 +90,11 @@ export default function Documentation( { page } ) {
 						} }
 					>
 						<CardContent
+<<<<<<< HEAD
 							sx={ { overflow: 'auto', ...contentStyles } }
+=======
+							sx={ { overflow: 'auto' } }
+>>>>>>> d78a3463b54610a29cf4b03016ae1c0da59bf6ae
 							dangerouslySetInnerHTML={ {
 								__html: currentDoc.html,
 							} }

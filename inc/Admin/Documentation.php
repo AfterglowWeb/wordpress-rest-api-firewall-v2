@@ -14,7 +14,7 @@ use League\CommonMark\Extension\HeadingPermalink\HeadingPermalinkRenderer;
 class Documentation {
 	protected static $instance = null;
 
-	public static function register():void {
+	public static function register(): void {
 		$self = new self();
 		add_action( 'wp_ajax_rest_api_firewall_documentation', array( $self, 'ajax_documentation' ) );
 	}
@@ -30,7 +30,7 @@ class Documentation {
 
 	public static function read_pages() {
 
-		$docs_dir = BROMATE_REST_API_FIREWALL_DIR . '/docs';
+		$docs_dir = BROMATE_REST_API_FIREWALL_DIR . 'docs';
 
 		if ( ! FileUtils::is_dir( $docs_dir ) ) {
 			return array();

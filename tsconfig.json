@@ -13,6 +13,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
+<<<<<<< HEAD
+=======
+    "noEmit": true,
+>>>>>>> d78a3463b54610a29cf4b03016ae1c0da59bf6ae
     "paths": {
       "@components/*": ["./src/components/*"],
       "@contexts/*": ["./src/contexts/*"],
@@ -20,7 +24,13 @@
       "@layouts/*": ["./src/layouts/*"],
       "@pages/*": ["./src/pages/*"],
       "@services/*": ["./src/services/*"],
+<<<<<<< HEAD
       "@app-types/*": ["./src/app-types/*"]
+=======
+      "@app-types/*": ["./src/app-types/*"],
+      "@app-utils/*": ["./src/utils/*"],
+      "@constants/*": ["./src/constants/*"]
+>>>>>>> d78a3463b54610a29cf4b03016ae1c0da59bf6ae
     }
   },
   "include": ["./src/**/*"]
