@@ -1,13 +1,12 @@
 <?php namespace Bromate\RestApiFirewall\Security\Ip;
 
-
 defined( 'ABSPATH' ) || exit;
 
 use wpdb;
 
 class IpSchema {
 
-	const SCHEMA_VERSION = '1.1.0';
+	const SCHEMA_VERSION = '1.2.0';
 	const OPTION_KEY     = 'bromate_rest_api_firewall_ip_schema_version';
 
 	public static function install(): void {

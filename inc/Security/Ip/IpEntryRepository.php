@@ -184,7 +184,7 @@ class IpEntryRepository {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$row = $wpdb->get_row( $wpdb->prepare( $sql, $ip, $list_type ), ARRAY_A );
 
-		return $row ? self::normalize( $row ) : [];
+		return $row ? self::normalize( $row ) : array();
 	}
 
 	public static function ip_in_list( string $ip, string $list_type = 'blacklist' ): bool {
@@ -283,13 +283,13 @@ class IpEntryRepository {
 
 		global $wpdb;
 
-		$sql = "
+		$sql = '
 			SELECT 1
-			FROM " . self::table() . "
+			FROM ' . self::table() . '
 			WHERE country_code = %s
 			AND list_type = %s
 			LIMIT 1
-		";
+		';
 
 		return (bool) $wpdb->get_var(
 			$wpdb->prepare(
@@ -348,5 +348,4 @@ class IpEntryRepository {
 
 		return $sanitized;
 	}
-
 }

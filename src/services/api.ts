@@ -1,5 +1,3 @@
-import apiFetch from '@wordpress/api-fetch';
-
 type AjaxResponse<T> = {
 	success: boolean;
 	data: T;
@@ -17,15 +15,21 @@ export async function apiRequest<T>(
 	action: string,
 	data: Record<string, any> = {}
 ): Promise<T> {
-	return apiFetch<AjaxResponse<T>>({
-		url: getAjaxurl(),
+	const nonce = getNonce();
+	return fetch( getAjaxurl(), {
 		method: 'POST',
-		data: {
-			action,
-			nonce: getNonce(),
-			...data,
-		},
-	}).then((res) => {
+		headers: {
+				'Content-Type':
+					'application/x-www-form-urlencoded; charset=UTF-8',
+			},
+		body: new URLSearchParams( {
+				action,
+				nonce,
+				...data
+			} ),
+	})
+	.then( ( r ) => r.json() )
+	.then((res:AjaxResponse<T>) => {
 		if (!res.success) {
 			throw new Error('Request failed');
 		}

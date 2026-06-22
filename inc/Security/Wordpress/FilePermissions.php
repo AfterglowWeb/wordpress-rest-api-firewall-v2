@@ -1,4 +1,4 @@
-<?php namespace Bromate\RestApiFirewall\Security\Wordpress;
+<?php namespace Bromate\RestApiFirewall\Security\WordPress;
 
 use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
 use Bromate\RestApiFirewall\Core\FileUtils;

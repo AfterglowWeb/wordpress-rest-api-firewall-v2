@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Box, Grid, Paper, Typography, Stack, Switch, Chip } from '@mui/material';
-import type { SecurityModule } from '@types/modules';
+import type { SecurityModule } from '@app-types/modules';
 
 type StatCardProps = {
 	title: string;
@@ -122,9 +122,9 @@ export default function Dashboard(): JSX.Element {
 	return (
         <>
 
-		<Box p={3}>
+		<Box>
 			{/* Header */}
-			<Box mb={3}>
+			<Box>
 				<Typography variant="h5" fontWeight={600}>
 					Security Modules
 				</Typography>

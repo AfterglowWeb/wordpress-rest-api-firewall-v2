@@ -1,0 +1,55 @@
+// utils/buildMenuItems.ts
+
+import type { ComponentType } from 'react';
+import type { SvgIconProps } from '@mui/material/SvgIcon';
+import type { PanelDefinition, PanelKey } from '@app-types/navigation';
+
+import LockOutlinedIcon          from '@mui/icons-material/LockOutlined';
+import SpeedOutlinedIcon         from '@mui/icons-material/SpeedOutlined';
+import AccountTreeOutlinedIcon   from '@mui/icons-material/AccountTreeOutlined';
+import ShieldOutlinedIcon        from '@mui/icons-material/ShieldOutlined';
+import DataObjectOutlinedIcon    from '@mui/icons-material/DataObjectOutlined';
+import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
+
+type IconComponent = ComponentType<SvgIconProps>;
+
+// Keys match the 'icon' strings returned by SettingsConfig::groups_config()
+const ICON_MAP: Record<string, IconComponent> = {
+    lock:          LockOutlinedIcon,
+    speed:         SpeedOutlinedIcon,
+    route:         AccountTreeOutlinedIcon,
+    shield:        ShieldOutlinedIcon,
+    data_object:   DataObjectOutlinedIcon,
+    wordpress:     AdminPanelSettingsOutlinedIcon, // no WP icon in MUI, closest fit
+};
+
+export interface MenuItemAction {
+    type: 'item';
+    key: PanelKey;
+    label: string;
+    icon: IconComponent | undefined;
+    hidden?: boolean;
+    disabled?: boolean;
+    badge?: boolean;
+    pendingBadge?: boolean;
+    secondary?: string;
+    pl?: number;
+    action?: () => void;
+}
+
+export interface MenuSection {
+    type: 'section';
+    label?: string;
+    hidden?: boolean;
+}
+
+export type MenuItem = MenuSection | MenuItemAction;
+
+export function buildMenuItems( panels: PanelDefinition[] ): MenuItem[] {
+    return panels.map( ( panel ): MenuItemAction => ( {
+        type:  'item',
+        key:   panel.key,
+        label: panel.label,
+        icon:  ICON_MAP[ panel.icon ],
+    } ) );
+}

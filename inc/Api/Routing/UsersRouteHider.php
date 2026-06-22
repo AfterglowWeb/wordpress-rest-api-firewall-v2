@@ -18,12 +18,11 @@ class UsersRouteHider {
 		return static::$instance;
 	}
 
-	private function __construct()
-	{
+	private function __construct() {
 		add_filter( 'rest_pre_dispatch', array( self::class, 'filter_users_route' ), 5, 3 );
 	}
 
-	
+
 	/**
 	 * Filter to block user routes if option is enabled.
 	 *
@@ -58,5 +57,4 @@ class UsersRouteHider {
 	public static function is_hidden(): bool {
 		return (bool) SettingsRepository::read_option( 'hide_user_routes' );
 	}
-
 }

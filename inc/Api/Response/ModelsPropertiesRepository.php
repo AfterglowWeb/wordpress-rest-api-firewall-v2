@@ -60,7 +60,7 @@ class ModelsPropertiesRepository {
 			wp_send_json_error( array( 'message' => 'Missing object_type.' ), 400 );
 		}
 
-		wp_send_json_success( array( 'props' => ModelsPropertiesRepository::model_properties_for_type( $object_type ) ) );
+		wp_send_json_success( array( 'props' => self::model_properties_for_type( $object_type ) ) );
 	}
 
 	public static function model_properties( string $post_type ): array {
@@ -656,7 +656,7 @@ class ModelsPropertiesRepository {
 			),
 		);
 	}
-	
+
 	private static function author_properties(): array {
 
 		$filters             = self::properties_filters();

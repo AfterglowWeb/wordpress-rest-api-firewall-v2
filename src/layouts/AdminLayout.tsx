@@ -1,4 +1,4 @@
-import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
 
 import Navigation from '@components/Navigation';
 
@@ -9,17 +9,17 @@ import Authentication from '@pages/Authentication';
 import AccessControl from '@pages/AccessControl';
 import RateLimiting from '@pages/RateLimiting';
 import Routes from '@pages/Routes';
-//import Wordpress from '@pages/Wordpress';
+//import WordPress from '@pages/WordPress';
 //import Logs from '@pages/Logs';
 
 export default function AdminLayout() {
 	const { panel } = useNavigation();
 
 	return (
-		<Box display="flex">
+		<Stack>
 			<Navigation />
 
-			<Box flex={1}>
+			<Stack>
 				{panel === 'dashboard' && <Dashboard />}
 
 				{panel === 'authentication' && (
@@ -36,10 +36,10 @@ export default function AdminLayout() {
 
 				{panel === 'routes' && <Routes />}
 
-				{/*panel === 'wordpress' && <Wordpress />*/}
+				{/*panel === 'wordpress' && <WordPress />*/}
 
 				{/*panel === 'logs' && <Logs />*/}
-			</Box>
-		</Box>
+			</Stack>
+		</Stack>
 	);
 }
