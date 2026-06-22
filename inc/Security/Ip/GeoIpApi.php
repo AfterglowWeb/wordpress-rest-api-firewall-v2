@@ -54,12 +54,12 @@ class GeoIpApi {
 		);
 	}
 
-	public static function get_country_code( string $ip): string {
+	public static function get_country_code( string $ip ): string {
 
 		$geoip = self::get_geoip( $ip );
 
-        return isset( $geoip['country'] ) ? $geoip['country'] : '';
-    }
+		return isset( $geoip['country'] ) ? $geoip['country'] : '';
+	}
 
 	public static function get_geoip( string $ip ): array {
 
@@ -70,12 +70,12 @@ class GeoIpApi {
 
 		$geoip = self::fetch_from_api( $ip );
 
-		if ( !empty( $geoip ) ) {
+		if ( ! empty( $geoip ) ) {
 			self::cache_result( $ip, $geoip );
 			return $geoip;
 		}
 
-		return [];
+		return array();
 	}
 
 	private static function build_api_url( string $ip ): string {
@@ -97,14 +97,14 @@ class GeoIpApi {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			return [];
+			return array();
 		}
 
 		$body = wp_remote_retrieve_body( $response );
 		$data = json_decode( $body, true );
 
 		if ( ! is_array( $data ) ) {
-			return [];
+			return array();
 		}
 
 		return array(

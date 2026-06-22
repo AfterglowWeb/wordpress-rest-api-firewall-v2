@@ -1,83 +1,44 @@
 import {
-	createContext,
-	useContext,
-	useState,
-	useCallback,
+    createContext,
+    useContext,
+    useState,
+    useCallback,
 } from '@wordpress/element';
+import type { ChildrenProps } from '@app-types/children-props';
 
-const DialogContext = createContext( null );
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 export const DIALOG_TYPES = {
-	CONFIRM: 'confirm',
-	LOADING: 'loading',
-	SUCCESS: 'success',
-	ERROR: 'error',
-	INFO: 'info',
-};
+    CONFIRM: 'confirm',
+    LOADING: 'loading',
+    SUCCESS: 'success',
+    ERROR:   'error',
+    INFO:    'info',
+} as const;
 
-const initialState = {
-	open: false,
-	type: DIALOG_TYPES.CONFIRM,
-	title: '',
-	content: '',
-	confirmLabel: null,
-	cancelLabel: null,
-	onConfirm: null,
-	onCancel: null,
-	autoClose: null,
-};
+export type DialogType = typeof DIALOG_TYPES[keyof typeof DIALOG_TYPES];
 
-export function DialogProvider( { children } ) {
-	const [ dialog, setDialog ] = useState( initialState );
-
-	const openDialog = useCallback( ( options ) => {
-		setDialog( {
-			...initialState,
-			...options,
-			open: true,
-		} );
-	}, [] );
-
-	const updateDialog = useCallback( ( options ) => {
-		setDialog( ( prev ) => ( {
-			...prev,
-			...options,
-		} ) );
-	}, [] );
-
-	const closeDialog = useCallback( () => {
-		setDialog( ( prev ) => ( {
-			...prev,
-			open: false,
-		} ) );
-	}, [] );
-
-	const resetDialog = useCallback( () => {
-		setDialog( initialState );
-	}, [] );
-
-	return (
-		<DialogContext.Provider
-			value={ {
-				dialog,
-				openDialog,
-				updateDialog,
-				closeDialog,
-				resetDialog,
-				DIALOG_TYPES,
-			} }
-		>
-			{ children }
-		</DialogContext.Provider>
-	);
+export interface DialogState {
+    open:         boolean;
+    type:         DialogType;
+    title:        string;
+    content:      string;
+    confirmLabel: string | null;
+    cancelLabel:  string | null;
+    onConfirm:    (() => void) | null;
+    onCancel:     (() => void) | null;
+    autoClose:    number | null;        // délai en ms, null = pas d'auto-close
 }
 
-export function useDialog() {
-	const context = useContext( DialogContext );
-	if ( ! context ) {
-		throw new Error( 'useDialog must be used within a DialogProvider' );
-	}
-	return context;
+/** Toutes les clés sauf `open` sont optionnelles à l'ouverture */
+export type OpenDialogOptions = Partial<Omit<DialogState, 'open'>>;
+
+interface DialogContextValue {
+    dialog:      DialogState;
+    openDialog:  (options?: OpenDialogOptions) => void;
+    updateDialog:(options: Partial<DialogState>) => void;
+    closeDialog: () => void;
+    resetDialog: () => void;
 }
 
 // ─── State initiale ───────────────────────────────────────────────────────────

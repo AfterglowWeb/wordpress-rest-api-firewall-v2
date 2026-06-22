@@ -1,7 +1,8 @@
 import { createRoot } from '@wordpress/element';
 
 import App from './App';
-import AppTheme from './AppTheme';
+import { type AdminData } from '@app-types/admin';
+import { AdminDataProvider } from '@contexts/AdminDataContext';
 
 document.addEventListener( 'DOMContentLoaded', function () {
 	const container = document.getElementById( 'bromate-rest-api-firewall-page' );
@@ -29,13 +30,3 @@ document.addEventListener( 'DOMContentLoaded', function () {
 });
 
 
-	createRoot(container).render(
-		<AdminDataProvider adminData={adminData}>
-			<DocumentationProvider>
-				<AppTheme>
-					<App />
-				</AppTheme>
-			</DocumentationProvider>
-		</AdminDataProvider>
-	);
-});

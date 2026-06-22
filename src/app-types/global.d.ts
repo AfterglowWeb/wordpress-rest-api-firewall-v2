@@ -4,7 +4,6 @@ export {};
 
 declare global {
 	interface Window {
-		restApiFirewallAdminData?: AdminData;
-		restApiFirewallPro?: Record<string, unknown>;
+		bromateRestApiFirewall: AdminData;
 	}
 }

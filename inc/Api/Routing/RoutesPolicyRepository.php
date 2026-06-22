@@ -24,16 +24,15 @@ class RoutesPolicyRepository {
 	}
 
 	public static function save_routes_policy_tree( array $tree ): bool {
-		
-		$diff = self::extract_diff_from_tree( $tree );
-		$now      = current_time( 'mysql', true );
-		$data = array(
-				'routes'     => wp_json_encode( $diff['routes'] ?? array() ),
-				'nodes'      => wp_json_encode( $diff['nodes'] ?? array() ),
-				'updated_at' => $now,
-			);
 
-	
+		$diff = self::extract_diff_from_tree( $tree );
+		$now  = current_time( 'mysql', true );
+		$data = array(
+			'routes'     => wp_json_encode( $diff['routes'] ?? array() ),
+			'nodes'      => wp_json_encode( $diff['nodes'] ?? array() ),
+			'updated_at' => $now,
+		);
+
 		return SettingsRepository::update_option( 'policy', $data );
 	}
 

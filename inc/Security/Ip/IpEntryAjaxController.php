@@ -13,11 +13,11 @@ class IpEntryAjaxController {
 
 	public static function register(): void {
 		$self = new self();
-		add_action('wp_ajax_bromate_add_ip_entry', [$self, 'ajax_add_ip_entry']);
-		add_action('wp_ajax_bromate_get_ip_entries', [$self, 'ajax_add_ip_entries']);
-		add_action('wp_ajax_bromate_delete_ip_entry', [$self, 'ajax_delete_ip_entry']);
-		add_action('wp_ajax_bromate_delete_ip_entries', [$self, 'ajax_delete_ip_entries']);
-		add_action('wp_ajax_bromate_get_country_stats', [$self, 'ajax_get_country_stats']);
+		add_action( 'wp_ajax_bromate_add_ip_entry', array( $self, 'ajax_add_ip_entry' ) );
+		add_action( 'wp_ajax_bromate_get_ip_entries', array( $self, 'ajax_add_ip_entries' ) );
+		add_action( 'wp_ajax_bromate_delete_ip_entry', array( $self, 'ajax_delete_ip_entry' ) );
+		add_action( 'wp_ajax_bromate_delete_ip_entries', array( $self, 'ajax_delete_ip_entries' ) );
+		add_action( 'wp_ajax_bromate_get_country_stats', array( $self, 'ajax_get_country_stats' ) );
 	}
 
 	public function ajax_get_ip_entries(): void {

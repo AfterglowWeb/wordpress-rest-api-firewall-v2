@@ -218,20 +218,19 @@ final class SettingsConfig {
 				'group'             => 'routes_policy',
 			),
 
-			'routes_policy_hidden_response_code'                            => array(
-				'label' => esc_html__( 'Hidden ressources response code', 'bromate-rest-api-firewall' ),
-				'info'  => esc_html__( 'HTTP response code on hidden ressources.', 'bromate-rest-api-firewall' ),
+			'routes_policy_hidden_response_code'      => array(
+				'label'             => esc_html__( 'Hidden ressources response code', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'HTTP response code on hidden ressources.', 'bromate-rest-api-firewall' ),
 				'default_value'     => '404',
-				'options' => [
+				'options'           => array(
 					'401',
 					'403',
-					'404'
-				],
+					'404',
+				),
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
 				'group'             => 'routes_policy',
 			),
-
 
 			// Auth hardening.
 			'login_rate_limit_enabled'                => array(

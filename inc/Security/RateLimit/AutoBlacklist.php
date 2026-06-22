@@ -8,7 +8,7 @@ use WP_Error;
 
 class AutoBlacklist {
 
-    private const AUTO_BLACKLIST_KEY_PREFIX = 'rest_firewall_auto_blacklist_';
+	private const AUTO_BLACKLIST_KEY_PREFIX = 'rest_firewall_auto_blacklist_';
 
 	public static function is_auto_blacklisted( string $ip ): bool {
 		return (bool) get_transient(

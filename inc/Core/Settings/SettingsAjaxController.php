@@ -12,29 +12,12 @@ class SettingsAjaxController {
 	public static function register(): void {
 		$self = new self();
 
-		add_action( 'wp_ajax_bromate_rest_api_firewall_read_options', array( $self , 'ajax_read_options' ) );
-       	add_action( 'wp_ajax_bromate_rest_api_firewall_update_options', array( $self , 'ajax_update_options' ) );
-		add_action( 'wp_ajax_bromate_rest_api_firewall_update_option', array( $self , 'ajax_update_option' ) );
-		add_action( 'wp_ajax_bromate_rest_api_firewall_flush_rewrite_rules', array( $self , 'ajax_flush_rewrite_rules' ) );
-		add_action( 'wp_ajax_bromate_get_routes_policy_tree', array( $$self , 'ajax_get_routes_policy_tree' ) );
-		add_action( 'wp_ajax_bromate_save_routes_policy_tree', array( $$self , 'ajax_save_routes_policy_tree' ) );
-    }
-
-	public function ajax_read_config(): void {
-
-		if ( false === self::ajax_validate_has_firewall_admin_caps() ) {
-			wp_send_json_error(
-				array( 'message' => 'Unauthorized' ),
-				403
-			);
-		}
-
-		wp_send_json_success(
-			array(
-				'options' => SettingsConfig::options_config(),
-				'defaults' => SettingsConfig::default_options(),
-			)
-		);
+		add_action( 'wp_ajax_bromate_rest_api_firewall_read_options', array( $self, 'ajax_read_options' ) );
+		add_action( 'wp_ajax_bromate_rest_api_firewall_update_options', array( $self, 'ajax_update_options' ) );
+		add_action( 'wp_ajax_bromate_rest_api_firewall_update_option', array( $self, 'ajax_update_option' ) );
+		add_action( 'wp_ajax_bromate_rest_api_firewall_flush_rewrite_rules', array( $self, 'ajax_flush_rewrite_rules' ) );
+		add_action( 'wp_ajax_bromate_get_routes_policy_tree', array( $self, 'ajax_get_routes_policy_tree' ) );
+		add_action( 'wp_ajax_bromate_save_routes_policy_tree', array( $self, 'ajax_save_routes_policy_tree' ) );
 	}
 
 	public function ajax_read_options() {
@@ -109,15 +92,15 @@ class SettingsAjaxController {
 		}
 	}
 
-		public function ajax_get_routes_policy_tree(): void {
-		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
+	public function ajax_get_routes_policy_tree(): void {
+		if ( false === self::ajax_validate_has_firewall_admin_caps() ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
 
 		$routes_tree = RoutesPolicyRepository::get_routes_policy_tree();
 		wp_send_json_success(
 			array(
-				'tree'       => $routes_tree,
+				'tree' => $routes_tree,
 			),
 			200
 		);
@@ -140,7 +123,7 @@ class SettingsAjaxController {
 	}
 
 	public function ajax_save_routes_policy_tree(): void {
-		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
+		if ( false === self::ajax_validate_has_firewall_admin_caps() ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
 

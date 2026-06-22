@@ -15,8 +15,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 
-import contentStyles from './contentStyles';
-
 export default function Documentation( { page } ) {
 	const { __ } = wp.i18n || {};
 	const { open, openDoc, closeDoc, currentLocation, docs } =
@@ -87,7 +85,7 @@ export default function Documentation( { page } ) {
 						} }
 					>
 						<CardContent
-							sx={ { overflow: 'auto', ...contentStyles } }
+							sx={ { overflow: 'auto' } }
 							dangerouslySetInnerHTML={ {
 								__html: currentDoc.html,
 							} }

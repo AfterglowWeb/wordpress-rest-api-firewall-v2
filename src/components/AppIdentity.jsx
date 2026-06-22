@@ -1,11 +1,12 @@
 import { useAdminData } from '../contexts/AdminDataContext';
-import { styled } from '@mui/material/styles';
+import { styled, useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Avatar from '@mui/material/Avatar';
 
 const AppLogo = styled( Box )( () => ( {
-	height: 48,
+	height: '100%',
+	width:120,
 	padding: '0 12px',
 	background: 'linear-gradient(307deg, #ffb7c4 0%, #ff002e 100%)',
 	borderRadius: 0,
@@ -24,24 +25,28 @@ const AppLogo = styled( Box )( () => ( {
 export default function AppIdentity() {
 	const { __ } = wp.i18n || {};
 	const { adminData } = useAdminData();
+	const theme = useTheme();
 
 	return (
 		<Box
 			sx={ {
-				p: 2,
+				p:0,
 				height: 75,
+				width:220,
 				display: 'flex',
 				alignItems: 'center',
 				gap: 1,
-				boxSizing: 'border-box',
+				borderRight: '1px solid',
+				borderColor: theme.palette.divider,
 			} }
 		>
-			<AppLogo>WAL</AppLogo>
-			<Box>
+			<AppLogo>RAF</AppLogo>
+			<Box sx={{p:1}}>
 				<Typography 
 				textTransform="uppercase" 
 				variant="subtitle2" 
 				lineHeight={1} 
+				color="textPrimary"
 				fontWeight={ 600 }>
 					REST API Firewall
 				</Typography>

@@ -4,12 +4,16 @@ import {
 	useState,
 	useEffect,
 } from '@wordpress/element';
+import type { ChildrenProps } from '@app-types/children-props';
+import type { AdminData } from '@app-types/admin';
+
 import { useAdminData } from './AdminDataContext';
 
 const DocumentationContext = createContext( null );
 
-export const DocumentationProvider = ( { children } ) => {
+export const DocumentationProvider = ( { children }:ChildrenProps ): JSX.Element => {
 	const { adminData } = useAdminData();
+	const { nonce = '', ajaxurl = '' } = adminData;
 
 	const [ open, setOpen ] = useState( false );
 	const [ docs, setDocs ] = useState( [] );
@@ -24,9 +28,9 @@ export const DocumentationProvider = ( { children } ) => {
 		try {
 			const formData = new FormData();
 			formData.append( 'action', 'bromate_rest_api_firewall_documentation' );
-			formData.append( 'nonce', adminData.nonce );
+			formData.append( 'nonce', nonce );
 
-			const response = await fetch( adminData.ajaxurl, {
+			const response = await fetch( ajaxurl, {
 				method: 'POST',
 				body: formData,
 			} );
