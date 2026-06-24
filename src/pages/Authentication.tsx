@@ -1,49 +1,131 @@
-import { useState } from 'react';
-import {
-	Box,
-	Paper,
-	Typography,
-	Switch,
-	Stack,
-	TextField,
-	Select,
-	MenuItem,
-	FormControl,
-	InputLabel,
-	Divider,
-} from '@mui/material';
+// components/Authentication.tsx
 
-import type { AuthSettings } from '@app-types/auth';
+import { useState, useCallback } from '@wordpress/element';
+import {
+  Box, Paper, Typography, Switch, Stack,
+  TextField, Select, MenuItem, FormControl,
+  InputLabel, Divider, Button,
+} from '@mui/material';
+import {
+  DataGrid,
+  GridColDef,
+  GridActionsCellItem,
+  GridRowId,
+  Toolbar
+} from '@mui/x-data-grid';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+
+import type { AuthSettings, AuthorizedUser } from '@app-types/auth';
+import UserDialog from '@features/authentication/UserDialog';
+
+function CustomToolbar() {
+  return (
+    <Toolbar>
+      <Button startIcon={<AddIcon />} size="small">
+        Add user
+      </Button>
+      <Box sx={{ display: 'flex', gap: 1 }}>
+      </Box>
+    </Toolbar>
+  );
+}
 
 export default function Authentication(): JSX.Element {
-	const [settings, setSettings] = useState<AuthSettings>({
-		auth_enforce: false,
-		auth_methods: 'wp_auth',
-		auth_jwt_algorithm: 'RS256',
-		auth_jwt_public_key: '',
-		auth_jwt_audience: '',
-		auth_jwt_issuer: '',
-		auth_user_ids: 0,
-	});
+  const [settings, setSettings] = useState<AuthSettings>({
+    auth_enforce: false,
+    auth_methods: 'wp_auth',
+    auth_jwt_algorithm: 'RS256',
+    auth_jwt_public_key: '',
+    auth_jwt_audience: '',
+    auth_jwt_issuer: '',
+    auth_users: [],
+  });
 
-	const update = <K extends keyof AuthSettings>(
-		key: K,
-		value: AuthSettings[K]
-	) => {
-		setSettings((prev) => ({
-			...prev,
-			[key]: value,
-		}));
-	};
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<AuthorizedUser | null>(null);
 
-	return (
-		<Box p={3}>
-			<Typography variant="h5" fontWeight={600} mb={2}>
-				Authentication
-			</Typography>
+  const update = <K extends keyof AuthSettings>(
+    key: K,
+    value: AuthSettings[K]
+  ) => setSettings((prev) => ({ ...prev, [key]: value }));
 
-			{/* CORE AUTH */}
-			<Paper sx={{ p: 2, mb: 2 }}>
+  const handleSaveUser = useCallback((user: AuthorizedUser) => {
+    setSettings((prev) => {
+      const exists = prev.auth_users.some((u) => u.id === user.id);
+      return {
+        ...prev,
+        auth_users: exists
+          ? prev.auth_users.map((u) => (u.id === user.id ? user : u))
+          : [...prev.auth_users, user],
+      };
+    });
+    setDialogOpen(false);
+    setEditingUser(null);
+  }, []);
+
+  const handleDeleteUser = useCallback((id: GridRowId) => {
+    setSettings((prev) => ({
+      ...prev,
+      auth_users: prev.auth_users.filter((u) => u.id !== id),
+    }));
+  }, []);
+
+  const columns: GridColDef<AuthorizedUser>[] = [
+    { field: 'id', headerName: 'WP ID', width: 80 },
+    { field: 'display_name', headerName: 'User', flex: 1 },
+    { field: 'wp_role', headerName: 'Role', width: 120 },
+    {
+      field: 'jwt_claim_sub',
+      headerName: 'JWT sub claim',
+      flex: 1,
+      renderCell: ({ value }) => (
+        <Typography variant="body2" fontFamily="monospace" color="text.secondary">
+          {value ?? '—'}
+        </Typography>
+      ),
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 110,
+      // Chip via renderCell — à adapter avec ton système de design
+    },
+    {
+      field: 'expires_at',
+      headerName: 'Expires',
+      width: 120,
+      valueFormatter: ({ value }) =>
+        value ? new Date(value).toLocaleDateString() : '—',
+    },
+    {
+      field: 'actions',
+      type: 'actions',
+      width: 80,
+      getActions: ({ id, row }) => [
+        <GridActionsCellItem
+          icon={<EditIcon />}
+          label="Edit"
+          onClick={() => { setEditingUser(row); setDialogOpen(true); }}
+        />,
+        <GridActionsCellItem
+          icon={<DeleteIcon />}
+          label="Remove"
+          onClick={() => handleDeleteUser(id)}
+        />,
+      ],
+    },
+  ];
+
+  return (
+    <Box>
+      <Typography variant="h5" fontWeight={600} mb={2}>
+        Authentication
+      </Typography>
+
+      {/* Core settings — inchangé */}
+      <Paper sx={{ p: 2, mb: 2 }}>
 				<Typography variant="h6" mb={2}>
 					Core Settings
 				</Typography>
@@ -81,11 +163,11 @@ export default function Authentication(): JSX.Element {
 						</Select>
 					</FormControl>
 				</Stack>
-			</Paper>
+      </Paper>
 
-			{/* JWT SECTION */}
-			{settings.auth_methods === 'jwt' && (
-				<Paper sx={{ p: 2, mb: 2 }}>
+      {/* JWT — inchangé */}
+      {settings.auth_methods === 'jwt' && (
+        <Paper sx={{ p: 2, mb: 2 }}>
 					<Typography variant="h6" mb={2}>
 						JWT Configuration
 					</Typography>
@@ -139,32 +221,33 @@ export default function Authentication(): JSX.Element {
 							}
 						/>
 					</Stack>
-				</Paper>
-			)}
+        </Paper>
+      )}
 
-			{/* ACCESS CONTROL */}
-			<Paper sx={{ p: 2 }}>
-				<Typography variant="h6" mb={2}>
-					User Restrictions
-				</Typography>
+      {/* Multi-user management */}
+      <Paper sx={{ p: 2 }}>
+        <Typography variant="h6" mb={2}>
+          Authorized users
+        </Typography>
 
-				<TextField
-					label="Authorized user IDs (temporary single value)"
-					type="number"
-					value={settings.auth_user_ids}
-					onChange={(e) =>
-						update('auth_user_ids', Number(e.target.value))
-					}
-					helperText="Later we’ll upgrade this to a multi-user selector"
-					fullWidth
-				/>
-			</Paper>
+        <DataGrid
+          rows={settings.auth_users}
+          columns={columns}
+          autoHeight
+          pageSizeOptions={[10, 25]}
+          slots={{
+            toolbar: Toolbar
+          }}
+          disableRowSelectionOnClick
+        />
+      </Paper>
 
-			<Divider sx={{ my: 3 }} />
-
-			<Typography variant="body2" color="text.secondary">
-				These settings will be synced with SettingsRepository.php
-			</Typography>
-		</Box>
-	);
+      <UserDialog
+        open={dialogOpen}
+        user={editingUser}
+        onSave={handleSaveUser}
+        onClose={() => setDialogOpen(false)}
+      />
+    </Box>
+  );
 }

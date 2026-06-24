@@ -46,9 +46,6 @@ import { AdminDataProvider } from '@contexts/AdminDataContext';
 
 document.addEventListener( 'DOMContentLoaded', function () {
 	const container = document.getElementById( 'bromate-rest-api-firewall-page' );
-	console.log( '[Bromate] container', container );
-
-
 	const raw = window.bromateRestApiFirewall ;
 	const adminData: AdminData = {
 		...raw,

@@ -830,6 +830,8 @@ class ModelsPropertiesRepository {
 					'label'        => sanitize_text_field( $user->display_name ?? '' ),
 					'admin_url'    => sanitize_url( get_edit_user_link( $user_id ) ),
 					'current_user' => get_current_user_id() === $user_id ? 1 : 0,
+					'email' => sanitize_email( $user->user_email ),
+					'roles' => array_map( 'sanitize_key', $user->roles ),
 				);
 			},
 			array_filter(

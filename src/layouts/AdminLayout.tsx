@@ -17,29 +17,33 @@ export default function AdminLayout() {
 
 	return (
 		<Stack>
-			<Navigation />
+			<Navigation>
+				<Stack>
+					{panel === 'dashboard' && <Dashboard />}
 
-			<Stack>
-				{panel === 'dashboard' && <Dashboard />}
+					{panel === 'authentication' && (
+						<Authentication />
+					)}
 
-				{panel === 'authentication' && (
-					<Authentication />
-				)}
+					
+					{panel === 'rate-limiting' && (
+						<RateLimiting />
+					)}
 
-				{panel === 'access-control' && (
-					<AccessControl />
-				)}
+					{panel === 'access-control' && (
+						<AccessControl />
+					)}
 
-				{panel === 'rate-limiting' && (
-					<RateLimiting />
-				)}
 
-				{panel === 'routes' && <Routes />}
+					{panel === 'routes' && <Routes />}
 
-				{/*panel === 'wordpress' && <WordPress />*/}
+					{/*panel === 'wordpress' && <WordPress />*/}
 
-				{/*panel === 'logs' && <Logs />*/}
-			</Stack>
+					{/*panel === 'logs' && <Logs />*/}
+				</Stack>
+			</Navigation>
+
+			
 		</Stack>
 	);
 }

@@ -1,8 +1,8 @@
 <?php namespace Bromate\RestApiFirewall\Core\Settings;
 
 use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
-use Bromate\RestApiFirewall\Core\Settings\SettingsConfig;
 use Bromate\RestApiFirewall\Api\Routing\RoutesPolicyRepository;
+use Bromate\RestApiFirewall\Api\Response\ModelsPropertiesRepository;
 
 class SettingsAjaxController {
 
@@ -129,6 +129,22 @@ class SettingsAjaxController {
 			),
 			200
 		);
+	}
+
+	public function ajax_get_wordpress_users(): void {
+		if ( false === self::ajax_validate_has_firewall_admin_caps() ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-api-firewall' ) ), 403 );
+		}
+		$wordpress_users = ModelsPropertiesRepository::list_users();
+		wp_send_json_success( $wordpress_users );
+	}
+
+	public function ajax_get_wordpress_objects(): void {
+		if ( false === self::ajax_validate_has_firewall_admin_caps() ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-api-firewall' ) ), 403 );
+		}
+		$wordpress_objects = ModelsPropertiesRepository::list_rest_api_object_types();
+		wp_send_json_success( $wordpress_objects );
 	}
 
 	public function ajax_save_routes_policy_tree(): void {

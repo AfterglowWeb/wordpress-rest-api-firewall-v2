@@ -3,6 +3,7 @@ export type PanelKey =
 	| 'authentication'
 	| 'rate-limiting'
 	| 'access-control'
+	| 'login-hardening'
 	| 'routes'
 	| 'wordpress'
 <<<<<<< HEAD

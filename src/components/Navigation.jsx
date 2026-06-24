@@ -35,7 +35,7 @@ export const WP_ADMIN_BAR_HEIGHT_MOBILE = 46;
 export const WP_MENU_WIDTH_MD = 36;
 export const WP_MENU_WIDTH_LG = 160;
 
-export default function Navigation() {
+export default function Navigation({children}) {
     const theme = useTheme();
     const isMobile = useMediaQuery( theme.breakpoints.down( 'md' ) );
     const [ mobileOpen, setMobileOpen ] = useState( false );
@@ -140,121 +140,123 @@ export default function Navigation() {
                     </Stack>
                 </Toolbar>
             </AppBar>
+            <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                <Drawer
+                    variant={ isMobile ? 'temporary' : 'permanent' }
+                    anchor="left"
+                    open={ isMobile ? mobileOpen : true }
+                    onClose={ () => setMobileOpen( false ) }
+                    sx={ {
+                        '.MuiPaper-root': {
+                            width: DRAWER_WIDTH,
+                            top: APP_BAR_HEIGHT,
+                            position: 'sticky',
+                            height: `calc(100vh - ${ APP_BAR_HEIGHT }px)`,
+                            overflowY: 'auto',
+                        },
+                    } }
+                >
 
-            <Drawer
-                variant={ isMobile ? 'temporary' : 'permanent' }
-                anchor="left"
-                open={ isMobile ? mobileOpen : true }
-                onClose={ () => setMobileOpen( false ) }
-                sx={ {
-                    '.MuiPaper-root': {
-                        width: DRAWER_WIDTH,
-                        top: APP_BAR_HEIGHT,
-                        position: 'sticky',
-                        height: `calc(100vh - ${ APP_BAR_HEIGHT }px)`,
-                        overflowY: 'auto',
-                    },
-                } }
-            >
+                    <List component="nav" disablePadding sx={ { pb: 4 } }>
+                        { menuItems.map( ( item, index ) => {
+                            if ( item.hidden ) return null;
 
-                <List component="nav" disablePadding sx={ { pb: 4 } }>
-                    { menuItems.map( ( item, index ) => {
-                        if ( item.hidden ) return null;
-
-                        if ( item.type === 'section' ) {
-                            return (
-                                <Stack
-                                    sx={ { mt: index === 1 ? 0 : 2 } }
-                                    key={ `section-${ index }` }
-                                >
-                                    { index !== 0 && <Divider /> }
-                                    { item.label ? (
-                                        <Typography
-                                            variant="caption"
-                                            sx={ {
-                                                display: 'block',
-                                                px: 2,
-                                                mb: 1,
-                                                mt: 2,
-                                                textTransform: 'uppercase',
-                                                letterSpacing: 0.5,
-                                                fontSize: '0.7rem',
-                                                color: 'text.secondary',
-                                            } }
-                                        >
-                                            { item.label }
-                                        </Typography>
-                                    ) : (
-                                        <Stack py={ 1 } />
-                                    ) }
-                                </Stack>
-                            );
-                        }
-
-                        const Icon = item.icon;
-                        const isActive = panel === item.key;
-
-                        return (
-                            <ListItemButton
-                                key={ item.key }
-                                selected={ isActive }
-                                sx={ { pl: item.pl ?? 3, pr: 3 } }
-                                disabled={ !! item.disabled }
-                                onClick={ () => {
-                                    if ( item.action ) {
-                                        item.action();
-                                    } else {
-                                        navigateGuarded( item.key );
-                                    }
-                                    setMobileOpen( false );
-                                } }
-                            >
-                                { Icon && (
-                                    <ListItemIcon sx={ { px: 1, minWidth: 32 } }>
-                                        { item.pendingBadge ? (
-                                            <Badge
-                                                badgeContent={ <PendingOutlinedIcon sx={ { fontSize: 10 } } /> }
-                                                color="default"
+                            if ( item.type === 'section' ) {
+                                return (
+                                    <Stack
+                                        sx={ { mt: index === 1 ? 0 : 2 } }
+                                        key={ `section-${ index }` }
+                                    >
+                                        { index !== 0 && <Divider /> }
+                                        { item.label ? (
+                                            <Typography
+                                                variant="caption"
                                                 sx={ {
-                                                    '& .MuiBadge-badge': {
-                                                        backgroundColor: 'grey.400',
-                                                        color: 'white',
-                                                        padding: '2px',
-                                                    },
+                                                    display: 'block',
+                                                    px: 2,
+                                                    mb: 1,
+                                                    mt: 2,
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: 0.5,
+                                                    fontSize: '0.7rem',
+                                                    color: 'text.secondary',
                                                 } }
                                             >
-                                                <Icon color={ isActive ? 'primary' : undefined } fontSize="small" />
-                                            </Badge>
-                                        ) : (
-                                            <Badge color="error" variant="dot" invisible={ ! item.badge }>
-                                                <Icon color={ isActive ? 'primary' : undefined } fontSize="small" />
-                                            </Badge>
-                                        ) }
-                                    </ListItemIcon>
-                                ) }
-                                <ListItemText
-                                    sx={ {
-                                        '& .MuiListItemText-primary': {
-                                            lineHeight: 'normal',
-                                            color: isActive ? 'primary.main' : 'text.primary',
-                                        },
-                                    } }
-                                    primary={ item.label }
-                                    secondary={
-                                        item.secondary && (
-                                            <Typography variant="caption" color="text.secondary">
-                                                { item.secondary }
+                                                { item.label }
                                             </Typography>
-                                        )
-                                    }
-                                />
-                            </ListItemButton>
-                        );
-                    } ) }
-                </List>
-            </Drawer>
+                                        ) : (
+                                            <Stack py={ 1 } />
+                                        ) }
+                                    </Stack>
+                                );
+                            }
 
-           
+                            const Icon = item.icon;
+                            const isActive = panel === item.key;
+
+                            return (
+                                <ListItemButton
+                                    key={ item.key }
+                                    selected={ isActive }
+                                    sx={ { pl: item.pl ?? 3, pr: 3 } }
+                                    disabled={ !! item.disabled }
+                                    onClick={ () => {
+                                        if ( item.action ) {
+                                            item.action();
+                                        } else {
+                                            navigateGuarded( item.key );
+                                        }
+                                        setMobileOpen( false );
+                                    } }
+                                >
+                                    { Icon && (
+                                        <ListItemIcon sx={ { px: 1, minWidth: 32 } }>
+                                            { item.pendingBadge ? (
+                                                <Badge
+                                                    badgeContent={ <PendingOutlinedIcon sx={ { fontSize: 10 } } /> }
+                                                    color="default"
+                                                    sx={ {
+                                                        '& .MuiBadge-badge': {
+                                                            backgroundColor: 'grey.400',
+                                                            color: 'white',
+                                                            padding: '2px',
+                                                        },
+                                                    } }
+                                                >
+                                                    <Icon color={ isActive ? 'primary' : undefined } fontSize="small" />
+                                                </Badge>
+                                            ) : (
+                                                <Badge color="error" variant="dot" invisible={ ! item.badge }>
+                                                    <Icon color={ isActive ? 'primary' : undefined } fontSize="small" />
+                                                </Badge>
+                                            ) }
+                                        </ListItemIcon>
+                                    ) }
+                                    <ListItemText
+                                        sx={ {
+                                            '& .MuiListItemText-primary': {
+                                                lineHeight: 'normal',
+                                                color: isActive ? 'primary.main' : 'text.primary',
+                                            },
+                                        } }
+                                        primary={ item.label }
+                                        secondary={
+                                            item.secondary && (
+                                                <Typography variant="caption" color="text.secondary">
+                                                    { item.secondary }
+                                                </Typography>
+                                            )
+                                        }
+                                    />
+                                </ListItemButton>
+                            );
+                        } ) }
+                    </List>
+                </Drawer>
+                <Box component="main" sx={{ flex: 1, overflow: 'auto', p:3 }}>
+                    {children}
+                </Box>
+            </Box>
         </Box>
     );
 }
