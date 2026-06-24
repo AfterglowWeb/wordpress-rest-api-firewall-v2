@@ -10,17 +10,20 @@ import AccountTreeOutlinedIcon   from '@mui/icons-material/AccountTreeOutlined';
 import ShieldOutlinedIcon        from '@mui/icons-material/ShieldOutlined';
 import DataObjectOutlinedIcon    from '@mui/icons-material/DataObjectOutlined';
 import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
+import SpaceDashboardOutlinedIcon from '@mui/icons-material/SpaceDashboardOutlined';
+import VpnLockIcon from '@mui/icons-material/VpnLock';
 
 type IconComponent = ComponentType<SvgIconProps>;
 
-// Keys match the 'icon' strings returned by SettingsConfig::groups_config()
 const ICON_MAP: Record<string, IconComponent> = {
+    dashboard:     SpaceDashboardOutlinedIcon,
     lock:          LockOutlinedIcon,
     speed:         SpeedOutlinedIcon,
     route:         AccountTreeOutlinedIcon,
     shield:        ShieldOutlinedIcon,
     data_object:   DataObjectOutlinedIcon,
-    wordpress:     AdminPanelSettingsOutlinedIcon, // no WP icon in MUI, closest fit
+    wordpress:     AdminPanelSettingsOutlinedIcon,
+    world:         VpnLockIcon,
 };
 
 export interface MenuItemAction {

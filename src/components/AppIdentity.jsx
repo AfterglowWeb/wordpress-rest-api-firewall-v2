@@ -43,7 +43,7 @@ export default function AppIdentity() {
 				variant="subtitle2" 
 				lineHeight={1} 
 				fontWeight={ 600 }>
-					{ adminData.plugin_name }
+					REST API Firewall
 				</Typography>
 			</Box>
 		</Box>

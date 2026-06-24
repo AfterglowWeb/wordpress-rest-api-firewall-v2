@@ -32,7 +32,7 @@ final class SettingsConfig {
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
-				'group'             => 'auth',
+				'group'             => 'authentication',
 			),
 
 			'auth_methods'                            => array(
@@ -46,7 +46,7 @@ final class SettingsConfig {
 				),
 				'type'              => 'string',
 				'sanitize_callback' => static fn( $v ) => in_array( $v, array( 'wp_auth', 'jwt' ), true ) ? $v : 'wp_auth',
-				'group'             => 'auth',
+				'group'             => 'authentication',
 			),
 
 			'auth_jwt_algorithm'                      => array(
@@ -65,7 +65,7 @@ final class SettingsConfig {
 				),
 				'type'              => 'string',
 				'sanitize_callback' => static fn( $v ) => in_array( $v, array( 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512', 'ES256' ), true ) ? $v : 'RS256',
-				'group'             => 'auth',
+				'group'             => 'authentication',
 			),
 
 			'auth_jwt_public_key'                     => array(
@@ -74,7 +74,7 @@ final class SettingsConfig {
 				'default_value'     => '',
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_textarea_field',
-				'group'             => 'auth',
+				'group'             => 'authentication',
 			),
 
 			'auth_jwt_audience'                       => array(
@@ -83,7 +83,7 @@ final class SettingsConfig {
 				'default_value'     => '',
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
-				'group'             => 'auth',
+				'group'             => 'authentication',
 			),
 
 			'auth_jwt_issuer'                         => array(
@@ -92,7 +92,7 @@ final class SettingsConfig {
 				'default_value'     => '',
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
-				'group'             => 'auth',
+				'group'             => 'authentication',
 			),
 
 			'auth_user_ids'                           => array(
@@ -101,7 +101,7 @@ final class SettingsConfig {
 				'default_value'     => 0,
 				'type'              => 'integer',
 				'sanitize_callback' => 'sanitize_array_int',
-				'group'             => 'auth',
+				'group'             => 'authentication',
 			),
 
 			'rate_limit_enabled'                      => array(
@@ -110,7 +110,7 @@ final class SettingsConfig {
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
-				'group'             => 'rate',
+				'group'             => 'rate-limiting',
 			),
 
 			'rate_limit_max'                          => array(
@@ -119,7 +119,7 @@ final class SettingsConfig {
 				'default_value'     => 30,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
-				'group'             => 'rate',
+				'group'             => 'rate-limiting',
 			),
 
 			'rate_limit_time'                         => array(
@@ -128,7 +128,7 @@ final class SettingsConfig {
 				'default_value'     => 60,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
-				'group'             => 'rate',
+				'group'             => 'rate-limiting',
 			),
 
 			'rate_limit_block_duration'               => array(
@@ -137,7 +137,7 @@ final class SettingsConfig {
 				'default_value'     => 300,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
-				'group'             => 'rate',
+				'group'             => 'rate-limiting',
 			),
 
 			'rate_limit_blacklist_threshold'          => array(
@@ -146,7 +146,7 @@ final class SettingsConfig {
 				'default_value'     => 5,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
-				'group'             => 'rate',
+				'group'             => 'rate-limiting',
 			),
 
 			'rate_limit_whitelist'                    => array(
@@ -155,7 +155,7 @@ final class SettingsConfig {
 				'default_value'     => array(),
 				'type'              => 'array',
 				'sanitize_callback' => array( CidrMatcher::class, 'sanitize_ip_array' ),
-				'group'             => 'rate',
+				'group'             => 'rate-limiting',
 			),
 
 			'rate_limit_countries'                    => array(
@@ -170,7 +170,7 @@ final class SettingsConfig {
 				'default_value'     => array(),
 				'type'              => 'array',
 				'sanitize_callback' => array( GeoIpApi::class, 'sanitize_country_codes' ),
-				'group'             => 'rate',
+				'group'             => 'rate-limiting',
 			),
 
 			'rate_limit_emergency_token_hash'         => array(
@@ -179,7 +179,7 @@ final class SettingsConfig {
 				'default_value'     => '',
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
-				'group'             => 'rate',
+				'group'             => 'rate-limiting',
 			),
 
 			// Routes Policies.
@@ -240,7 +240,7 @@ final class SettingsConfig {
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
-				'group'             => 'login',
+				'group'             => 'login-hardening',
 			),
 
 			'login_rate_limit_attempts'               => array(
@@ -249,7 +249,7 @@ final class SettingsConfig {
 				'default_value'     => 5,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
-				'group'             => 'login',
+				'group'             => 'login-hardening',
 			),
 
 			'login_rate_limit_window'                 => array(
@@ -258,7 +258,7 @@ final class SettingsConfig {
 				'default_value'     => 300,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
-				'group'             => 'login',
+				'group'             => 'login-hardening',
 			),
 
 			'login_rate_limit_blacklist_time'         => array(
@@ -267,7 +267,7 @@ final class SettingsConfig {
 				'default_value'     => 3600,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
-				'group'             => 'login',
+				'group'             => 'login-hardening',
 			),
 
 			'login_rate_limit_promote_after'          => array(
@@ -276,7 +276,7 @@ final class SettingsConfig {
 				'default_value'     => 0,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
-				'group'             => 'login',
+				'group'             => 'login-hardening',
 			),
 
 			// API Models response
@@ -508,14 +508,24 @@ final class SettingsConfig {
 	public static function groups_config(): array {
 		return array(
 
-			'auth'          => array(
+			'dashboard' => array(
+				'label' => __( 'Dashboard', 'bromate-rest-api-firewall' ),
+				'icon'  => 'dashboard',
+			),
+
+			'authentication'          => array(
 				'label' => __( 'Authentication', 'bromate-rest-api-firewall' ),
 				'icon'  => 'lock',
 			),
 
-			'rate'          => array(
+			'rate-limiting'          => array(
 				'label' => __( 'Rate Limiting', 'bromate-rest-api-firewall' ),
 				'icon'  => 'speed',
+			),
+
+			'access-control'          => array(
+				'label' => __( 'Access Control', 'bromate-rest-api-firewall' ),
+				'icon'  => 'world',
 			),
 
 			'routes_policy' => array(
@@ -523,14 +533,14 @@ final class SettingsConfig {
 				'icon'  => 'route',
 			),
 
-			'login'         => array(
-				'label' => __( 'Login Protection', 'bromate-rest-api-firewall' ),
-				'icon'  => 'shield',
-			),
-
 			'models'        => array(
 				'label' => __( 'Response Models', 'bromate-rest-api-firewall' ),
 				'icon'  => 'data_object',
+			),
+
+			'login-hardening'         => array(
+				'label' => __( 'Login Protection', 'bromate-rest-api-firewall' ),
+				'icon'  => 'shield',
 			),
 
 			'wordpress'     => array(
