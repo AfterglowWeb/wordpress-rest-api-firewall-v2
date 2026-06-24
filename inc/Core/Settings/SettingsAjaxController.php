@@ -18,6 +18,8 @@ class SettingsAjaxController {
 		add_action( 'wp_ajax_bromate_rest_api_firewall_flush_rewrite_rules', array( $self, 'ajax_flush_rewrite_rules' ) );
 		add_action( 'wp_ajax_bromate_get_routes_policy_tree', array( $self, 'ajax_get_routes_policy_tree' ) );
 		add_action( 'wp_ajax_bromate_save_routes_policy_tree', array( $self, 'ajax_save_routes_policy_tree' ) );
+		add_action( 'wp_ajax_bromate_get_wordpress_users', array( $self, 'ajax_get_wordpress_users' ) );
+		add_action( 'wp_ajax_bromate_get_wordpress_objects', array( $self, 'ajax_get_wordpress_objects' ) );
 	}
 
 	public function ajax_read_options() {

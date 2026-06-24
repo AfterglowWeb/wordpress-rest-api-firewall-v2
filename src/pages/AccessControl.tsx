@@ -14,6 +14,12 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { IpAPI, type IpEntry, type ListType } from '@services/ip';
 import { usePortalContainer } from '@contexts/PortalContainerContext';
 
+interface AddEntryForm {
+  value: string;       // IP, CIDR, or ISO country code
+  entry_type: EntryType;
+  list_type: ListType;
+  expires_at: string;  // '' = never
+}
 
 type EntryType = 'ip' | 'cidr';
 
