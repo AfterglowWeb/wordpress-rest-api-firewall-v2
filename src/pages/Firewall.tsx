@@ -214,7 +214,6 @@ const IP_COLUMNS: GridColDef[] = [
 
 export default function Firewall(): JSX.Element {
 
-  // ── Rate limiting state ──
   const [settings, setSettings] = useState<RateLimitSettings>({
     rate_limit_enabled: false,
     rate_limit_max: 30,
@@ -227,7 +226,6 @@ export default function Firewall(): JSX.Element {
   const updateSetting = <K extends keyof RateLimitSettings>(key: K, value: RateLimitSettings[K]) =>
     setSettings((prev) => ({ ...prev, [key]: value }));
 
-  // ── Access control state ──
   const [listType, setListType]     = useState<ListType>('blacklist');
   const [rows, setRows]             = useState<IpEntry[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -285,14 +283,8 @@ export default function Firewall(): JSX.Element {
     },
   }), [handleDeleteSelected, selection.ids.size]);
 
-  // ── Render ──
   return (
     <Box>
-      <Typography variant="h5" fontWeight={600} mb={2}>
-        Security
-      </Typography>
-
-      {/* ── Rate limiting ── */}
       <Paper sx={{ p: 2, mb: 2 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Box>
@@ -339,7 +331,6 @@ export default function Firewall(): JSX.Element {
         </Stack>
       </Paper>
 
-      {/* ── IP access control ── */}
       <Paper sx={{ height: 600, mb: 2 }}>
         <DataGrid
           rows={rows}
@@ -355,7 +346,6 @@ export default function Firewall(): JSX.Element {
         />
       </Paper>
 
-      {/* ── Emergency access ── */}
       <Paper sx={{ p: 2 }}>
         <Typography variant="h6" mb={2}>Emergency Access</Typography>
         <TextField
@@ -366,11 +356,6 @@ export default function Firewall(): JSX.Element {
           helperText="Stored as hash — never expose the raw token"
         />
       </Paper>
-
-      <Divider sx={{ my: 3 }} />
-      <Typography variant="body2" color="text.secondary">
-        These settings will be synced with RateLimiter.php
-      </Typography>
 
       <AddEntryDialog
         open={dialogOpen}

@@ -1,34 +1,38 @@
 import { useMemo, useState } from '@wordpress/element';
-import { Box, Grid, Paper, Typography, Stack, Switch, Chip } from '@mui/material';
+import { Box, Grid, Paper, Typography, Stack, Switch, Chip, Card, CardContent, useTheme } from '@mui/material';
 import type { SecurityModule } from '@app-types/modules';
 
 type StatCardProps = {
 	title: string;
 	value: string | number;
 	description?: string;
+	bgColor?: string;
 };
 
-function StatCard({ title, value, description }: StatCardProps) {
+function StatCard({ title, value, description, bgColor }: StatCardProps) {
 	return (
 		<Paper
-			elevation={2}
+			elevation={0}
 			sx={{
 				p: 2,
 				borderRadius: 2,
 				height: '100%',
+				color:'white',
+				fontWeight:600,
+				backgroundColor: bgColor ? bgColor : 'transparent',
 			}}
 		>
 			<Stack spacing={1}>
-				<Typography variant="subtitle2" color="text.secondary">
+				<Typography variant="subtitle2">
 					{title}
 				</Typography>
 
-				<Typography variant="h4" fontWeight={600}>
+				<Typography variant="h4" fontWeight={800}>
 					{value}
 				</Typography>
 
 				{description && (
-					<Typography variant="body2" color="text.secondary">
+					<Typography variant="body2">
 						{description}
 					</Typography>
 				)}
@@ -38,34 +42,37 @@ function StatCard({ title, value, description }: StatCardProps) {
 }
 
 export default function Dashboard(): JSX.Element {
-	// Later: replace with real API data (logs, rate limit, blocked IPs, etc.)
+	const theme = useTheme();
+
 	const stats = useMemo(
 		() => [
 			{
 				title: 'Blocked Requests',
 				value: 1284,
 				description: 'Last 7 days',
+				bgColor: theme.palette.warning.main
 			},
 			{
 				title: 'Active IP Blocks',
 				value: 37,
 				description: 'Currently blacklisted IPs',
+				bgColor: theme.palette.error.light
 			},
 			{
 				title: 'Rate Limit Violations',
 				value: 92,
 				description: 'Auto-blacklist triggers',
+				bgColor: theme.palette.error.main
 			},
 			{
 				title: 'Protected Routes',
 				value: 14,
 				description: 'Secured REST endpoints',
+				bgColor: theme.palette.success.light
 			},
 		],
 		[]
 	);
-
-
 
 	const [modules, setModules] = useState<SecurityModule[]>([
 		{
@@ -114,110 +121,117 @@ export default function Dashboard(): JSX.Element {
 	);
 
 	return (
-        <>
+        <Stack display="flex" flexDirection="column" gap={3}>
 
-		<Box>
-			{/* Header */}
-			<Box>
-				<Typography variant="h5" fontWeight={600}>
-					Security Modules
-				</Typography>
-
-				<Typography variant="body2" color="text.secondary">
-					Enable or disable firewall components
-				</Typography>
-
-				<Chip
-					label={`${enabledCount}/${modules.length} active`}
-					sx={{ mt: 1 }}
-					color={enabledCount === modules.length ? 'success' : 'default'}
-				/>
-			</Box>
-
-			<Grid container spacing={2}>
-				{modules.map((module) => (
-                    <Paper
-                        elevation={2}
-                        sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            opacity: module.enabled ? 1 : 0.5,
-                            transition: '0.2s',
-                        }}
-                        key={module.key}
-                    >
-                        <Stack
-                            direction="row"
-                            alignItems="center"
-                            justifyContent="space-between"
-                        >
-                            <Typography fontWeight={600}>
-                                {module.title}
-                            </Typography>
-
-                            <Switch
-                                checked={module.enabled}
-                                onChange={() => toggleModule(module.key)}
-                            />
-                        </Stack>
-
-                        <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            mt={1}
-                        >
-                            {module.description}
-                        </Typography>
-
-                        <Box mt={2}>
-                            <Chip
-                                size="small"
-                                label={module.enabled ? 'Enabled' : 'Disabled'}
-                                color={module.enabled ? 'success' : 'default'}
-                            />
-                        </Box>
-                    </Paper>
-				))}
-			</Grid>
-		</Box>
-
-		<Box p={3}>
-			{/* Header */}
-			<Box mb={3}>
-				<Typography variant="h5" fontWeight={600}>
-					Stats
-				</Typography>
-
-				<Typography variant="body2" color="text.secondary">
-					Overview of firewall activity and protection status
-				</Typography>
-			</Box>
-
-			<Grid container spacing={2}>
-				{stats.map((stat) => (
-					<StatCard {...stat} />
-				))}
-			</Grid>
-
-			<Box mt={4}>
-				<Paper
-					elevation={1}
-					sx={{
-						p: 2,
-						borderRadius: 2,
-						minHeight: 300,
-					}}
-				>
-					<Typography variant="h6" gutterBottom>
-						Activity Overview
+			<Card>
+			<CardContent>
+				<Box sx={{mb:2}}>
+					<Typography variant="h6">
+						Security Modules
 					</Typography>
-
 					<Typography variant="body2" color="text.secondary">
-						(Charts will be connected to rate limiting + authentication events)
+						Enable or disable Security Modules
 					</Typography>
-				</Paper>
-			</Box>
-		</Box>
-    </>
+
+					<Chip
+						label={`${enabledCount}/${modules.length} active`}
+						sx={{ mt: 1 }}
+						color={enabledCount === modules.length ? 'success' : 'default'}
+					/>
+				</Box>
+
+				<Grid container spacing={2}>
+					{modules.map((module) => (
+						<Grid size={4}>
+						<Paper
+							elevation={0}
+							sx={{
+								p: 2,
+								borderRadius: 2,
+								border:`1px solid ${theme.palette.grey[300]}`,
+								opacity: module.enabled ? 1 : 0.5,
+								transition: '0.2s',
+							}}
+							key={module.key}
+						>
+							<Stack
+								direction="row"
+								alignItems="center"
+								justifyContent="space-between"
+								flexWrap="wrap"
+							>
+								<Typography fontWeight={600}>
+									{module.title}
+								</Typography>
+
+								<Switch
+									checked={module.enabled}
+									onChange={() => toggleModule(module.key)}
+								/>
+							</Stack>
+
+							<Typography
+								variant="body2"
+								color="text.secondary"
+								mt={1}
+							>
+								{module.description}
+							</Typography>
+
+							<Box mt={2}>
+								<Chip
+									size="small"
+									label={module.enabled ? 'Enabled' : 'Disabled'}
+									color={module.enabled ? 'success' : 'default'}
+								/>
+							</Box>
+						</Paper>
+						</Grid>
+					))}
+				</Grid>
+			</CardContent>
+			</Card>
+
+			<Card>
+				<CardContent>
+					<Box sx={{mb:2}}>
+						<Typography variant="h6">
+							Stats
+						</Typography>
+
+						<Typography variant="body2" color="text.secondary">
+							Overview of firewall activity and protection status
+						</Typography>
+					</Box>
+
+					<Grid container spacing={2}>
+						{stats.map((stat) => (
+							<StatCard {...stat} />
+						))}
+					</Grid>
+
+					<Box mt={4}>
+						<Paper
+							elevation={0}
+							sx={{
+								p: 2,
+								borderRadius: 2,
+								border:`1px solid ${theme.palette.grey[300]}`,
+								minHeight: 300,
+							}}
+						>
+							<Typography variant="h6" gutterBottom>
+								Activity Overview
+							</Typography>
+
+							<Typography variant="body2" color="text.secondary">
+								(Charts will be connected to rate limiting + authentication events)
+							</Typography>
+						</Paper>
+					</Box>
+				</CardContent>
+			</Card>
+
+		</Stack>
 	);
 }
