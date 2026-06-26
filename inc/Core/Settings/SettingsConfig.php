@@ -95,12 +95,21 @@ final class SettingsConfig {
 				'group'             => 'authentication',
 			),
 
+			'auth_users'          => array(
+				'label'             => esc_html__( 'Authorized API users', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Restrict API access to specific WordPress user accounts.', 'bromate-rest-api-firewall' ),
+				'default_value'     => [],
+				'type'              => 'array',
+    'sanitize_callback' => [ SettingsRepository::class, 'sanitize_authorized_user' ],  // ← singular
+				'group'             => 'authentication',
+			),  
+
 			'auth_user_ids'                           => array(
 				'label'             => esc_html__( 'Authorized API users', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Restrict API access to specific WordPress user accounts.', 'bromate-rest-api-firewall' ),
-				'default_value'     => 0,
-				'type'              => 'integer',
-				'sanitize_callback' => 'sanitize_array_int',
+				'default_value'     => [],
+				'type'              => 'array',
+				'sanitize_callback' =>'absint',
 				'group'             => 'authentication',
 			),
 

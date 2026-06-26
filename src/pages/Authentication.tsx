@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from '@wordpress/element';
+import { useState, useCallback, useMemo, useEffect } from '@wordpress/element';
 import {
   Box, Paper, Typography, Switch, Stack,
   TextField, Select, MenuItem, FormControl,
@@ -18,10 +18,13 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 
-import type { AuthSettings, AuthorizedUser } from '@app-types/auth';
+import type { AuthSettings, AuthorizedUser, AuthorizedUserMeta } from '@app-types/auth';
 import UserDialog from '@features/authentication/UserDialog';
 import { apiRequest } from '@services/api';
+import { SettingsAPI } from '@services/settings';
 import { usePortalContainer } from '@contexts/PortalContainerContext';
+import { useDialog, DIALOG_TYPES } from '@contexts/DialogContext';
+import ConfirmDialog from '@components/ConfirmDialog';
 
 declare module '@mui/x-data-grid' {
   interface ToolbarPropsOverrides {
@@ -41,16 +44,11 @@ function CustomToolbar({ onAddUser, onDeleteSelected, selectedCount }: CustomToo
   return (
     <Toolbar>
       <Box sx={{ display: 'flex', gap: 1 }}>
-        <Button 
-          startIcon={<AddIcon />} 
-          size="small"
-          variant="contained"
-          onClick={onAddUser}
-        >
+        <Button startIcon={<AddIcon />} size="small" variant="contained" onClick={onAddUser}>
           Add user
         </Button>
-        <Button 
-          startIcon={<DeleteForeverIcon />} 
+        <Button
+          startIcon={<DeleteForeverIcon />}
           size="small"
           variant="outlined"
           color="error"
@@ -75,316 +73,299 @@ export default function Authentication(): JSX.Element {
     auth_users: [],
   });
 
-  const portalContainer = usePortalContainer();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const portalContainer  = usePortalContainer();
+  const { openDialog }   = useDialog();
+  const [dialogOpen, setDialogOpen]   = useState(false);
   const [editingUser, setEditingUser] = useState<AuthorizedUser | null>(null);
-  const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
-    type: 'include',
-    ids: new Set<GridRowId>(),
-  });
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
-
-  const [wpUsers, setWpUsers] = useState<AuthorizedUser[]>([]);
+  const [wpUsers, setWpUsers]         = useState<AuthorizedUser[]>([]);
   const [wpUsersLoading, setWpUsersLoading] = useState(false);
+
+  // Plain array of selected IDs — simpler than wrestling with GridRowSelectionModel shape
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({ open: false, message: '', severity: 'success' });
+
+  const authorizedUsers = useMemo<AuthorizedUser[]>(
+    () => settings.auth_users.flatMap((meta) => {
+      const wpUser = wpUsers.find((u) => u.id === meta.id);
+      if (!wpUser) return [];
+      return [{
+        ...wpUser,
+        jwt_claim_sub: meta.jwt_claim_sub,
+        status:        meta.status,
+        expires_at:    meta.expires_at,
+      }];
+    }),
+    [settings.auth_users, wpUsers]
+  );
+
+  const authorizedUserIds = useMemo(
+    () => settings.auth_users.map((u) => u.id),
+    [settings.auth_users]
+  );
+
+  const resolveDisplayStatus = (user: AuthorizedUser): 'active' | 'expiring' | 'revoked' => {
+    if (user.status === 'revoked') return 'revoked';
+    if (user.expires_at) {
+      const days = Math.ceil(
+        (new Date(user.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      );
+      if (days <= 0)  return 'revoked';
+      if (days <= 30) return 'expiring';
+    }
+    return 'active';
+  };
+
   const fetchWordPressUsers = useCallback(async () => {
     setWpUsersLoading(true);
     try {
-      const users = await apiRequest<AuthorizedUser[]>('bromate_get_authorized_users');
+      const users = await apiRequest<AuthorizedUser[]>('bromate_authorized_users_options');
       setWpUsers(users);
-
-    } catch (error) {
-      console.error('Failed to fetch WordPress users:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to load WordPress users',
-        severity: 'error',
-      });
+    } catch {
+      setSnackbar({ open: true, message: 'Failed to load WordPress users', severity: 'error' });
     } finally {
       setWpUsersLoading(false);
     }
   }, []);
 
+  useEffect(() => {
+    Promise.all([SettingsAPI.readOptions(), fetchWordPressUsers()])
+      .then(([options]) => {
+        const users = options['auth_users'];
+        if (Array.isArray(users)) {
+          const valid = users.filter(
+            (u): u is AuthorizedUserMeta =>
+              u !== null && typeof u === 'object' && typeof u.id === 'number'
+          );
+          setSettings((prev) => ({ ...prev, auth_users: valid }));
+        }
+      })
+      .catch(() => {
+        setSnackbar({ open: true, message: 'Failed to load settings', severity: 'error' });
+      });
+  }, []);
 
-  const update = <K extends keyof AuthSettings>(
-    key: K,
-    value: AuthSettings[K]
-  ) => setSettings((prev) => ({ ...prev, [key]: value }));
+  const update = <K extends keyof AuthSettings>(key: K, value: AuthSettings[K]) =>
+    setSettings((prev) => ({ ...prev, [key]: value }));
 
-  const handleSaveUser = useCallback((user: AuthorizedUser) => {
+  const persistUsers = useCallback((users: AuthorizedUserMeta[]) => {
+    SettingsAPI.updateOption('auth_users', users).catch(() =>
+      setSnackbar({ open: true, message: 'Failed to save changes', severity: 'error' })
+    );
+  }, []);
+
+  // ── CRUD with confirm dialogs ──────────────────────────────────────────────
+
+  const doSaveUser = useCallback((user: AuthorizedUser) => {
+    const meta: AuthorizedUserMeta = {
+      id:            user.id,
+      jwt_claim_sub: user.jwt_claim_sub ?? '',
+      status:        user.status ?? 'active',
+      expires_at:    user.expires_at ?? '',
+    };
     setSettings((prev) => {
-      const exists = prev.auth_users.some((u) => u.id === user.id);
+      const exists  = prev.auth_users.some((u) => u.id === meta.id);
       const newUsers = exists
-        ? prev.auth_users.map((u) => (u.id === user.id ? user : u))
-        : [...prev.auth_users, user];
-      
+        ? prev.auth_users.map((u) => (u.id === meta.id ? meta : u))
+        : [...prev.auth_users, meta];
+      persistUsers(newUsers);
       setSnackbar({
         open: true,
         message: exists ? 'User updated successfully' : 'User added successfully',
         severity: 'success',
       });
-      
-      return {
-        ...prev,
-        auth_users: newUsers,
-      };
+      return { ...prev, auth_users: newUsers };
     });
     setDialogOpen(false);
     setEditingUser(null);
-  }, []);
+  }, [persistUsers]);
+
+  // Dialog closes → on confirm → save
+  const handleSaveUser = useCallback((user: AuthorizedUser) => {
+    const exists = settings.auth_users.some((u) => u.id === user.id);
+    openDialog({
+      type:         DIALOG_TYPES.CONFIRM,
+      title:        exists ? 'Save changes?' : 'Add user?',
+      content:      exists
+        ? `Save changes for ${user.display_name}?`
+        : `Add ${user.display_name} to authorized users?`,
+      confirmLabel: exists ? 'Save' : 'Add',
+      onConfirm:    () => doSaveUser(user),
+    });
+  }, [settings.auth_users, openDialog, doSaveUser]);
 
   const handleDeleteUser = useCallback((id: GridRowId) => {
-    setSettings((prev) => {
-      const user = prev.auth_users.find(u => u.id === id);
-      setSnackbar({
-        open: true,
-        message: `User ${user?.display_name || id} deleted successfully`,
-        severity: 'success',
-      });
-      return {
-        ...prev,
-        auth_users: prev.auth_users.filter((u) => u.id !== id),
-      };
+    const user = authorizedUsers.find((u) => u.id === id);
+    openDialog({
+      type:         DIALOG_TYPES.CONFIRM,
+      title:        'Remove user?',
+      content:      `Remove ${user?.display_name ?? id} from authorized users?`,
+      confirmLabel: 'Remove',
+      onConfirm: () => {
+        setSettings((prev) => {
+          const newUsers = prev.auth_users.filter((u) => u.id !== id);
+          persistUsers(newUsers);
+          return { ...prev, auth_users: newUsers };
+        });
+        setSnackbar({ open: true, message: 'User removed', severity: 'success' });
+      },
     });
-  }, []);
+  }, [authorizedUsers, openDialog, persistUsers]);
 
   const handleDeleteSelected = useCallback(() => {
-    const selectedIds = Array.from(rowSelectionModel.ids);
-    const selectedNames = settings.auth_users
-      .filter(u => selectedIds.includes(u.id))
-      .map(u => u.display_name)
+    if (selectedIds.length === 0) return;
+    const names = authorizedUsers
+      .filter((u) => selectedIds.includes(u.id))
+      .map((u) => u.display_name)
       .join(', ');
-    
-    setSettings((prev) => ({
-      ...prev,
-      auth_users: prev.auth_users.filter((u) => !selectedIds.includes(u.id)),
-    }));
-    
-    setSnackbar({
-      open: true,
-      message: `Deleted ${selectedIds.length} user(s): ${selectedNames}`,
-      severity: 'success',
+
+    openDialog({
+      type:         DIALOG_TYPES.CONFIRM,
+      title:        `Remove ${selectedIds.length} user(s)?`,
+      content:      `This will remove: ${names}`,
+      confirmLabel: 'Remove all',
+      onConfirm: () => {
+        setSettings((prev) => {
+          const newUsers = prev.auth_users.filter((u) => !selectedIds.includes(u.id));
+          persistUsers(newUsers);
+          return { ...prev, auth_users: newUsers };
+        });
+        setSnackbar({
+          open: true,
+          message: `Removed ${selectedIds.length} user(s)`,
+          severity: 'success',
+        });
+        setSelectedIds([]);
+      },
     });
-    
-    setRowSelectionModel({
-      type: 'include',
-      ids: new Set<GridRowId>(),
-    });
-  }, [rowSelectionModel, settings.auth_users]);
+  }, [selectedIds, authorizedUsers, openDialog, persistUsers]);
 
   const handleAddUser = useCallback(() => {
     setEditingUser(null);
-    fetchWordPressUsers();
     setDialogOpen(true);
-  }, [fetchWordPressUsers]);
+  }, []);
 
   const handleEditUser = useCallback((user: AuthorizedUser) => {
     setEditingUser(user);
     setDialogOpen(true);
   }, []);
 
+  // ── DataGrid ──────────────────────────────────────────────────────────────
+
   const columns: GridColDef<AuthorizedUser>[] = [
     { field: 'id', headerName: 'WP ID', width: 80 },
     { field: 'display_name', headerName: 'User', flex: 1 },
-    { 
-      field: 'email', 
-      headerName: 'Email', 
-      flex: 1,
-      valueGetter: (_, row) => row.email || '—',
-    },
-    { 
-      field: 'wp_role', 
-      headerName: 'Role', 
-      width: 120,
-      valueGetter: (_, row) => {
-        if (row.roles && row.roles.length > 0) {
-          return row.roles[0];
-        }
-        return row.roles || '—';
-      }
-    },
+    { field: 'email', headerName: 'Email', flex: 1,
+      valueGetter: (_, row) => row.email || '—' },
+    { field: 'wp_role', headerName: 'Role', width: 120,
+      valueGetter: (_, row) => row.roles?.length > 0 ? row.roles[0] : '—' },
+    { field: 'jwt_claim_sub', headerName: 'JWT sub claim', flex: 1,
+      valueGetter: (_, row) => row.jwt_claim_sub || '—' },
     {
-      field: 'jwt_claim_sub',
-      headerName: 'JWT sub claim',
-      flex: 1,
-      valueGetter: (_, row) => row.jwt_claim_sub || '—',
-    },
-    {
-      field: 'status',
-      headerName: 'Status',
-      width: 110,
-      renderCell: ({ value }) => {
-        const statusColors: Record<string, string> = {
-          active: '#4caf50',
-          expiring: '#ff9800',
-          revoked: '#f44336',
-        };
+      field: 'status', headerName: 'Status', width: 110,
+      renderCell: ({ row }) => {
+        const s = resolveDisplayStatus(row);
         return (
-          <Chip 
-            label={value || 'active'} 
-            size="small"
-            sx={{ 
-              backgroundColor: statusColors[value as string] || '#9e9e9e',
-              color: 'white',
-            }}
-          />
+          <Chip label={s} size="small" sx={{
+            backgroundColor: { active: '#4caf50', expiring: '#ff9800', revoked: '#f44336' }[s],
+            color: 'white',
+          }} />
         );
-      }
+      },
     },
+    { field: 'expires_at', headerName: 'Expires', width: 120,
+      valueFormatter: (value: string | undefined) =>
+        value ? new Date(value).toLocaleDateString() : '—' },
     {
-      field: 'expires_at',
-      headerName: 'Expires',
-      width: 120,
-      valueFormatter: ({ value }) =>
-        value ? new Date(value).toLocaleDateString() : '—',
-    },
-    {
-      field: 'actions',
-      type: 'actions',
-      width: 80,
+      field: 'actions', type: 'actions', width: 80,
       getActions: ({ row }) => [
-        <GridActionsCellItem
-          icon={<EditIcon />}
-          label="Edit"
-          onClick={() => handleEditUser(row)}
-        />,
-        <GridActionsCellItem
-          icon={<DeleteIcon />}
-          label="Remove"
-          onClick={() => handleDeleteUser(row.id)}
-        />,
+        <GridActionsCellItem icon={<EditIcon />}   label="Edit"   onClick={() => handleEditUser(row)} />,
+        <GridActionsCellItem icon={<DeleteIcon />} label="Remove" onClick={() => handleDeleteUser(row.id)} />,
       ],
     },
   ];
 
-  const dataGridRows = settings.auth_users;
+  const toolbarSlots = useMemo(() => ({ toolbar: CustomToolbar }), []);
 
-  const toolbarSlots = useMemo(() => ({
-    toolbar: CustomToolbar,
-  }), []);
-
-  const toolbarSlotProps = useMemo(() => ({
+  // Recompute whenever selectedIds changes — no useMemo needed, inline is fine
+  const toolbarSlotProps = {
     toolbar: {
       onAddUser: handleAddUser,
       onDeleteSelected: handleDeleteSelected,
-      selectedCount: rowSelectionModel.ids.size,
+      selectedCount: selectedIds.length,  // ← plain array length, always fresh
     },
-  }), [handleAddUser, handleDeleteSelected, rowSelectionModel.ids.size]);
+  };
 
   return (
-    <Stack flexDirection={"column"} gap={2}>
-     
+    <Stack flexDirection="column" gap={2}>
       <Paper sx={{ p: 2, mb: 2 }}>
-        <Typography variant="h6" mb={2}>
-          Core Settings
-        </Typography>
-        <Stack flexDirection={"column"} gap={2}>
+        <Typography variant="h6" mb={2}>Core Settings</Typography>
+        <Stack flexDirection="column" gap={2}>
           <FormControl>
             <FormLabel>Authentication method</FormLabel>
-            <RadioGroup
-              row
-              value={settings.auth_methods}
-              onChange={(e) => update('auth_methods', e.target.value as any)}
-            >
+            <RadioGroup row value={settings.auth_methods}
+              onChange={(e) => update('auth_methods', e.target.value as any)}>
               <FormControlLabel value="wp_auth" control={<Radio size="small" />} label="WordPress Auth" />
               <FormControlLabel value="jwt"     control={<Radio size="small" />} label="JWT" />
             </RadioGroup>
           </FormControl>
-
           <FormControl>
             <FormLabel>Require authentication for all API routes</FormLabel>
-            <Switch
-              checked={settings.auth_enforce}
-              onChange={(e) =>
-                update('auth_enforce', e.target.checked)
-              }
-            />
+            <Switch checked={settings.auth_enforce}
+              onChange={(e) => update('auth_enforce', e.target.checked)} />
           </FormControl>
         </Stack>
       </Paper>
 
       {settings.auth_methods === 'jwt' && (
         <Paper sx={{ p: 2, mb: 2 }}>
-          <Typography variant="h6" mb={2}>
-            JWT Configuration
-          </Typography>
-
+          <Typography variant="h6" mb={2}>JWT Configuration</Typography>
           <Stack spacing={2}>
             <FormControl fullWidth>
               <InputLabel>JWT Algorithm</InputLabel>
-              <Select
-                MenuProps={{container:portalContainer}}
-                value={settings.auth_jwt_algorithm}
-                label="JWT Algorithm"
-                onChange={(e) =>
-                  update(
-                    'auth_jwt_algorithm',
-                    e.target.value as any
-                  )
-                }
-              >
-                <MenuItem value="RS256">RS256</MenuItem>
-                <MenuItem value="RS384">RS384</MenuItem>
-                <MenuItem value="RS512">RS512</MenuItem>
-                <MenuItem value="HS256">HS256</MenuItem>
-                <MenuItem value="HS384">HS384</MenuItem>
-                <MenuItem value="HS512">HS512</MenuItem>
-                <MenuItem value="ES256">ES256</MenuItem>
+              <Select MenuProps={{ container: portalContainer }}
+                value={settings.auth_jwt_algorithm} label="JWT Algorithm"
+                onChange={(e) => update('auth_jwt_algorithm', e.target.value as any)}>
+                {['RS256','RS384','RS512','HS256','HS384','HS512','ES256'].map((alg) => (
+                  <MenuItem key={alg} value={alg}>{alg}</MenuItem>
+                ))}
               </Select>
             </FormControl>
-
-            <TextField
-              label="JWT Public Key"
-              multiline
-              minRows={4}
+            <TextField label="JWT Public Key" multiline minRows={4}
               value={settings.auth_jwt_public_key}
-              onChange={(e) =>
-                update('auth_jwt_public_key', e.target.value)
-              }
-            />
-
-            <TextField
-              label="JWT Audience"
-              value={settings.auth_jwt_audience}
-              onChange={(e) =>
-                update('auth_jwt_audience', e.target.value)
-              }
-            />
-
-            <TextField
-              label="JWT Issuer"
-              value={settings.auth_jwt_issuer}
-              onChange={(e) =>
-                update('auth_jwt_issuer', e.target.value)
-              }
-            />
+              onChange={(e) => update('auth_jwt_public_key', e.target.value)} />
+            <TextField label="JWT Audience" value={settings.auth_jwt_audience}
+              onChange={(e) => update('auth_jwt_audience', e.target.value)} />
+            <TextField label="JWT Issuer" value={settings.auth_jwt_issuer}
+              onChange={(e) => update('auth_jwt_issuer', e.target.value)} />
           </Stack>
         </Paper>
       )}
 
       <Paper sx={{ p: 2 }}>
-        <Typography variant="h6" mb={2}>
-          Authorized users
-        </Typography>
-
+        <Typography variant="h6" mb={2}>Authorized users</Typography>
         <DataGrid
-          rows={dataGridRows}
+          rows={authorizedUsers}
           columns={columns}
           autoHeight
           pageSizeOptions={[10, 25]}
-          showToolbar={true}
+          showToolbar
           checkboxSelection
           disableRowSelectionOnClick
-          rowSelectionModel={rowSelectionModel}
-          onRowSelectionModelChange={(newSelection) => {
-            setRowSelectionModel(newSelection);
+          loading={wpUsersLoading}
+          // ← Uncontrolled selection: let DataGrid own it, read changes via callback
+          onRowSelectionModelChange={(model) => {
+            const ids = Array.from(
+              (model as GridRowSelectionModel & { ids?: Set<GridRowId> }).ids ?? model
+            ) as number[];
+            setSelectedIds(ids);
           }}
           slots={toolbarSlots}
           slotProps={toolbarSlotProps}
-
         />
       </Paper>
 
@@ -396,19 +377,16 @@ export default function Authentication(): JSX.Element {
         wpUsers={wpUsers}
         wpUsersLoading={wpUsersLoading}
         fetchWordPressUsers={fetchWordPressUsers}
+        authorizedUserIds={authorizedUserIds}
       />
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert 
-          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
-          severity={snackbar.severity}
-          variant="filled"
-        >
+      <ConfirmDialog />
+
+      <Snackbar open={snackbar.open} autoHideDuration={4000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+        <Alert onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity} variant="filled">
           {snackbar.message}
         </Alert>
       </Snackbar>
