@@ -1,6 +1,6 @@
 // components/UserDialog.tsx
 
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useContext } from '@wordpress/element';
 import {
   Dialog,
   DialogTitle,
@@ -19,32 +19,35 @@ import {
   Typography,
   Box,
   Divider,
+  Card, 
+  CardContent,
 } from '@mui/material';
-import type { AuthorizedUser, UserStatus } from '@app-types/auth';
 
-interface WpUserSuggestion {
-  id: number;
-  display_name: string;
-  user_email: string;
-  roles: string[];
-}
+import type { AuthorizedUser, UserStatus } from '@app-types/auth';
+import { usePortalContainer } from '@contexts/PortalContainerContext';
+
 
 interface UserDialogProps {
   open: boolean;
   user: AuthorizedUser | null;
   onSave: (user: AuthorizedUser) => void;
   onClose: () => void;
+  wpUsers: AuthorizedUser[];
+  wpUsersLoading: boolean;
+  fetchWordPressUsers: () => void;
 }
 
 const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
-  { value: 'active',   label: 'Active' },
-  { value: 'expiring', label: 'Expiring' },
-  { value: 'revoked',  label: 'Revoked' },
+  { value: 'active',  label: 'Active' },
+  { value: 'revoked', label: 'Revoked' },
 ];
 
 const EMPTY_FORM: Omit<AuthorizedUser, 'id'> = {
   display_name: '',
-  wp_role: '',
+  email: '',
+  admin_url: '',
+  current_user: false,
+  roles: [],
   jwt_claim_sub: '',
   status: 'active',
   expires_at: '',
@@ -55,20 +58,20 @@ export default function UserDialog({
   user,
   onSave,
   onClose,
+  wpUsers,
+  wpUsersLoading,
+  fetchWordPressUsers,
 }: UserDialogProps): JSX.Element {
   const isEditing = user !== null;
-
-  // WP user search
-  const [searchInput, setSearchInput]     = useState('');
-  const [suggestions, setSuggestions]     = useState<WpUserSuggestion[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [selectedWpUser, setSelectedWpUser] = useState<WpUserSuggestion | null>(null);
 
   // Form fields
   const [wpUserId, setWpUserId]   = useState<number | ''>('');
   const [form, setForm]           = useState(EMPTY_FORM);
+  const [selectedWpUser, setSelectedWpUser] = useState<AuthorizedUser | null>(null);
 
-  // Reset when dialog opens/closes or user changes
+  const portalContainer = usePortalContainer();
+
+
   useEffect(() => {
     if (!open) return;
 
@@ -76,51 +79,41 @@ export default function UserDialog({
       setWpUserId(user.id);
       setForm({
         display_name:  user.display_name,
-        wp_role:       user.wp_role,
+        email:         user.email,
+        current_user:  user.current_user,
+        admin_url:     user.admin_url,
+        roles:         user.roles,
         jwt_claim_sub: user.jwt_claim_sub ?? '',
-        status:        user.status,
+        status:        user.status || 'active',
         expires_at:    user.expires_at ?? '',
       });
-      setSelectedWpUser(null);
-      setSearchInput(user.display_name);
+      const matchedUser = wpUsers.find(wp => wp.id === user.id);
+      setSelectedWpUser(matchedUser || null);
     } else {
       setWpUserId('');
       setForm(EMPTY_FORM);
       setSelectedWpUser(null);
-      setSearchInput('');
     }
   }, [open, user]);
 
-  // Fetch WP users from REST API as user types
   useEffect(() => {
-    if (isEditing) return;
-    if (searchInput.length < 2) { setSuggestions([]); return; }
+    if (open && !user) {
+      fetchWordPressUsers();
+    }
+  }, [open]); 
 
-    const controller = new AbortController();
-    setSearchLoading(true);
-
-    fetch(
-      `/wp-json/wp/v2/users?search=${encodeURIComponent(searchInput)}&per_page=10&context=edit`,
-      { signal: controller.signal }
-    )
-      .then((r) => r.json())
-      .then((data: WpUserSuggestion[]) => setSuggestions(data))
-      .catch(() => {})
-      .finally(() => setSearchLoading(false));
-
-    return () => controller.abort();
-  }, [searchInput, isEditing]);
-
-  const handleWpUserSelect = (_: unknown, value: WpUserSuggestion | null) => {
+  const handleWpUserSelect = (_: unknown, value: AuthorizedUser | null) => {
     setSelectedWpUser(value);
-    if (!value) return;
+    if (!value) {
+      setWpUserId('');
+      return;
+    }
 
     setWpUserId(value.id);
     setForm((prev) => ({
       ...prev,
       display_name:  value.display_name,
-      wp_role:       value.roles[0] ?? '',
-      // Pre-fill sub claim with WP convention if empty
+      roles:       value.roles,
       jwt_claim_sub: prev.jwt_claim_sub || `user_${value.id}`,
     }));
   };
@@ -135,13 +128,23 @@ export default function UserDialog({
       ...form,
       jwt_claim_sub: form.jwt_claim_sub || undefined,
       expires_at:    form.expires_at    || undefined,
+      ...(selectedWpUser && {
+        email: selectedWpUser.email,
+        roles: selectedWpUser.roles,
+      }),
     });
   };
 
   const isValid = wpUserId !== '' && form.display_name.trim() !== '';
 
+  const getOptionLabel = (option: AuthorizedUser) => option.display_name;
+
+  const isOptionEqualToValue = (option: AuthorizedUser, value: AuthorizedUser) => {
+    return option.id === value.id;
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog container={portalContainer} open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>
         {isEditing ? `Edit — ${user?.display_name}` : 'Add authorized user'}
       </DialogTitle>
@@ -149,24 +152,22 @@ export default function UserDialog({
       <DialogContent dividers>
         <Stack spacing={2.5} sx={{ pt: 0.5 }}>
 
-          {/* WP user lookup (creation only) */}
-          {!isEditing ? (
-            <Autocomplete<WpUserSuggestion>
-              options={suggestions}
-              loading={searchLoading}
-              getOptionLabel={(o) => o.display_name}
-              filterOptions={(x) => x}           // server-side search
-              inputValue={searchInput}
-              onInputChange={(_, v) => setSearchInput(v)}
+          {!isEditing && (
+            <Autocomplete<AuthorizedUser>
+              options={wpUsers}
+              loading={wpUsersLoading}
+              getOptionLabel={getOptionLabel}
+              isOptionEqualToValue={isOptionEqualToValue}
+              value={selectedWpUser}
               onChange={handleWpUserSelect}
               renderOption={(props, option) => (
                 <li {...props} key={option.id}>
                   <Box>
                     <Typography variant="body2" fontWeight={500}>
-                      {option.display_name}
+                      {option.display_name}{option.current_user && ' (me)'}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {option.user_email} · ID #{option.id} · {option.roles.join(', ')}
+                      {option.email} · ID #{option.id} · {option.roles.join(', ')}
                     </Typography>
                   </Box>
                 </li>
@@ -174,74 +175,122 @@ export default function UserDialog({
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="Search WordPress user"
-                  placeholder="Name or email…"
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: (
-                      <>
-                        {searchLoading && <CircularProgress size={16} />}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
+                  label="Select WordPress user"
+                  placeholder="Search or select a user..."
+                  slotProps={{input:{
+                      ...params.InputProps,
+                      endAdornment: (
+                        <>
+                          {wpUsersLoading && <CircularProgress size={16} />}
+                          {params.InputProps.endAdornment}
+                        </>
+                      )
+                    },
                   }}
                 />
               )}
             />
-          ) : (
-            <Box display="flex" alignItems="center" gap={1}>
-              <Typography variant="body2" color="text.secondary">WP ID</Typography>
-              <Chip label={`#${user?.id}`} size="small" />
-            </Box>
           )}
 
           <Divider />
 
-          {/* JWT claim sub */}
-          <TextField
-            label="JWT sub claim"
-            value={form.jwt_claim_sub}
-            onChange={(e) => updateField('jwt_claim_sub', e.target.value)}
-            helperText="Valeur attendue dans le claim `sub` du token entrant"
-            InputProps={{ sx: { fontFamily: 'monospace', fontSize: 13 } }}
-            fullWidth
-          />
+          <Stack flexDirection="row" gap={2.5} sx={{ pt: 0.5 }}>
+            <Card sx={{ p: 2, bgcolor: '#fff', maxWidth:400 }}>
+              <CardContent sx={{ p: 0 }}>
+                <Box display="flex" sx={{flexDirection:'column'}} gap={2}>
+                  <TextField
+                  label="JWT sub claim"
+                    value={form.jwt_claim_sub}
+                    onChange={(e) => updateField('jwt_claim_sub', e.target.value)}
+                    helperText="Expected value in the incoming token's `sub` claim"
+                    fullWidth
+                  />
+                  <FormControl fullWidth>
+                    <InputLabel>Status</InputLabel>
+                    <Select
+                      value={form.status}
+                      onChange={(e) => updateField('status', e.target.value as UserStatus)}
+                    >
+                      {STATUS_OPTIONS.map((o) => (
+                        <MenuItem key={o.value} value={o.value}>
+                          {o.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <TextField
+                  label="Expires at"
+                      type="date"
+                      value={form.expires_at}
+                      onChange={(e) => updateField('expires_at', e.target.value)}
+                      helperText="Leave empty for no expiration"
+                      fullWidth
+                    />
+                </Box>
 
-          {/* Role + Status side by side */}
-          <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
-            <TextField
-              label="WP Role"
-              value={form.wp_role}
-              onChange={(e) => updateField('wp_role', e.target.value)}
-              fullWidth
-            />
+              </CardContent>
+            </Card> 
 
-            <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={form.status}
-                label="Status"
-                onChange={(e) => updateField('status', e.target.value as UserStatus)}
-              >
-                {STATUS_OPTIONS.map((o) => (
-                  <MenuItem key={o.value} value={o.value}>
-                    {o.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
+            {selectedWpUser && (
+              <Card sx={{ p: 2, bgcolor: '#fff', maxWidth:300 }}>
+                <CardContent sx={{ p: 0 }}>
+                  <Box display="flex" sx={{flexDirection:'column'}} gap={0.5}>
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                        ID:
+                      </Typography>
+                      <Typography variant="body2">{selectedWpUser.id}</Typography>
+                    </Box>
+                    
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                        Name:
+                      </Typography>
+                      <Typography variant="body2">{selectedWpUser.display_name}</Typography>
+                      {selectedWpUser.current_user && (
+                        <Box>
+                        <Chip 
+                          color="success" 
+                          label="Me"
+                          size="small"
+                          variant="outlined"
+                        />
+                        </Box>
+                      )}
+                    </Box>
+                    
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                        Roles:
+                      </Typography>
+                      <Typography variant="body2">
+                        {selectedWpUser.roles.join(', ')}
+                      </Typography>
+                    </Box>
+                    
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                        Email:
+                      </Typography>
+                      <Typography variant="body2">{selectedWpUser.email}</Typography>
+                    </Box>
 
-          {/* Expiration */}
-          <TextField
-            label="Expires at"
-            type="date"
-            value={form.expires_at}
-            onChange={(e) => updateField('expires_at', e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            helperText="Laisser vide pour ne pas limiter dans le temps"
-            fullWidth
-          />
+                    
+
+                    <Button 
+                      variant="outlined" 
+                      size="small"
+                      href={`${selectedWpUser.admin_url}`}
+                      target="_blank"
+                      sx={{maxWidth:80}}
+                    >
+                      Profile
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+          </Stack>
 
         </Stack>
       </DialogContent>

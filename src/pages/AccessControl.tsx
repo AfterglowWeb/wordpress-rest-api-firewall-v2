@@ -1,100 +1,99 @@
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect, useState, useCallback, useMemo } from '@wordpress/element';
 import {
   Box, Paper, Typography, Button, Stack,
-  Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, FormControl, InputLabel, Select, MenuItem,
-  ToggleButton, ToggleButtonGroup,
+  Dialog, DialogTitle, DialogContent, DialogActions, Toolbar,
+  Alert, CircularProgress, List, ListItem, ListItemText,
+  RadioGroup, FormControlLabel, Radio, FormLabel
 } from '@mui/material';
 import {
-  DataGrid, GridColDef, useGridApiContext, type GridRowSelectionModel,
+  DataGrid, GridColDef, GridRowSelectionModel,
 } from '@mui/x-data-grid';
-import type { ToolbarProps } from '@mui/x-data-grid';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { IpAPI, type IpEntry, type ListType } from '@services/ip';
+import { usePortalContainer } from '@contexts/PortalContainerContext';
 
-type EntryType = 'ip' | 'cidr' | 'country';
+
+type EntryType = 'ip' | 'cidr';
 
 interface AddEntryForm {
-  value: string;       // IP, CIDR, or ISO country code
+  value: string;
   entry_type: EntryType;
   list_type: ListType;
-  expires_at: string;  // '' = never
 }
 
 const EMPTY_FORM: AddEntryForm = {
   value: '',
   entry_type: 'ip',
   list_type: 'blacklist',
-  expires_at: '',
 };
 
-interface CustomToolbarProps extends ToolbarProps {
-  listType: ListType;
-  onListTypeChange: (v: ListType) => void;
-  onAdd: () => void;
-  onDeleteSelected: () => void;
-  hasSelection: boolean;
+declare module '@mui/x-data-grid' {
+  interface ToolbarPropsOverrides {
+    onAdd: () => void;
+    onDeleteSelected: () => void;
+    selectedCount: number;
+  }
 }
 
-function CustomToolbar() {
-	const apiRef = useGridApiContext();
-  
-  return (
-    <Stack
-      direction="row"
-      spacing={1}
-      alignItems="center"
-      justifyContent="space-between"
-      sx={{ p: 1 }}
-    >
-      {/*<ToggleButtonGroup
-        value={listType}
-        exclusive
-        size="small"
-        onChange={(_, v) => v && onListTypeChange(v)}
-      >
-        <ToggleButton value="blacklist">Blacklist</ToggleButton>
-        <ToggleButton value="whitelist">Whitelist</ToggleButton>
-      </ToggleButtonGroup>
+interface CustomToolbarProps {
+  onAdd: () => void;
+  onDeleteSelected: () => void;
+  selectedCount: number;
+}
 
-      <Stack direction="row" spacing={1}>
+function CustomToolbar({ onAdd, onDeleteSelected, selectedCount }: CustomToolbarProps) {
+  return (
+    <Toolbar>
+      <Box sx={{ display: 'flex', gap: 1 }}>
         <Button
+          startIcon={<AddIcon />}
           size="small"
-          color="error"
-          variant="outlined"
-          onClick={onDeleteSelected}
-          disabled={!hasSelection}
+          variant="contained"
+          onClick={onAdd}
         >
-          Delete selected
+          Add IPs
         </Button>
-        <Button size="small" variant="contained" onClick={onAdd}>
-          Add entry
+        <Button
+          startIcon={<DeleteForeverIcon />}
+          size="small"
+          variant="outlined"
+          color="error"
+          onClick={onDeleteSelected}
+          disabled={selectedCount === 0}
+        >
+          Delete selected ({selectedCount})
         </Button>
-      </Stack>*/}
-    </Stack>
+      </Box>
+    </Toolbar>
   );
+}
+
+interface LineResult {
+  value: string;
+  error: string;
 }
 
 interface AddEntryDialogProps {
   open: boolean;
   defaultListType: ListType;
-  onSave: (form: AddEntryForm) => Promise<void>;
+  onSave: (form: AddEntryForm) => Promise<LineResult[]>;
   onClose: () => void;
 }
 
-function AddEntryDialog({
-  open,
-  defaultListType,
-  onSave,
-  onClose,
-}: AddEntryDialogProps) {
-  const [form, setForm] = useState<AddEntryForm>({
-    ...EMPTY_FORM,
-    list_type: defaultListType,
-  });
+function AddEntryDialog({ open, defaultListType, onSave, onClose }: AddEntryDialogProps) {
+  const [form, setForm] = useState<AddEntryForm>({ ...EMPTY_FORM, list_type: defaultListType });
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<LineResult[]>([]);
+
+  const portalContainer = usePortalContainer();
 
   useEffect(() => {
-    if (open) setForm({ ...EMPTY_FORM, list_type: defaultListType });
+    if (open) {
+      setForm({ ...EMPTY_FORM, list_type: defaultListType });
+      setErrors([]);
+    }
   }, [open, defaultListType]);
 
   const update = <K extends keyof AddEntryForm>(key: K, value: AddEntryForm[K]) =>
@@ -102,89 +101,99 @@ function AddEntryDialog({
 
   const handleSave = async () => {
     setSaving(true);
-    await onSave(form);
+    setErrors([]);
+    const lineErrors = await onSave(form);
     setSaving(false);
+    if (lineErrors.length > 0) {
+      setErrors(lineErrors);
+    }
   };
 
-  const placeholder =
-    form.entry_type === 'ip'      ? '203.0.113.42' :
-    form.entry_type === 'cidr'    ? '203.0.113.0/24' :
-                                    'CN';
-
-  const label =
-    form.entry_type === 'country' ? 'ISO country code' : 'IP / CIDR';
-
   const isValid = form.value.trim() !== '';
+  const placeholder = '203.0.113.1\n203.0.113.2\n203.0.113.0/24';
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>Add access control entry</DialogTitle>
+    <Dialog container={portalContainer} open={open} onClose={saving ? undefined : onClose} fullWidth maxWidth="xs">
+      <DialogTitle>Add access control entries</DialogTitle>
 
       <DialogContent dividers>
         <Stack spacing={2} sx={{ pt: 0.5 }}>
 
-          <FormControl fullWidth>
-            <InputLabel>List</InputLabel>
-            <Select
+          <FormControl>
+            <FormLabel>List</FormLabel>
+            <RadioGroup
+              row
               value={form.list_type}
-              label="List"
               onChange={(e) => update('list_type', e.target.value as ListType)}
             >
-              <MenuItem value="blacklist">Blacklist</MenuItem>
-              <MenuItem value="whitelist">Whitelist</MenuItem>
-            </Select>
+              <FormControlLabel value="blacklist" control={<Radio size="small" />} label="Blacklist" />
+              <FormControlLabel value="whitelist" control={<Radio size="small" />} label="Whitelist" />
+            </RadioGroup>
           </FormControl>
 
-          <FormControl fullWidth>
-            <InputLabel>Entry type</InputLabel>
-            <Select
+          <FormControl>
+            <FormLabel>Entry type</FormLabel>
+            <RadioGroup
+              row
               value={form.entry_type}
-              label="Entry type"
-              onChange={(e) => update('entry_type', e.target.value as EntryType)}
+              onChange={(e) => {
+                update('entry_type', e.target.value as EntryType);
+                update('value', '');
+              }}
             >
-              <MenuItem value="ip">Single IP</MenuItem>
-              <MenuItem value="cidr">CIDR range</MenuItem>
-              <MenuItem value="country">Country</MenuItem>
-            </Select>
+              <FormControlLabel value="ip"   control={<Radio size="small" />} label="IP" />
+              <FormControlLabel value="cidr" control={<Radio size="small" />} label="CIDR range" />
+            </RadioGroup>
           </FormControl>
 
           <TextField
-            label={label}
+            label="IPs / CIDRs (one per line)"
             placeholder={placeholder}
             value={form.value}
-            onChange={(e) =>
-              update(
-                'value',
-                form.entry_type === 'country'
-                  ? e.target.value.toUpperCase().slice(0, 2)
-                  : e.target.value
-              )
-            }
-            inputProps={form.entry_type === 'country' ? { maxLength: 2 } : undefined}
+            onChange={(e) => update('value', e.target.value)}
+            multiline
+            minRows={4}
+            maxRows={10}
             fullWidth
+            size="small"
+            disabled={saving}
           />
 
-          <TextField
-            label="Expires at"
-            type="date"
-            value={form.expires_at}
-            onChange={(e) => update('expires_at', e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            helperText="Leave empty for permanent entry"
-            fullWidth
-          />
+          {errors.length > 0 && (
+            <Alert severity="error" variant="outlined">
+              <Typography variant="body2" fontWeight={600} mb={0.5}>
+                {errors.length} entr{errors.length > 1 ? 'ies' : 'y'} failed:
+              </Typography>
+              <List dense disablePadding>
+                {errors.map((e) => (
+                  <ListItem key={e.value} disablePadding>
+                    <ListItemText
+                      primary={
+                        <Typography variant="body2" fontFamily="monospace">
+                          {e.value} — {e.error}
+                        </Typography>
+                      }
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Alert>
+          )}
 
         </Stack>
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} color="inherit">Cancel</Button>
+        <Button onClick={onClose} color="inherit" disabled={saving}>
+          Cancel
+        </Button>
         <Button
           onClick={handleSave}
           variant="contained"
           disabled={!isValid || saving}
+          startIcon={saving ? <CircularProgress size={14} color="inherit" /> : undefined}
         >
-          Add entry
+          {saving ? 'Adding…' : 'Add entries'}
         </Button>
       </DialogActions>
     </Dialog>
@@ -192,52 +201,89 @@ function AddEntryDialog({
 }
 
 export default function AccessControl(): JSX.Element {
-  const [listType, setListType]   = useState<ListType>('blacklist');
-  const [rows, setRows]           = useState<IpEntry[]>([]);
+  const [listType, setListType] = useState<ListType>('blacklist');
+  const [rows, setRows]         = useState<IpEntry[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selection, setSelection] = useState<GridRowSelectionModel>({
     type: 'include',
     ids: new Set(),
   });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const res = await IpAPI.getEntries(listType);
     setRows(res.entries);
+  }, [listType]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const handleAddEntries = async (form: AddEntryForm): Promise<LineResult[]> => {
+    const lines = form.value
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    const results = await Promise.allSettled(
+      lines.map((val) => IpAPI.addEntry(val, form.list_type))
+    );
+
+    const errors: LineResult[] = results
+      .map((result, i) => ({ result, val: lines[i] }))
+      .filter(({ result }) => result.status === 'rejected')
+      .map(({ result, val }) => ({
+        value: val,
+        error: (result as PromiseRejectedResult).reason?.message ?? 'Unknown error',
+      }));
+
+    // Reload if at least one succeeded
+    const anySuccess = results.some((r) => r.status === 'fulfilled');
+    if (anySuccess) {
+      if (form.list_type !== listType) setListType(form.list_type);
+      else await load();
+    }
+
+    // Close only if all succeeded
+    if (errors.length === 0) setDialogOpen(false);
+
+    return errors;
   };
 
-  useEffect(() => { load(); }, [listType]);
-
-  const handleAddEntry = async (form: AddEntryForm) => {
-    await IpAPI.addEntry(form.value, form.list_type);
-
-    // Switch to the list the user just added to
-    if (form.list_type !== listType) setListType(form.list_type);
-    else await load();
-    setDialogOpen(false);
-  };
-
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = useCallback(async () => {
     const ids = Array.from(selection.ids).map(Number);
     await IpAPI.deleteEntries(ids);
     setSelection({ type: 'include', ids: new Set() });
     await load();
-  };
+  }, [selection, load]);
 
   const columns: GridColDef[] = [
-    { field: 'ip',           headerName: 'IP / CIDR / Country', flex: 1 },
-    { field: 'list_type',    headerName: 'List',    width: 110 },
-    { field: 'entry_type',   headerName: 'Type',    width: 110 },
-    { field: 'country_code', headerName: 'Country', width: 100 },
+    { field: 'ip',           headerName: 'IP / CIDR',  flex: 1 },
+    { field: 'list_type',    headerName: 'List',        width: 110 },
+    { field: 'entry_type',   headerName: 'Type',        width: 110 },
+    { field: 'country_code', headerName: 'Country',     width: 100 },
     {
-      field: 'expires_at',
-      headerName: 'Expires',
+      field: 'blocked_at',
+      headerName: 'Blocked at',
+      width: 160,
+      valueFormatter: ({ value }) =>
+        value ? new Date(value).toLocaleString() : '—',
+    },
+    {
+      field: 'created_at',
+      headerName: 'Added',
       width: 160,
       valueFormatter: ({ value }) =>
         value ? new Date(value).toLocaleString() : '—',
     },
   ];
 
-  const hasSelection = Array.from(selection.ids).length > 0;
+  const toolbarSlots = useMemo(() => ({ toolbar: CustomToolbar }), []);
+
+  const toolbarSlotProps = useMemo(() => ({
+    toolbar: {
+      onAdd: () => setDialogOpen(true),
+      onDeleteSelected: handleDeleteSelected,
+      selectedCount: selection.ids.size,
+    },
+  }), [handleDeleteSelected, selection.ids.size]);
 
   return (
     <Box>
@@ -254,16 +300,16 @@ export default function AccessControl(): JSX.Element {
           disableRowSelectionOnClick
           rowSelectionModel={selection}
           onRowSelectionModelChange={setSelection}
-          slots={{
-            toolbar: CustomToolbar,
-          }}
+          showToolbar
+          slots={toolbarSlots}
+          slotProps={toolbarSlotProps}
         />
       </Paper>
 
       <AddEntryDialog
         open={dialogOpen}
         defaultListType={listType}
-        onSave={handleAddEntry}
+        onSave={handleAddEntries}
         onClose={() => setDialogOpen(false)}
       />
     </Box>

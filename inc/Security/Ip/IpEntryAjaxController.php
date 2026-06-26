@@ -3,7 +3,6 @@
 defined( 'ABSPATH' ) || exit;
 
 use Bromate\RestApiFirewall\Core\Settings\SettingsAjaxController;
-use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
 use Bromate\RestApiFirewall\Security\Ip\IpEntryRepository;
 use Bromate\RestApiFirewall\Security\Ip\CidrMatcher;
 use Bromate\RestApiFirewall\Security\Ip\GeoIpApi;
@@ -14,14 +13,14 @@ class IpEntryAjaxController {
 
 	public static function register(): void {
 		$self = new self();
-		add_action( 'wp_ajax_bromate_add_ip_entry', array( $self, 'ajax_add_ip_entry' ) );
-		add_action( 'wp_ajax_bromate_get_ip_entries', array( $self, 'ajax_add_ip_entries' ) );
-		add_action( 'wp_ajax_bromate_delete_ip_entry', array( $self, 'ajax_delete_ip_entry' ) );
+		add_action( 'wp_ajax_bromate_get_ip_entries',    array( $self, 'ajax_get_ip_entries' ) );
+		add_action( 'wp_ajax_bromate_add_ip_entry',      array( $self, 'ajax_add_ip_entry' ) );
+		add_action( 'wp_ajax_bromate_delete_ip_entry',   array( $self, 'ajax_delete_ip_entry' ) );
 		add_action( 'wp_ajax_bromate_delete_ip_entries', array( $self, 'ajax_delete_ip_entries' ) );
 		add_action( 'wp_ajax_bromate_get_country_stats', array( $self, 'ajax_get_country_stats' ) );
 	}
 
-	public function ajax_add_ip_entries(): void {
+	public function ajax_get_ip_entries(): void {
 
 		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
@@ -47,23 +46,17 @@ class IpEntryAjaxController {
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
 		if ( empty( $ip ) || ! CidrMatcher::is_valid_ip_or_cidr( $ip ) ) {
-			wp_send_json_error( array( 'message' => __( 'Invalid IP address', 'bromate-rest-api-firewall' ) ), 400 );
+			wp_send_json_error( array( 'message' => __( 'Invalid IP address or CIDR', 'bromate-rest-api-firewall' ) ), 400 );
 		}
 
 		if ( IpEntryRepository::find_by_ip( $ip, $list_type ) ) {
 			wp_send_json_error( array( 'message' => __( 'IP already in list', 'bromate-rest-api-firewall' ) ), 400 );
 		}
 
-		$expiry_seconds = (int) SettingsRepository::read_option( 'expiry_seconds' );
-		$expires_at     = $expiry_seconds > 0
-			? gmdate( 'Y-m-d H:i:s', time() + $expiry_seconds )
-			: null;
-
 		$data = array(
 			'ip'         => $ip,
 			'list_type'  => $list_type,
 			'entry_type' => 'manual',
-			'expires_at' => $expires_at,
 		);
 
 		$geoip = GeoIpApi::get_geoip( $ip );
@@ -127,6 +120,7 @@ class IpEntryAjaxController {
 	}
 
 	public function ajax_get_country_stats(): void {
+
 		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}

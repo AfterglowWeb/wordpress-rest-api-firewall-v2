@@ -4,7 +4,6 @@ import { useEffect } from '@wordpress/element';
 >>>>>>> d78a3463b54610a29cf4b03016ae1c0da59bf6ae
 import { DialogProvider } from '@contexts/DialogContext';
 import { NavigationProvider } from '@contexts/NavigationContext';
-import ConfirmDialog from '@components/ConfirmDialog';
 import AdminLayout from '@layouts/AdminLayout';
 <<<<<<< HEAD
 
@@ -40,7 +39,6 @@ export default function App() {
 		<DialogProvider>
 			<NavigationProvider>
 				<AdminLayout />
-				<ConfirmDialog />
 			</NavigationProvider>
 		</DialogProvider>
 	);

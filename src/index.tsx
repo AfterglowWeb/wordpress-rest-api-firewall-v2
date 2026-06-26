@@ -42,29 +42,17 @@ document.addEventListener( 'DOMContentLoaded', function () {
 });
 =======
 import { type AdminData } from '@app-types/admin';
-import { AdminDataProvider } from '@contexts/AdminDataContext';
 
-document.addEventListener( 'DOMContentLoaded', function () {
-	const container = document.getElementById( 'bromate-rest-api-firewall-page' );
-	const raw = window.bromateRestApiFirewall ;
-	const adminData: AdminData = {
-		...raw,
-		plugin_name: raw.plugin?.name ?? raw.plugin_name,
-		plugin_version: raw.plugin?.version ?? raw.plugin_version,
-	};
+document.addEventListener('DOMContentLoaded', function () {
+  const raw = window.bromateRestApiFirewall;
+  if (!raw) {
+	return;
+  }
 
-	if ( container && adminData ) {
-	
-		const root = createRoot( container );
-
-		root.render(
-			<AdminDataProvider adminData={adminData}>
-				<App />
-			</AdminDataProvider>
-		);
-
-	}
-});
-
+  const adminData: AdminData = {
+    ...raw,
+    plugin_name: raw.plugin?.name ?? raw.plugin_name,
+    plugin_version: raw.plugin?.version ?? raw.plugin_version,
+  };
 
 >>>>>>> d78a3463b54610a29cf4b03016ae1c0da59bf6ae

@@ -6,7 +6,7 @@ use wpdb;
 
 class IpSchema {
 
-	const SCHEMA_VERSION = '1.2.0';
+	const SCHEMA_VERSION = '1.3.0';
 	const OPTION_KEY     = 'bromate_rest_api_firewall_ip_schema_version';
 
 	public static function install(): void {
@@ -19,14 +19,26 @@ class IpSchema {
 		if ( version_compare( $current, self::SCHEMA_VERSION, '<' ) ) {
 			self::create_tables( $wpdb );
 			self::maybe_alter_list_type_enum( $wpdb );
+			self::maybe_drop_expires_at( $wpdb );
 			update_option( self::OPTION_KEY, self::SCHEMA_VERSION, false );
 		}
 	}
 
 	private static function maybe_alter_list_type_enum( wpdb $wpdb ): void {
 		$table = $wpdb->prefix . 'bromate_rest_api_firewall_ip_entries';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- DDL statement, $table is $wpdb->prefix-derived, not user input
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$wpdb->query( "ALTER TABLE {$table} MODIFY list_type ENUM('whitelist','blacklist') NOT NULL DEFAULT 'blacklist'" );
+	}
+
+	private static function maybe_drop_expires_at( wpdb $wpdb ): void {
+		$table = $wpdb->prefix . 'bromate_rest_api_firewall_ip_entries';
+		// Check column exists before dropping to keep idempotent
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$col = $wpdb->get_results( "SHOW COLUMNS FROM {$table} LIKE 'expires_at'" );
+		if ( ! empty( $col ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE {$table} DROP INDEX expires_at, DROP COLUMN expires_at" );
+		}
 	}
 
 	private static function create_tables( wpdb $wpdb ): void {
@@ -42,7 +54,6 @@ class IpSchema {
 			country_code CHAR(2) NULL,
 			country_name VARCHAR(100) NULL,
 			blocked_at DATETIME NOT NULL,
-			expires_at DATETIME NULL,
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
@@ -50,8 +61,7 @@ class IpSchema {
 			KEY list_type (list_type),
 			KEY entry_type (entry_type),
 			KEY country_code (country_code),
-			KEY blocked_at (blocked_at),
-			KEY expires_at (expires_at)
+			KEY blocked_at (blocked_at)
 		) {$charset_collate};";
 
 		dbDelta( $sql );

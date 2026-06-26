@@ -4,9 +4,6 @@ import {
     useState,
     useCallback,
 } from '@wordpress/element';
-import type { ChildrenProps } from '@app-types/children-props';
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 export const DIALOG_TYPES = {
     CONFIRM: 'confirm',
@@ -27,10 +24,9 @@ export interface DialogState {
     cancelLabel:  string | null;
     onConfirm:    (() => void) | null;
     onCancel:     (() => void) | null;
-    autoClose:    number | null;        // délai en ms, null = pas d'auto-close
+    autoClose:    number | null;
 }
 
-/** Toutes les clés sauf `open` sont optionnelles à l'ouverture */
 export type OpenDialogOptions = Partial<Omit<DialogState, 'open'>>;
 
 interface DialogContextValue {
@@ -40,8 +36,6 @@ interface DialogContextValue {
     closeDialog: () => void;
     resetDialog: () => void;
 }
-
-// ─── State initiale ───────────────────────────────────────────────────────────
 
 const initialState: DialogState = {
     open:         false,
@@ -55,11 +49,13 @@ const initialState: DialogState = {
     autoClose:    null,
 };
 
-// ─── Context ──────────────────────────────────────────────────────────────────
-
 const DialogContext = createContext<DialogContextValue | null>(null);
 
-export function DialogProvider({ children }: ChildrenProps): JSX.Element {
+type DialogProviderProps = {
+    children?: JSX.Element;
+};
+
+export function DialogProvider({ children }: DialogProviderProps): JSX.Element {
     const [dialog, setDialog] = useState<DialogState>(initialState);
 
     const openDialog = useCallback((options: OpenDialogOptions = {}) => {

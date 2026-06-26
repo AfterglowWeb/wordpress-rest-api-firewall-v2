@@ -50,7 +50,6 @@ export function useNavigation(): NavigationContextValue {
 =======
 import { createContext, useContext, useState } from '@wordpress/element';
 import type { PanelKey, PanelDefinition } from '@app-types/navigation';
-import type { ChildrenProps } from '@app-types/children-props';
 import { parseLocalizedPanels } from '@app-utils/parseLocalizedPanels';
 import { buildMenuItems } from '@app-utils/buildMenuItems';
 import type { MenuItem } from '@app-utils/buildMenuItems';
@@ -65,7 +64,11 @@ type NavigationContextValue = {
 
 const NavigationContext = createContext<NavigationContextValue | undefined>( undefined );
 
-export function NavigationProvider( { children }: ChildrenProps ): JSX.Element {
+type NavigationProviderProps = {
+    children?: JSX.Element;
+};
+
+export function NavigationProvider( { children }: NavigationProviderProps ): JSX.Element {
     const panels = parseLocalizedPanels();
     const firstKey = panels[ 0 ]?.key ?? 'auth';
 

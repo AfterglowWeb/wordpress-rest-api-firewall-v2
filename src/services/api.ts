@@ -32,7 +32,7 @@ export async function apiRequest<T>(
 	}).then((res) => {
 =======
 	const nonce = getNonce();
-	return fetch( getAjaxurl(), {
+	const response = await fetch(getAjaxurl(), {
 		method: 'POST',
 		headers: {
 				'Content-Type':
@@ -52,4 +52,19 @@ export async function apiRequest<T>(
 		}
 		return res.data;
 	});
+
+	if (!response.ok) {
+		throw new Error(`HTTP error ${response.status}`);
+	}
+
+	const res: AjaxResponse<T> = await response.json();
+
+	if (!res.success) {
+		const message =
+			(res.data as any)?.message ??
+			(typeof res.data === 'string' ? res.data : 'Request failed');
+		throw new Error(message);
+	}
+
+	return res.data;
 }

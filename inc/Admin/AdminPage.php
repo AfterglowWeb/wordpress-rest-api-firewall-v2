@@ -41,7 +41,7 @@ class AdminPage {
 	}
 
 	public function render_admin_page(): void { ?>
-		<div id="bromate-rest-api-firewall-page"></div>
+		<div id="bromate-rest-api-firewall-page"><div id="bromate-shadow-host"></div></div>
 		
 	<?php }
 
@@ -127,75 +127,6 @@ class AdminPage {
 		}
 		body.toplevel_page_bromate-rest-api-firewall #wpbody-content .notice {
 			display:none;
-		}
-		#bromate-rest-api-firewall-page input[type=color], 
-		#bromate-rest-api-firewall-page input[type=date], 
-		#bromate-rest-api-firewall-page input[type=datetime-local], 
-		#bromate-rest-api-firewall-page input[type=datetime], 
-		#bromate-rest-api-firewall-page input[type=email], 
-		#bromate-rest-api-firewall-page input[type=month], 
-		#bromate-rest-api-firewall-page input[type=number], 
-		#bromate-rest-api-firewall-page input[type=password], 
-		#bromate-rest-api-firewall-page input[type=search], 
-		#bromate-rest-api-firewall-page input[type=tel], 
-		#bromate-rest-api-firewall-page input[type=text], 
-		#bromate-rest-api-firewall-page input[type=time], 
-		#bromate-rest-api-firewall-page input[type=url], 
-		#bromate-rest-api-firewall-page input[type=week],
-		body.toplevel_page_bromate-rest-api-firewall input[type=text],
-		body.toplevel_page_bromate-rest-api-firewall input[type=password],
-		body.toplevel_page_bromate-rest-api-firewall input[type=email],
-		body.toplevel_page_bromate-rest-api-firewall input[type=number],
-		body.toplevel_page_bromate-rest-api-firewall input[type=tel],
-		body.toplevel_page_bromate-rest-api-firewall input[type=url] {
-			box-shadow: unset;
-			border-radius: 4px;
-			background-color: none;
-			line-height: normal;
-			min-height: auto;
-			font: inherit;
-			letter-spacing: inherit;
-			color: currentColor;
-			border: 0;
-			box-sizing: content-box;
-			background: none;
-			height: 1.4375em;
-			margin: 0;
-			-webkit-tap-highlight-color: transparent;
-			display: block;
-			min-width: 0;
-			width: 100%;
-			-webkit-animation-name: mui-auto-fill-cancel;
-			animation-name: mui-auto-fill-cancel;
-			-webkit-animation-duration: 10ms;
-			animation-duration: 10ms;
-			padding-top: 1px;
-			padding: 8.5px 14px;
-		}
-		#bromate-rest-api-firewall-page input[type=checkbox], 
-		#bromate-rest-api-firewall-page input[type=radio] {
-			cursor: inherit;
-			position: absolute;
-			opacity: 0;
-			width: 100%;
-			height: 100%;
-			top: 0;
-			left: 0;
-			margin: 0;
-			padding: 0!important;
-			z-index: 1;
-			min-width: unset;
-			box-shadow: unset;
-
-		}
-		#bromate-rest-api-firewall-page input[type=checkbox]:disabled,
-		body.toplevel_page_bromate-rest-api-firewall input[type=checkbox]:disabled {
-			opacity:0;
-		}
-		#bromate-rest-api-firewall-page input[type="search"]:focus,
-		#bromate-rest-api-firewall-page textarea:focus {
-			border: unset;
-			box-shadow: unset;
 		}
 		';
 		echo '<style type="text/css">' . esc_html( $custom_css ) . '</style>';
