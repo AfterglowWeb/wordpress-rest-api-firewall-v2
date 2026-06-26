@@ -35,6 +35,7 @@ export default function ConfirmDialog(): JSX.Element {
     const handleClose = (_: unknown, reason?: string) => {
         if (reason === 'backdropClick' && type === DIALOG_TYPES.LOADING) return;
         onCancel?.();
+        resetDialog();
         closeDialog();
     };
 
@@ -129,7 +130,7 @@ export default function ConfirmDialog(): JSX.Element {
         <Dialog
             open={open}
             onClose={handleClose}
-            TransitionProps={{ onExited: resetDialog }}
+            disablePortal
             aria-labelledby="dialog-title"
             maxWidth="xs"
             fullWidth
