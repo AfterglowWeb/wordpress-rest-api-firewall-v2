@@ -38,7 +38,7 @@ final class RestRequestBootstrap {
 			'rest_pre_dispatch',
 			array( self::class, 'rate_limit_request' ),
 			10,
-			3
+			1
 		);
 	}
 
@@ -66,11 +66,7 @@ final class RestRequestBootstrap {
 		return $result;
 	}
 
-	public static function rate_limit_request(
-		$result,
-		$server,
-		WP_REST_Request $request
-	) {
+	public static function rate_limit_request( $result ) {
 
 		if ( is_wp_error( $result ) ) {
 			return $result;

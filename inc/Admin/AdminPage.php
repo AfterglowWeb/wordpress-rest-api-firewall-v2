@@ -11,7 +11,7 @@ use WP_User;
 class AdminPage {
 
 	private function __construct() {}
-	
+
 
 	public static function register(): void {
 		$self = new self();
@@ -25,7 +25,6 @@ class AdminPage {
 		add_action( 'admin_menu', array( $self, 'register_admin_page' ) );
 		add_action( 'admin_enqueue_scripts', array( $self, 'enqueue_scripts' ), 10, 1 );
 		add_action( 'admin_footer', array( $self, 'print_inline_styles' ), 20 );
-		//add_action( 'admin_notices', array( $self, 'admin_notices' ) );
 	}
 
 	public function register_admin_page(): void {
@@ -40,10 +39,12 @@ class AdminPage {
 		);
 	}
 
-	public function render_admin_page(): void { ?>
+	public function render_admin_page(): void {
+		?>
 		<div id="bromate-rest-api-firewall-page"><div id="bromate-shadow-host"></div></div>
 		
-	<?php }
+		<?php
+	}
 
 	public function enqueue_scripts( $hook ): void {
 		if ( 'toplevel_page_bromate-rest-api-firewall' !== $hook ) {
@@ -67,10 +68,9 @@ class AdminPage {
 			true
 		);
 
-
 		$mui_datagrid_config       = self::load_script_config( BROMATE_REST_API_FIREWALL_DIR . 'build/mui-datagrid.asset.php' );
 		$mui_datagrid_dependencies = ! empty( $mui_datagrid_config ) && isset( $mui_datagrid_config['dependencies'] ) ? $mui_datagrid_config['dependencies'] : array();
-		$mui_datagrid_dependencies = array_unique( array_merge(['bromate-rest-api-firewall-mui'], $mui_datagrid_dependencies) );
+		$mui_datagrid_dependencies = array_unique( array_merge( array( 'bromate-rest-api-firewall-mui' ), $mui_datagrid_dependencies ) );
 		wp_enqueue_script(
 			'bromate-rest-api-firewall-mui-datagrid',
 			BROMATE_REST_API_FIREWALL_URL . 'build/mui-datagrid.js',
@@ -81,7 +81,7 @@ class AdminPage {
 
 		$index_script_config = self::load_script_config( BROMATE_REST_API_FIREWALL_DIR . 'build/index.asset.php' );
 		$index_dependencies  = ! empty( $index_script_config ) && isset( $index_script_config['dependencies'] ) ? $index_script_config['dependencies'] : array();
-		$index_dependencies  = array_unique( array_merge( ['bromate-rest-api-firewall-mui'], $index_dependencies ) );
+		$index_dependencies  = array_unique( array_merge( array( 'bromate-rest-api-firewall-mui' ), $index_dependencies ) );
 		wp_enqueue_script(
 			'bromate-rest-api-firewall',
 			BROMATE_REST_API_FIREWALL_URL . 'build/index.js',
@@ -105,7 +105,7 @@ class AdminPage {
 					'id'    => $user->ID,
 					'login' => $user->user_login,
 				),
-				'panels'  => SettingsConfig::groups_config(),
+				'panels'      => SettingsConfig::groups_config(),
 			)
 		);
 	}
@@ -175,7 +175,7 @@ class AdminPage {
 		if ( FileUtils::is_readable( $file_path ) ) {
 			$raw_config             = include realpath( $file_path );
 			$config['dependencies'] = isset( $raw_config['dependencies'] ) ? array_map( 'sanitize_text_field', $raw_config['dependencies'] ) : array();
-			$config['version']      = isset( $raw_config['version'] ) ? sanitize_text_field( $raw_config['version'] ) : rand();
+			$config['version']      = isset( $raw_config['version'] ) ? sanitize_text_field( $raw_config['version'] ) : wp_rand();
 		}
 		return $config;
 	}

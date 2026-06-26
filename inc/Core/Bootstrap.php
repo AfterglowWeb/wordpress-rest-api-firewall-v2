@@ -23,16 +23,15 @@ final class Bootstrap {
 	}
 
 	public static function activate(): void {
-		
+
 		IpSchema::install();
-		
+
 		$role = get_role( 'administrator' );
 		if ( ! $role ) {
 			return;
 		}
 
 		$role->add_cap( 'bromate_rest_api_firewall_edit_options' );
-
 
 		if ( false === get_option( 'bromate_rest_api_firewall_options' ) ) {
 			update_option(

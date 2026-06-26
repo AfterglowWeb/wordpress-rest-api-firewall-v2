@@ -32,7 +32,6 @@ class IpSchema {
 
 	private static function maybe_drop_expires_at( wpdb $wpdb ): void {
 		$table = $wpdb->prefix . 'bromate_rest_api_firewall_ip_entries';
-		// Check column exists before dropping to keep idempotent
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$col = $wpdb->get_results( "SHOW COLUMNS FROM {$table} LIKE 'expires_at'" );
 		if ( ! empty( $col ) ) {

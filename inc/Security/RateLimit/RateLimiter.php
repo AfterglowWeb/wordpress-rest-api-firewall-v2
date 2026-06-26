@@ -84,6 +84,6 @@ class RateLimiter {
 			$window
 		);
 
-        return $count;
-    }
+		return $count;
+	}
 }

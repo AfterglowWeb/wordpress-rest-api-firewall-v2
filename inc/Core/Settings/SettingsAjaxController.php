@@ -208,7 +208,7 @@ class SettingsAjaxController {
 		$current_user_id = get_current_user_id();
 
 		return array_map(
-			static function ( WP_User $user ) use ($current_user_id): array {
+			static function ( WP_User $user ) use ( $current_user_id ): array {
 				return array(
 					'id'            => absint( $user->ID ),
 					'display_name'  => sanitize_text_field( $user->display_name ?? '' ),
@@ -227,5 +227,4 @@ class SettingsAjaxController {
 			)
 		);
 	}
-
 }

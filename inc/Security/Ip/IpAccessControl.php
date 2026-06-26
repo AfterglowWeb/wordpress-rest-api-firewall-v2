@@ -10,9 +10,9 @@ class IpAccessControl {
 
 		$ip = ClientIpResolver::get_client_ip();
 
-        if ( IpEntryRepository::ip_in_list( $ip, 'whitelist' ) ) {
-            return true;
-        }
+		if ( IpEntryRepository::ip_in_list( $ip, 'whitelist' ) ) {
+			return true;
+		}
 
 		if ( GeoIpApi::is_country_blocked( $ip ) ) {
 			return new WP_Error(
