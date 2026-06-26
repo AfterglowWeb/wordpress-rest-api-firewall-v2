@@ -285,7 +285,7 @@ class IpEntryRepository {
 
 		$sql = "
 			SELECT 1
-			FROM " . self::table() . "
+			FROM ' . self::table() . '
 			WHERE country_code = %s
 			AND list_type = %s
 			LIMIT 1
@@ -348,5 +348,4 @@ class IpEntryRepository {
 
 		return $sanitized;
 	}
-
 }

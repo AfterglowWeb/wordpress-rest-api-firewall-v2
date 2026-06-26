@@ -1,4 +1,4 @@
-<?php namespace Bromate\RestApiFirewall\Security\Wordpress;
+<?php namespace Bromate\RestApiFirewall\Security\WordPress;
 
 defined( 'ABSPATH' ) || exit;
 

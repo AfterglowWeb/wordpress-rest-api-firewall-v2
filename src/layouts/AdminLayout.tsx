@@ -4,6 +4,8 @@ import Navigation from '@components/Navigation';
 
 import { useNavigation } from '@contexts/NavigationContext';
 
+import ConfirmDialog from '@components/ConfirmDialog';
+
 import Dashboard from '@pages/Dashboard';
 import Authentication from '@pages/Authentication';
 import AccessControl from '@pages/AccessControl';
@@ -22,19 +24,17 @@ export default function AdminLayout() {
 			<Box flex={1}>
 				{panel === 'dashboard' && <Dashboard />}
 
-				{panel === 'authentication' && (
-					<Authentication />
-				)}
+					
+					{panel === 'rate-limiting' && (
+						<RateLimiting />
+					)}
 
-				{panel === 'access-control' && (
-					<AccessControl />
-				)}
+					{panel === 'access-control' && (
+						<AccessControl />
+					)}
 
-				{panel === 'rate-limiting' && (
-					<RateLimiting />
-				)}
 
-				{panel === 'routes' && <Routes />}
+					{panel === 'routes' && <Routes />}
 
 				{/*panel === 'wordpress' && <Wordpress />*/}
 

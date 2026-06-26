@@ -34,6 +34,6 @@
       "composer install --no-dev --optimize-autoloader"
     ],
     "lint": "phpcs inc/",
-    "fix": "phpcbf --standard=Wordpress --extensions=php inc/"
+    "fix": "phpcbf --standard=WordPress --extensions=php inc/"
   }
 }

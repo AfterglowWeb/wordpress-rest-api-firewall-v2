@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from '@wordpress/element';
 import { Box, Grid, Paper, Typography, Stack, Switch, Chip } from '@mui/material';
 import type { SecurityModule } from '@types/modules';
 

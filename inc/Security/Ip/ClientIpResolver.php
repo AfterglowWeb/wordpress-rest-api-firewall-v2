@@ -33,6 +33,4 @@ class ClientIpResolver {
 
 		return '';
 	}
-
-
 }

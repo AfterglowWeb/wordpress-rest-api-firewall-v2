@@ -1,15 +1,16 @@
 <?php namespace Bromate\RestApiFirewall\Core\Settings;
 
 use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
-use Bromate\RestApiFirewall\Core\Settings\SettingsConfig;
 use Bromate\RestApiFirewall\Api\Routing\RoutesPolicyRepository;
+use Bromate\RestApiFirewall\Api\Response\ModelsPropertiesRepository;
+use WP_User;
 
 class SettingsAjaxController {
-	
+
 	private function __construct() {}
 
 	public static function register(): void {
-        $self = new self();
+		$self = new self();
 
 		add_action( 'wp_ajax_bromate_rest_api_firewall_read_options', array( $self , 'ajax_read_options' ) );
        	add_action( 'wp_ajax_bromate_rest_api_firewall_update_options', array( $self , 'ajax_update_options' ) );
@@ -122,6 +123,22 @@ class SettingsAjaxController {
 		);
 	}
 
+	public function ajax_get_authorized_users(): void {
+		if ( false === self::ajax_validate_has_firewall_admin_caps() ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-api-firewall' ) ), 403 );
+		}
+		$wordpress_users = self::list_authorized_users();
+		wp_send_json_success( $wordpress_users );
+	}
+
+	public function ajax_get_wordpress_objects(): void {
+		if ( false === self::ajax_validate_has_firewall_admin_caps() ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-api-firewall' ) ), 403 );
+		}
+		$wordpress_objects = ModelsPropertiesRepository::list_rest_api_object_types();
+		wp_send_json_success( $wordpress_objects );
+	}
+
 	public function ajax_save_routes_policy_tree(): void {
 		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
@@ -174,7 +191,6 @@ class SettingsAjaxController {
 
 		$valid = wp_verify_nonce( $nonce, 'bromate_rest_api_firewall_update_options_nonce' );
 
-
 		return (bool) $valid
 			&& is_user_logged_in()
 			&& current_user_can( 'bromate_rest_api_firewall_edit_options' );
@@ -187,6 +203,44 @@ class SettingsAjaxController {
 
 		flush_rewrite_rules( false );
 		wp_send_json_success( array( 'message' => esc_html__( 'Rewrite rules flushed successfully.', 'bromate-rest-api-firewall' ) ) );
+	}
+
+
+	private static function list_authorized_users(): array {
+		$users = get_users(
+			array(
+				'role__in' => array( 'administrator' ),
+				'number'   => 500,
+				'orderby'  => 'display_name',
+				'order'    => 'ASC',
+			)
+		);
+
+		if ( empty( $users ) ) {
+			return array();
+		}
+
+		$current_user_id = get_current_user_id();
+
+		return array_map(
+			static function ( WP_User $user ) use ($current_user_id): array {
+				return array(
+					'id'            => absint( $user->ID ),
+					'display_name'  => sanitize_text_field( $user->display_name ?? '' ),
+					'email'         => sanitize_email( $user->user_email ),
+					'current_user'  => $current_user_id === $user->ID ? true : false,
+					'admin_url'     => sanitize_url( get_edit_user_link( $user->ID ) ),
+					'roles'         => array_map( 'sanitize_key', $user->roles ),
+					'jwt_claim_sub' => '',
+					'status'        => '',
+					'expires_at'    => '',
+				);
+			},
+			array_filter(
+				(array) $users,
+				static fn ( $user ) => $user instanceof WP_User
+			)
+		);
 	}
 
 }

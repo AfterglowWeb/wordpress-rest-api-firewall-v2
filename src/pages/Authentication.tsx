@@ -1,170 +1,439 @@
-import { useState } from 'react';
-import {
-	Box,
-	Paper,
-	Typography,
-	Switch,
-	Stack,
-	TextField,
-	Select,
-	MenuItem,
-	FormControl,
-	InputLabel,
-	Divider,
-} from '@mui/material';
+// components/Authentication.tsx
 
-import type { AuthSettings } from '@app-types/auth';
+import { useState, useCallback, useMemo } from '@wordpress/element';
+import {
+  Box, Paper, Typography, Switch, Stack,
+  TextField, Select, MenuItem, FormControl,
+  InputLabel, Button, Alert, Snackbar, Chip
+} from '@mui/material';
+import {
+  DataGrid,
+  GridColDef,
+  GridActionsCellItem,
+  GridRowId,
+  GridRowSelectionModel,
+  Toolbar
+} from '@mui/x-data-grid';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+
+import type { AuthSettings, AuthorizedUser } from '@app-types/auth';
+import UserDialog from '@features/authentication/UserDialog';
+import { apiRequest } from '@services/api';
+
+
+// Extend MUI's slot overrides so slotProps.toolbar accepts our custom props
+declare module '@mui/x-data-grid' {
+  interface ToolbarPropsOverrides {
+    onAddUser: () => void;
+    onDeleteSelected: () => void;
+    selectedCount: number;
+  }
+}
+
+interface CustomToolbarProps {
+  onAddUser: () => void;
+  onDeleteSelected: () => void;
+  selectedCount: number;
+}
+
+function CustomToolbar({ onAddUser, onDeleteSelected, selectedCount }: CustomToolbarProps) {
+  return (
+    <Toolbar>
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        <Button 
+          startIcon={<AddIcon />} 
+          size="small"
+          variant="contained"
+          onClick={onAddUser}
+        >
+          Add user
+        </Button>
+        <Button 
+          startIcon={<DeleteForeverIcon />} 
+          size="small"
+          variant="outlined"
+          color="error"
+          onClick={onDeleteSelected}
+          disabled={selectedCount === 0}
+        >
+          Delete selected ({selectedCount})
+        </Button>
+      </Box>
+    </Toolbar>
+  );
+}
 
 export default function Authentication(): JSX.Element {
-	const [settings, setSettings] = useState<AuthSettings>({
-		auth_enforce: false,
-		auth_methods: 'wp_auth',
-		auth_jwt_algorithm: 'RS256',
-		auth_jwt_public_key: '',
-		auth_jwt_audience: '',
-		auth_jwt_issuer: '',
-		auth_user_ids: 0,
-	});
+  const [settings, setSettings] = useState<AuthSettings>({
+    auth_enforce: false,
+    auth_methods: 'wp_auth',
+    auth_jwt_algorithm: 'RS256',
+    auth_jwt_public_key: '',
+    auth_jwt_audience: '',
+    auth_jwt_issuer: '',
+    auth_users: [],
+  });
 
-	const update = <K extends keyof AuthSettings>(
-		key: K,
-		value: AuthSettings[K]
-	) => {
-		setSettings((prev) => ({
-			...prev,
-			[key]: value,
-		}));
-	};
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<AuthorizedUser | null>(null);
+  const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
+    type: 'include',
+    ids: new Set<GridRowId>(),
+  });
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
-	return (
-		<Box p={3}>
-			<Typography variant="h5" fontWeight={600} mb={2}>
-				Authentication
-			</Typography>
+  // Fetch WordPress users when dialog opens for adding new user
+  const [wpUsers, setWpUsers] = useState<AuthorizedUser[]>([]);
+  const [wpUsersLoading, setWpUsersLoading] = useState(false);
+  const fetchWordPressUsers = useCallback(async () => {
+    setWpUsersLoading(true);
+    try {
+      const users = await apiRequest<AuthorizedUser[]>('bromate_get_authorized_users');
+      setWpUsers(users);
 
-			{/* CORE AUTH */}
-			<Paper sx={{ p: 2, mb: 2 }}>
-				<Typography variant="h6" mb={2}>
-					Core Settings
-				</Typography>
+    } catch (error) {
+      console.error('Failed to fetch WordPress users:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load WordPress users',
+        severity: 'error',
+      });
+    } finally {
+      setWpUsersLoading(false);
+    }
+  }, []);
+  console.log(wpUsers);
 
-				<Stack spacing={2}>
-					<Box display="flex" justifyContent="space-between" alignItems="center">
-						<Box>
-							<Typography fontWeight={600}>
-								Require authentication for all API routes
-							</Typography>
-							<Typography variant="body2" color="text.secondary">
-								Force authentication unless route is explicitly public
-							</Typography>
-						</Box>
 
-						<Switch
-							checked={settings.auth_enforce}
-							onChange={(e) =>
-								update('auth_enforce', e.target.checked)
-							}
-						/>
-					</Box>
+  const update = <K extends keyof AuthSettings>(
+    key: K,
+    value: AuthSettings[K]
+  ) => setSettings((prev) => ({ ...prev, [key]: value }));
 
-					<FormControl fullWidth>
-						<InputLabel>Authentication method</InputLabel>
-						<Select
-							value={settings.auth_methods}
-							label="Authentication method"
-							onChange={(e) =>
-								update('auth_methods', e.target.value as any)
-							}
-						>
-							<MenuItem value="wp_auth">WordPress Auth</MenuItem>
-							<MenuItem value="jwt">JWT</MenuItem>
-						</Select>
-					</FormControl>
-				</Stack>
-			</Paper>
+  const handleSaveUser = useCallback((user: AuthorizedUser) => {
+    setSettings((prev) => {
+      const exists = prev.auth_users.some((u) => u.id === user.id);
+      const newUsers = exists
+        ? prev.auth_users.map((u) => (u.id === user.id ? user : u))
+        : [...prev.auth_users, user];
+      
+      setSnackbar({
+        open: true,
+        message: exists ? 'User updated successfully' : 'User added successfully',
+        severity: 'success',
+      });
+      
+      return {
+        ...prev,
+        auth_users: newUsers,
+      };
+    });
+    setDialogOpen(false);
+    setEditingUser(null);
+  }, []);
 
-			{/* JWT SECTION */}
-			{settings.auth_methods === 'jwt' && (
-				<Paper sx={{ p: 2, mb: 2 }}>
-					<Typography variant="h6" mb={2}>
-						JWT Configuration
-					</Typography>
+  const handleDeleteUser = useCallback((id: GridRowId) => {
+    setSettings((prev) => {
+      const user = prev.auth_users.find(u => u.id === id);
+      setSnackbar({
+        open: true,
+        message: `User ${user?.display_name || id} deleted successfully`,
+        severity: 'success',
+      });
+      return {
+        ...prev,
+        auth_users: prev.auth_users.filter((u) => u.id !== id),
+      };
+    });
+  }, []);
 
-					<Stack spacing={2}>
-						<FormControl fullWidth>
-							<InputLabel>JWT Algorithm</InputLabel>
-							<Select
-								value={settings.auth_jwt_algorithm}
-								label="JWT Algorithm"
-								onChange={(e) =>
-									update(
-										'auth_jwt_algorithm',
-										e.target.value as any
-									)
-								}
-							>
-								<MenuItem value="RS256">RS256</MenuItem>
-								<MenuItem value="RS384">RS384</MenuItem>
-								<MenuItem value="RS512">RS512</MenuItem>
-								<MenuItem value="HS256">HS256</MenuItem>
-								<MenuItem value="HS384">HS384</MenuItem>
-								<MenuItem value="HS512">HS512</MenuItem>
-								<MenuItem value="ES256">ES256</MenuItem>
-							</Select>
-						</FormControl>
+  const handleDeleteSelected = useCallback(() => {
+    const selectedIds = Array.from(rowSelectionModel.ids);
+    const selectedNames = settings.auth_users
+      .filter(u => selectedIds.includes(u.id))
+      .map(u => u.display_name)
+      .join(', ');
+    
+    setSettings((prev) => ({
+      ...prev,
+      auth_users: prev.auth_users.filter((u) => !selectedIds.includes(u.id)),
+    }));
+    
+    setSnackbar({
+      open: true,
+      message: `Deleted ${selectedIds.length} user(s): ${selectedNames}`,
+      severity: 'success',
+    });
+    
+    setRowSelectionModel({
+      type: 'include',
+      ids: new Set<GridRowId>(),
+    });
+  }, [rowSelectionModel, settings.auth_users]);
 
-						<TextField
-							label="JWT Public Key"
-							multiline
-							minRows={4}
-							value={settings.auth_jwt_public_key}
-							onChange={(e) =>
-								update('auth_jwt_public_key', e.target.value)
-							}
-						/>
+  const handleAddUser = useCallback(() => {
+    setEditingUser(null);
+    fetchWordPressUsers();
+    setDialogOpen(true);
+  }, [fetchWordPressUsers]);
 
-						<TextField
-							label="JWT Audience"
-							value={settings.auth_jwt_audience}
-							onChange={(e) =>
-								update('auth_jwt_audience', e.target.value)
-							}
-						/>
+  const handleEditUser = useCallback((user: AuthorizedUser) => {
+    setEditingUser(user);
+    setDialogOpen(true);
+  }, []);
 
-						<TextField
-							label="JWT Issuer"
-							value={settings.auth_jwt_issuer}
-							onChange={(e) =>
-								update('auth_jwt_issuer', e.target.value)
-							}
-						/>
-					</Stack>
-				</Paper>
-			)}
+  const columns: GridColDef<AuthorizedUser>[] = [
+    { field: 'id', headerName: 'WP ID', width: 80 },
+    { field: 'display_name', headerName: 'User', flex: 1 },
+    { 
+      field: 'email', 
+      headerName: 'Email', 
+      flex: 1,
+      valueGetter: (_, row) => row.email || '—',
+    },
+    { 
+      field: 'wp_role', 
+      headerName: 'Role', 
+      width: 120,
+      valueGetter: (_, row) => {
+        // If we have roles array, use first role, else use wp_role
+        if (row.roles && row.roles.length > 0) {
+          return row.roles[0];
+        }
+        return row.roles || '—';
+      }
+    },
+    {
+      field: 'jwt_claim_sub',
+      headerName: 'JWT sub claim',
+      flex: 1,
+      renderCell: ({ value }) => (
+        <Typography variant="body2" fontFamily="monospace" color="text.secondary">
+          {value ?? '—'}
+        </Typography>
+      ),
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 110,
+      renderCell: ({ value }) => {
+        const statusColors: Record<string, string> = {
+          active: '#4caf50',
+          expiring: '#ff9800',
+          revoked: '#f44336',
+        };
+        return (
+          <Chip 
+            label={value || 'active'} 
+            size="small"
+            sx={{ 
+              backgroundColor: statusColors[value as string] || '#9e9e9e',
+              color: 'white',
+            }}
+          />
+        );
+      }
+    },
+    {
+      field: 'expires_at',
+      headerName: 'Expires',
+      width: 120,
+      valueFormatter: ({ value }) =>
+        value ? new Date(value).toLocaleDateString() : '—',
+    },
+    {
+      field: 'actions',
+      type: 'actions',
+      width: 80,
+      getActions: ({ row }) => [
+        <GridActionsCellItem
+          icon={<EditIcon />}
+          label="Edit"
+          onClick={() => handleEditUser(row)}
+        />,
+        <GridActionsCellItem
+          icon={<DeleteIcon />}
+          label="Remove"
+          onClick={() => handleDeleteUser(row.id)}
+        />,
+      ],
+    },
+  ];
 
-			{/* ACCESS CONTROL */}
-			<Paper sx={{ p: 2 }}>
-				<Typography variant="h6" mb={2}>
-					User Restrictions
-				</Typography>
+  // Convert auth_users to include email and roles for DataGrid
+  const dataGridRows = settings.auth_users;
 
-				<TextField
-					label="Authorized user IDs (temporary single value)"
-					type="number"
-					value={settings.auth_user_ids}
-					onChange={(e) =>
-						update('auth_user_ids', Number(e.target.value))
-					}
-					helperText="Later we’ll upgrade this to a multi-user selector"
-					fullWidth
-				/>
-			</Paper>
+  const toolbarSlots = useMemo(() => ({
+    toolbar: CustomToolbar,
+  }), []);
 
-			<Divider sx={{ my: 3 }} />
+  const toolbarSlotProps = useMemo(() => ({
+    toolbar: {
+      onAddUser: handleAddUser,
+      onDeleteSelected: handleDeleteSelected,
+      selectedCount: rowSelectionModel.ids.size,
+    },
+  }), [handleAddUser, handleDeleteSelected, rowSelectionModel.ids.size]);
 
-			<Typography variant="body2" color="text.secondary">
-				These settings will be synced with SettingsRepository.php
-			</Typography>
-		</Box>
-	);
+  return (
+    <Box>
+      <Typography variant="h5" fontWeight={600} mb={2}>
+        Authentication
+      </Typography>
+
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Typography variant="h6" mb={2}>
+          Core Settings
+        </Typography>
+
+        <Stack spacing={2}>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Box>
+              <Typography fontWeight={600}>
+                Require authentication for all API routes
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Force authentication unless route is explicitly public
+              </Typography>
+            </Box>
+
+            <Switch
+              checked={settings.auth_enforce}
+              onChange={(e) =>
+                update('auth_enforce', e.target.checked)
+              }
+            />
+          </Box>
+
+          <FormControl fullWidth>
+            <InputLabel>Authentication method</InputLabel>
+            <Select
+              value={settings.auth_methods}
+              label="Authentication method"
+              onChange={(e) =>
+                update('auth_methods', e.target.value as any)
+              }
+            >
+              <MenuItem value="wp_auth">WordPress Auth</MenuItem>
+              <MenuItem value="jwt">JWT</MenuItem>
+            </Select>
+          </FormControl>
+        </Stack>
+      </Paper>
+
+      {settings.auth_methods === 'jwt' && (
+        <Paper sx={{ p: 2, mb: 2 }}>
+          <Typography variant="h6" mb={2}>
+            JWT Configuration
+          </Typography>
+
+          <Stack spacing={2}>
+            <FormControl fullWidth>
+              <InputLabel>JWT Algorithm</InputLabel>
+              <Select
+                value={settings.auth_jwt_algorithm}
+                label="JWT Algorithm"
+                onChange={(e) =>
+                  update(
+                    'auth_jwt_algorithm',
+                    e.target.value as any
+                  )
+                }
+              >
+                <MenuItem value="RS256">RS256</MenuItem>
+                <MenuItem value="RS384">RS384</MenuItem>
+                <MenuItem value="RS512">RS512</MenuItem>
+                <MenuItem value="HS256">HS256</MenuItem>
+                <MenuItem value="HS384">HS384</MenuItem>
+                <MenuItem value="HS512">HS512</MenuItem>
+                <MenuItem value="ES256">ES256</MenuItem>
+              </Select>
+            </FormControl>
+
+            <TextField
+              label="JWT Public Key"
+              multiline
+              minRows={4}
+              value={settings.auth_jwt_public_key}
+              onChange={(e) =>
+                update('auth_jwt_public_key', e.target.value)
+              }
+            />
+
+            <TextField
+              label="JWT Audience"
+              value={settings.auth_jwt_audience}
+              onChange={(e) =>
+                update('auth_jwt_audience', e.target.value)
+              }
+            />
+
+            <TextField
+              label="JWT Issuer"
+              value={settings.auth_jwt_issuer}
+              onChange={(e) =>
+                update('auth_jwt_issuer', e.target.value)
+              }
+            />
+          </Stack>
+        </Paper>
+      )}
+
+      <Paper sx={{ p: 2 }}>
+        <Typography variant="h6" mb={2}>
+          Authorized users
+        </Typography>
+
+        <DataGrid
+          rows={dataGridRows}
+          columns={columns}
+          autoHeight
+          pageSizeOptions={[10, 25]}
+          showToolbar={true}
+          checkboxSelection
+          disableRowSelectionOnClick
+          rowSelectionModel={rowSelectionModel}
+          onRowSelectionModelChange={(newSelection) => {
+            setRowSelectionModel(newSelection);
+          }}
+          slots={toolbarSlots}
+          slotProps={toolbarSlotProps}
+
+        />
+      </Paper>
+
+      <UserDialog
+        open={dialogOpen}
+        user={editingUser}
+        onSave={handleSaveUser}
+        onClose={() => setDialogOpen(false)}
+        wpUsers={wpUsers}
+        wpUsersLoading={wpUsersLoading}
+        fetchWordPressUsers={fetchWordPressUsers}
+      />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+          severity={snackbar.severity}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
 }

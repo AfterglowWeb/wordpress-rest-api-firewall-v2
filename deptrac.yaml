@@ -1,0 +1,150 @@
+deptrac:
+  paths:
+    - ./inc
+
+  exclude_files:
+    - '#.*TestPolicy\\.php$#'
+
+  layers:
+    - name: Admin
+      collectors:
+        - type: className
+          value: '^Bromate\\RestApiFirewall\\Admin\\.*'
+
+    - name: Core
+      collectors:
+        - type: className
+          value: '^cmk\\RestApiFirewall\\Core\\.*'
+
+    - name: Security
+      collectors:
+        - type: className
+          value: '^cmk\\RestApiFirewall\\Security\\.*'
+
+    - name: Firewall
+      collectors:
+        - type: className
+          value: '^cmk\\RestApiFirewall\\Firewall\\(?!IpFilter\\).+'
+
+    - name: FirewallIpFilter
+      collectors:
+        - type: className
+          value: '^cmk\\RestApiFirewall\\Firewall\\IpFilter\\.*'
+
+    - name: Policy
+      collectors:
+        - type: className
+          value: '^cmk\\RestApiFirewall\\Policy\\.*'
+
+    - name: Webhook
+      collectors:
+        - type: className
+          value: '^cmk\\RestApiFirewall\\Webhook\\.*'
+
+    - name: Collections
+      collectors:
+        - type: className
+          value: '^cmk\\RestApiFirewall\\Collections\\.*'
+
+    - name: Models
+      collectors:
+        - type: className
+          value: '^cmk\\RestApiFirewall\\Models\\.*'
+
+    - name: Routes
+      collectors:
+        - type: className
+          value: '^cmk\\RestApiFirewall\\Routes\\.*'
+
+    - name: GlobalSecurity
+      collectors:
+        - type: className
+          value: '^cmk\\RestApiFirewall\\GlobalSecurity\\.*'
+
+  ruleset:
+    Admin:
+      - Core
+      - Security
+      - Firewall
+      - FirewallIpFilter
+      - Policy
+      - Webhook
+      - Collections
+      - Models
+      - Routes
+      - GlobalSecurity
+
+    Core:
+      - Security
+      - Firewall
+      - FirewallIpFilter
+      - Policy
+      - Webhook
+      - Collections
+      - Models
+      - Routes
+      - GlobalSecurity
+
+    Security:
+      - Core
+      - FirewallIpFilter
+
+    Firewall:
+      - Core
+      - Security
+      - FirewallIpFilter
+      - Policy
+
+    FirewallIpFilter:
+      - Core
+
+    Policy:
+      - Core
+      - Firewall
+      - FirewallIpFilter
+      - Security
+
+    Webhook:
+      - Core
+      - Firewall
+      - Security
+      - Models
+      - Collections
+
+    Collections:
+      - Core
+      - Policy
+
+    Models:
+      - Core
+      - Policy
+      - Routes
+
+    Routes:
+      - Core
+      - Policy
+      - Models
+
+    GlobalSecurity:
+      - Core
+      - Security
+      - Firewall
+      - FirewallIpFilter
+
+  formatters:
+    graphviz:
+      groups:
+        Admin:
+          - Admin
+        Runtime:
+          - Core
+          - Security
+          - Firewall
+          - FirewallIpFilter
+          - Policy
+        Features:
+          - Webhook
+          - Collections
+          - Models
+          - Routes
+          - GlobalSecurity

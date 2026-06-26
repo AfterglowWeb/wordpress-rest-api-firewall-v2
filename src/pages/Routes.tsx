@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from '@wordpress/element';
 
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
 
-import type { RoutesSettings } from '@app-types/routes';
+import type { RoutesSettings, RouteNode } from '@app-types/routes';
 
 import GlobalRoutesPolicy from '@features/routes/GlobalRoutesPolicy';
 import RoutesPolicyTree from '@features/routes/RoutesPolicyTree';
@@ -18,14 +18,27 @@ export default function Routes(): JSX.Element {
 		useState<RoutesSettings>({
 			routes_policy_enabled: false,
 			routes_policy_rules: {
-				nodes: [],
-				routes: [],
+				id:'',
+				label:'',
+				path:'',
+				settings:{
+					protect: {value:false},
+					disabled: {value:false},
+					rate_limit: {value:false},
+					custom: false,
+					locked: false,
+					tags:[],
+				},
+				route:'',
+				children: [],
 			},
 			routes_policy_hidden_routes: [],
 			routes_policy_hidden_methods: [],
 			routes_policy_hidden_post_types: [],
 			routes_policy_hidden_response_code: '404',
 		});
+
+	const [tree, setTree] = useState<RouteNode>(settings.routes_policy_rules);
 
 	const update = useCallback(
 		<K extends keyof RoutesSettings>(
@@ -83,8 +96,8 @@ export default function Routes(): JSX.Element {
 
 			<Stack px={4} flexGrow={1}>
 				<RoutesPolicyTree
-					settings={settings}
-					onChange={setSettings}
+					tree={tree}
+					onChange={setTree}
 				/>
 			</Stack>
 		</Stack>

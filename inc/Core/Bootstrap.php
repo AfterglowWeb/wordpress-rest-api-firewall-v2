@@ -8,36 +8,31 @@ use Bromate\RestApiFirewall\Security\Ip\IpEntryAjaxController;
 use Bromate\RestApiFirewall\Admin\AdminPage;
 use Bromate\RestApiFirewall\Admin\Documentation;
 use Bromate\RestApiFirewall\Core\Settings\SettingsAjaxController;
+use Bromate\RestApiFirewall\Security\Ip\IpSchema;
 
 final class Bootstrap {
 
 	private function __construct() {}
-	
+
 	public static function register(): void {
-
 		RestRequestBootstrap::register();
-
-		if ( is_admin() ) {
-			AdminPage::register();
-    		SettingsAjaxController::register();
-			IpEntryAjaxController::register();
-			Documentation::register();
-		}
-
-        do_action('bromate_rest_api_firewall_loaded');
-    }
+		AdminPage::register();
+		SettingsAjaxController::register();
+		IpEntryAjaxController::register();
+		Documentation::register();
+	}
 
 	public static function activate(): void {
+		
+		IpSchema::install();
+		
 		$role = get_role( 'administrator' );
 		if ( ! $role ) {
 			return;
 		}
 
-		$caps = array( 'bromate_rest_api_firewall_edit_options' );
+		$role->add_cap( 'bromate_rest_api_firewall_edit_options' );
 
-		foreach ( $caps as $cap ) {
-			$role->add_cap( $cap );
-		}
 
 		if ( false === get_option( 'bromate_rest_api_firewall_options' ) ) {
 			update_option(

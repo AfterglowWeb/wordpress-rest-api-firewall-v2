@@ -38,7 +38,7 @@ class ModelsPropertiesRepository {
 		return array_merge(
 			self::list_post_types(),
 			self::list_taxonomies(),
-			self::format_user_type()
+			self::list_authors()
 		);
 	}
 
@@ -60,7 +60,7 @@ class ModelsPropertiesRepository {
 			wp_send_json_error( array( 'message' => 'Missing object_type.' ), 400 );
 		}
 
-		wp_send_json_success( array( 'props' => ModelsPropertiesRepository::model_properties_for_type( $object_type ) ) );
+		wp_send_json_success( array( 'props' => self::model_properties_for_type( $object_type ) ) );
 	}
 
 	public static function model_properties( string $post_type ): array {
@@ -656,7 +656,7 @@ class ModelsPropertiesRepository {
 			),
 		);
 	}
-	
+
 	private static function author_properties(): array {
 
 		$filters             = self::properties_filters();
@@ -739,7 +739,7 @@ class ModelsPropertiesRepository {
 
 	private static function apply_author_security_flags( array $props ): array {
 
-		$locked = array( 'username', 'email', 'capabilities', 'extra_capabilities' );
+		$locked = array( 'username', 'email', 'capabilities', 'extra_capabilities', 'admin_url', 'roles', 'jwt_claim_sub', 'status', 'expires_at' );
 		foreach ( $locked as $key ) {
 			if ( isset( $props[ $key ] ) ) {
 				$props[ $key ]['settings']['disable'] = true;
@@ -808,48 +808,11 @@ class ModelsPropertiesRepository {
 		);
 	}
 
-	public static function list_users(): array {
-		$users = get_users(
-			array(
-				'role__in' => array( 'administrator' ),
-				'number'   => 500,
-				'orderby'  => 'display_name',
-				'order'    => 'ASC',
-			)
-		);
-
-		if ( empty( $users ) ) {
-			return array();
-		}
-
-		return array_map(
-			static function ( \WP_User $user ): array {
-				$user_id = (int) $user->ID;
-				return array(
-					'value'        => $user_id,
-					'label'        => sanitize_text_field( $user->display_name ?? '' ),
-					'admin_url'    => sanitize_url( get_edit_user_link( $user_id ) ),
-					'current_user' => get_current_user_id() === $user_id ? 1 : 0,
-				);
-			},
-			array_filter(
-				(array) $users,
-				static fn ( $user ) => $user instanceof \WP_User
-			)
-		);
-	}
-
-	public static function format_user_type(): array {
-		$user_counts = count_users();
+	public static function list_authors(): array {
 		return array(
 			array(
-				'value'    => 'author',
-				'label'    => __( 'Author', 'bromate-rest-api-firewall' ),
-				'public'   => true,
-				'_builtin' => false,
-				'type'     => 'author',
-				'source'   => 'WordPress',
-				'count'    => (int) ( $user_counts['total_users'] ?? 0 ),
+				'id'    => 0,
+				'display_name'    => __( 'Author', 'bromate-rest-api-firewall' )
 			),
 		);
 	}
