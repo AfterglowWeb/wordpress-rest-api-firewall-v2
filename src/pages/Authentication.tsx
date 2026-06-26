@@ -283,6 +283,9 @@ export default function Authentication(): JSX.Element {
         );
       },
     },
+    { field: 'expires_at', headerName: 'Expires', width: 120,
+      valueFormatter: (value: string | undefined) =>
+        value ? new Date(value).toLocaleDateString() : '—' },
     {
       field: 'expires_at',
       headerName: 'Expires',
@@ -304,9 +307,9 @@ export default function Authentication(): JSX.Element {
     toolbar: {
       onAddUser: handleAddUser,
       onDeleteSelected: handleDeleteSelected,
-      selectedCount: rowSelectionModel.ids.size,
+      selectedCount: selectedIds.length,  // ← plain array length, always fresh
     },
-  }), [handleAddUser, handleDeleteSelected, rowSelectionModel.ids.size]);
+  };
 
   return (
     <Stack flexDirection="column" gap={2}>
