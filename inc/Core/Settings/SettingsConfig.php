@@ -110,7 +110,7 @@ final class SettingsConfig {
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
-				'group'             => 'rate-limiting',
+				'group'             => 'firewall',
 			),
 
 			'rate_limit_max'                          => array(
@@ -119,7 +119,7 @@ final class SettingsConfig {
 				'default_value'     => 30,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
-				'group'             => 'rate-limiting',
+				'group'             => 'firewall',
 			),
 
 			'rate_limit_time'                         => array(
@@ -128,7 +128,7 @@ final class SettingsConfig {
 				'default_value'     => 60,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
-				'group'             => 'rate-limiting',
+				'group'             => 'firewall',
 			),
 
 			'rate_limit_block_duration'               => array(
@@ -137,7 +137,7 @@ final class SettingsConfig {
 				'default_value'     => 300,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
-				'group'             => 'rate-limiting',
+				'group'             => 'firewall',
 			),
 
 			'rate_limit_blacklist_threshold'          => array(
@@ -146,7 +146,7 @@ final class SettingsConfig {
 				'default_value'     => 5,
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
-				'group'             => 'rate-limiting',
+				'group'             => 'firewall',
 			),
 
 			'rate_limit_whitelist'                    => array(
@@ -155,7 +155,7 @@ final class SettingsConfig {
 				'default_value'     => array(),
 				'type'              => 'array',
 				'sanitize_callback' => array( CidrMatcher::class, 'sanitize_ip_array' ),
-				'group'             => 'rate-limiting',
+				'group'             => 'firewall',
 			),
 
 			'rate_limit_countries'                    => array(
@@ -170,7 +170,7 @@ final class SettingsConfig {
 				'default_value'     => array(),
 				'type'              => 'array',
 				'sanitize_callback' => array( GeoIpApi::class, 'sanitize_country_codes' ),
-				'group'             => 'rate-limiting',
+				'group'             => 'firewall',
 			),
 
 			'rate_limit_emergency_token_hash'         => array(
@@ -179,7 +179,7 @@ final class SettingsConfig {
 				'default_value'     => '',
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
-				'group'             => 'rate-limiting',
+				'group'             => 'firewall',
 			),
 
 			// Routes Policies.
@@ -517,13 +517,8 @@ final class SettingsConfig {
 				'icon'  => 'lock',
 			),
 
-			'rate-limiting'          => array(
-				'label' => __( 'Rate Limiting', 'bromate-rest-api-firewall' ),
-				'icon'  => 'speed',
-			),
-
-			'access-control'          => array(
-				'label' => __( 'Access Control', 'bromate-rest-api-firewall' ),
+			'firewall'          => array(
+				'label' => __( 'Firewall', 'bromate-rest-api-firewall' ),
 				'icon'  => 'world',
 			),
 

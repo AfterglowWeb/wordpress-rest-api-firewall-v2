@@ -1,8 +1,7 @@
 export type PanelKey =
 	| 'dashboard'
 	| 'authentication'
-	| 'rate-limiting'
-	| 'access-control'
+	| 'firewall'
 	| 'login-hardening'
 	| 'routes'
 	| 'wordpress'

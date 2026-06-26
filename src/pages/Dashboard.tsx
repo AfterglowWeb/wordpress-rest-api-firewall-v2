@@ -75,15 +75,9 @@ export default function Dashboard(): JSX.Element {
 			enabled: true,
 		},
 		{
-			key: 'access-control',
-			title: 'Access Control',
-			description: 'IP filtering, CIDR, GeoIP blocking',
-			enabled: true,
-		},
-		{
-			key: 'rate-limiting',
-			title: 'Rate Limiting',
-			description: 'Request throttling & auto-blacklist',
+			key: 'firewall',
+			title: 'Firewall',
+			description: 'Rate Limiting, IP filtering, CIDR, GeoIP blocking',
 			enabled: true,
 		},
 		{

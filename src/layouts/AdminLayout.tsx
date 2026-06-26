@@ -8,8 +8,7 @@ import ConfirmDialog from '@components/ConfirmDialog';
 
 import Dashboard from '@pages/Dashboard';
 import Authentication from '@pages/Authentication';
-import AccessControl from '@pages/AccessControl';
-import RateLimiting from '@pages/RateLimiting';
+import Firewall from '@pages/Firewall';
 import Routes from '@pages/Routes';
 //import WordPress from '@pages/WordPress';
 //import Logs from '@pages/Logs';
@@ -23,19 +22,9 @@ export default function AdminLayout() {
 				<Stack>
 					{panel === 'dashboard' && <Dashboard />}
 
-					{panel === 'authentication' && (
-						<Authentication />
-					)}
-
+					{panel === 'authentication' && <Authentication />}
 					
-					{panel === 'rate-limiting' && (
-						<RateLimiting />
-					)}
-
-					{panel === 'access-control' && (
-						<AccessControl />
-					)}
-
+					{panel === 'firewall' && <Firewall />}
 
 					{panel === 'routes' && <Routes />}
 
@@ -45,7 +34,7 @@ export default function AdminLayout() {
 				</Stack>
 			</Navigation>
 
-							<ConfirmDialog />
+			<ConfirmDialog />
 			
 		</Stack>
 	);
