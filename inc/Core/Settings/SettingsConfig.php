@@ -113,6 +113,7 @@ final class SettingsConfig {
 				'group'             => 'firewall',
 			),
 
+			// Firewall.
 			'rate_limit_max'                          => array(
 				'label'             => esc_html__( 'Maximum requests', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Number of requests allowed during the configured time window.', 'bromate-rest-api-firewall' ),
@@ -278,7 +279,7 @@ final class SettingsConfig {
 				'group'             => 'login-hardening',
 			),
 
-			// API Models response
+			// API Models response.
 			'models_enabled'                          => array(
 				'label'             => esc_html__( 'Transform REST API responses', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
@@ -507,37 +508,37 @@ final class SettingsConfig {
 	public static function groups_config(): array {
 		return array(
 
-			'dashboard' => array(
+			'dashboard'       => array(
 				'label' => __( 'Dashboard', 'bromate-rest-api-firewall' ),
 				'icon'  => 'dashboard',
 			),
 
-			'authentication'          => array(
+			'authentication'  => array(
 				'label' => __( 'Authentication', 'bromate-rest-api-firewall' ),
 				'icon'  => 'lock',
 			),
 
-			'firewall'          => array(
+			'firewall'        => array(
 				'label' => __( 'Firewall', 'bromate-rest-api-firewall' ),
 				'icon'  => 'world',
 			),
 
-			'routes_policy' => array(
+			'routes_policy'   => array(
 				'label' => __( 'Route Policies', 'bromate-rest-api-firewall' ),
 				'icon'  => 'route',
 			),
 
-			'models'        => array(
+			'models'          => array(
 				'label' => __( 'Response Models', 'bromate-rest-api-firewall' ),
 				'icon'  => 'data_object',
 			),
 
-			'login-hardening'         => array(
+			'login-hardening' => array(
 				'label' => __( 'Login Protection', 'bromate-rest-api-firewall' ),
 				'icon'  => 'shield',
 			),
 
-			'wordpress'     => array(
+			'wordpress'       => array(
 				'label' => __( 'WordPress Hardening', 'bromate-rest-api-firewall' ),
 				'icon'  => 'wordpress',
 			),

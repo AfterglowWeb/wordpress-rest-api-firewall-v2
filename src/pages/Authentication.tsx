@@ -210,11 +210,7 @@ export default function Authentication(): JSX.Element {
       field: 'jwt_claim_sub',
       headerName: 'JWT sub claim',
       flex: 1,
-      renderCell: ({ value }) => (
-        <Typography variant="body2" fontFamily="monospace" color="text.secondary">
-          {value ?? '—'}
-        </Typography>
-      ),
+      valueGetter: (_, row) => row.jwt_claim_sub || '—',
     },
     {
       field: 'status',
@@ -282,11 +278,10 @@ export default function Authentication(): JSX.Element {
     <Stack flexDirection={"column"} gap={2}>
      
       <Paper sx={{ p: 2, mb: 2 }}>
-         <Typography variant="h6" mb={2}>
+        <Typography variant="h6" mb={2}>
           Core Settings
         </Typography>
-    <Stack flexDirection={"column"} gap={2}>
-
+        <Stack flexDirection={"column"} gap={2}>
           <FormControl>
             <FormLabel>Authentication method</FormLabel>
             <RadioGroup
@@ -308,7 +303,7 @@ export default function Authentication(): JSX.Element {
               }
             />
           </FormControl>
-          </Stack>
+        </Stack>
       </Paper>
 
       {settings.auth_methods === 'jwt' && (

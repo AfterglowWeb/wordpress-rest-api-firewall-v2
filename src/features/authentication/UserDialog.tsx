@@ -11,18 +11,16 @@ import {
   Stack,
   Autocomplete,
   CircularProgress,
-  Chip,
   Typography,
   Box,
-  Divider,
-  Card, 
-  CardContent,
+  useTheme,
 } from '@mui/material';
 
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
-import type { AuthorizedUser, UserStatus } from '@app-types/auth';
+import type { AuthorizedUser } from '@app-types/auth';
 import { usePortalContainer } from '@contexts/PortalContainerContext';
 
 
@@ -35,11 +33,6 @@ interface UserDialogProps {
   wpUsersLoading: boolean;
   fetchWordPressUsers: () => void;
 }
-
-const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
-  { value: 'active',  label: 'Active' },
-  { value: 'revoked', label: 'Revoked' },
-];
 
 const EMPTY_FORM: Omit<AuthorizedUser, 'id'> = {
   display_name: '',
@@ -61,15 +54,15 @@ export default function UserDialog({
   wpUsersLoading,
   fetchWordPressUsers,
 }: UserDialogProps): JSX.Element {
-  const isEditing = user !== null;
 
-  // Form fields
+  const isEditing = user !== null;
   const [wpUserId, setWpUserId]   = useState<number | ''>('');
   const [form, setForm]           = useState(EMPTY_FORM);
   const [selectedWpUser, setSelectedWpUser] = useState<AuthorizedUser | null>(null);
-
   const portalContainer = usePortalContainer();
+  const theme = useTheme();
 
+  const noUser = !isEditing && selectedWpUser === null;
 
   useEffect(() => {
     if (!open) return;
@@ -142,14 +135,25 @@ export default function UserDialog({
     return option.id === value.id;
   };
 
+  const ReadonlyField = ({ label, value }: { label: string; value: string }) => (
+    <Box sx={{ minWidth: 150 }}>
+      <Typography color="text.secondary" sx={{ display: 'block' }}>
+        {label}
+      </Typography>
+      <Typography sx={{ fontWeight: 500 }}>
+        {value || '—'}
+      </Typography>
+    </Box>
+  );
+
   return (
-    <Dialog container={portalContainer} open={open} onClose={onClose} fullWidth maxWidth="md">
+    <Dialog container={portalContainer} open={open} onClose={onClose} fullWidth maxWidth="xs">
       <DialogTitle>
         {isEditing ? `Edit — ${user?.display_name}` : 'Add authorized user'}
       </DialogTitle>
 
       <DialogContent dividers>
-        <Stack spacing={2.5} sx={{ pt: 0.5 }}>
+        <Stack direction="column" gap={2}>
 
           {!isEditing && (
             <Autocomplete<AuthorizedUser>
@@ -159,6 +163,7 @@ export default function UserDialog({
               isOptionEqualToValue={isOptionEqualToValue}
               value={selectedWpUser}
               onChange={handleWpUserSelect}
+              disablePortal
               renderOption={(props, option) => (
                 <li {...props} key={option.id}>
                   <Box>
@@ -190,104 +195,57 @@ export default function UserDialog({
               )}
             />
           )}
-
-          <Divider />
-
-          <Stack flexDirection="row" gap={2.5} sx={{ pt: 0.5 }}>
-            <Card sx={{ p: 2, bgcolor: '#fff', maxWidth:400 }}>
-              <CardContent sx={{ p: 0 }}>
-                <Box display="flex" sx={{flexDirection:'column'}} gap={2}>
-                  <TextField
-                  label="JWT sub claim"
-                    value={form.jwt_claim_sub}
-                    onChange={(e) => updateField('jwt_claim_sub', e.target.value)}
-                    helperText="Expected value in the incoming token's `sub` claim"
-                    fullWidth
+          
+          <Stack direction="column" gap={2} mb={1}>
+            <Stack direction="row" justifyContent={"space-between"} alignItems={"center"} gap={2}>
+              <FormControlLabel
+                label="User Active"
+                control={
+                  <Switch
+                    checked={form.status === 'active'}
+                    disabled={noUser}
+                    onChange={(e) => updateField('status', e.target.checked ? 'active' : 'revoked')}
                   />
-                  <FormControlLabel
-  label="Active"
-  control={
-    <Switch
-      checked={form.status === 'active'}
-      onChange={(e) => updateField('status', e.target.checked ? 'active' : 'revoked')}
-    />
-  }
-/>
-                  <TextField
-                  label="Expires at"
-                      type="date"
-                      value={form.expires_at}
-                      onChange={(e) => updateField('expires_at', e.target.value)}
-                      helperText="Leave empty for no expiration"
-                      fullWidth
-                    />
-                </Box>
+                }
+              />
+              <Button
+              variant="outlined"
+              disabled={noUser}
+              endIcon={<OpenInNewIcon />}
+              size="small"
+              href={selectedWpUser?.admin_url ?? form.admin_url}
+              target="_blank"
+              >Profile</Button>
+            </Stack>
+            <ReadonlyField label="Name" value={selectedWpUser?.display_name ?? form.display_name} />
+            <ReadonlyField label="Email" value={selectedWpUser?.email ?? form.email} />
+            <ReadonlyField label="Roles" value={(selectedWpUser?.roles ?? form.roles).join(', ')} />
+          </Stack>
+          
+          <Stack direction="column" gap={2}>
+            <TextField
+              label="JWT sub claim"
+              value={form.jwt_claim_sub}
+              disabled={noUser}
+              onChange={(e) => updateField('jwt_claim_sub', e.target.value)}
+              helperText="Expected value in the incoming token's `sub` claim"
+              size="small"
+            />
 
-              </CardContent>
-            </Card> 
-
-            {selectedWpUser && (
-              <Card sx={{ p: 2, bgcolor: '#fff', maxWidth:300 }}>
-                <CardContent sx={{ p: 0 }}>
-                  <Box display="flex" sx={{flexDirection:'column'}} gap={0.5}>
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                        ID:
-                      </Typography>
-                      <Typography variant="body2">{selectedWpUser.id}</Typography>
-                    </Box>
-                    
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                        Name:
-                      </Typography>
-                      <Typography variant="body2">{selectedWpUser.display_name}</Typography>
-                      {selectedWpUser.current_user && (
-                        <Box>
-                        <Chip 
-                          color="success" 
-                          label="Me"
-                          size="small"
-                          variant="outlined"
-                        />
-                        </Box>
-                      )}
-                    </Box>
-                    
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                        Roles:
-                      </Typography>
-                      <Typography variant="body2">
-                        {selectedWpUser.roles.join(', ')}
-                      </Typography>
-                    </Box>
-                    
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                        Email:
-                      </Typography>
-                      <Typography variant="body2">{selectedWpUser.email}</Typography>
-                    </Box>
-
-                    
-
-                    <Button 
-                      variant="outlined" 
-                      size="small"
-                      href={`${selectedWpUser.admin_url}`}
-                      target="_blank"
-                      sx={{maxWidth:80}}
-                    >
-                      Profile
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-            )}
+            <TextField
+              label="Authorization expires"
+              type="date"
+              value={form.expires_at || ''}
+              disabled={noUser}
+              onChange={(e) => updateField('expires_at', e.target.value)}
+              helperText="Leave empty for no expiration"
+              size="small"
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
           </Stack>
 
         </Stack>
+
       </DialogContent>
 
       <DialogActions>

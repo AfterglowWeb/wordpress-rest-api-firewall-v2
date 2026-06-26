@@ -23,11 +23,11 @@ final class LoginRateLimiter {
 	}
 
 	private function __construct() {
-		add_filter( 'authenticate', array( $this, 'check_before_auth' ), 5, 3 );
-		add_action( 'wp_login_failed', array( $this, 'on_login_failed' ), 10, 2 );
+		add_filter( 'authenticate', array( $this, 'check_before_auth' ), 5, 1 );
+		add_action( 'wp_login_failed', array( $this, 'on_login_failed' ), 10 );
 	}
 
-	public function check_before_auth( $user, string $_username, string $_password ) {
+	public function check_before_auth( $user ) {
 		if ( ! $this->is_enabled() ) {
 			return $user;
 		}
@@ -47,7 +47,7 @@ final class LoginRateLimiter {
 		return $user;
 	}
 
-	public function on_login_failed( string $_username, $_error = null ): void {
+	public function on_login_failed(): void {
 		if ( ! $this->is_enabled() ) {
 			return;
 		}

@@ -811,8 +811,8 @@ class ModelsPropertiesRepository {
 	public static function list_authors(): array {
 		return array(
 			array(
-				'id'    => 0,
-				'display_name'    => __( 'Author', 'bromate-rest-api-firewall' )
+				'id'           => 0,
+				'display_name' => __( 'Author', 'bromate-rest-api-firewall' ),
 			),
 		);
 	}
