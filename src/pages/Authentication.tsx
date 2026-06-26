@@ -1,10 +1,9 @@
-// components/Authentication.tsx
-
 import { useState, useCallback, useMemo } from '@wordpress/element';
 import {
   Box, Paper, Typography, Switch, Stack,
   TextField, Select, MenuItem, FormControl,
-  InputLabel, Button, Alert, Snackbar, Chip
+  InputLabel, Button, Alert, Snackbar, Chip,
+  RadioGroup, FormControlLabel, Radio, FormLabel
 } from '@mui/material';
 import {
   DataGrid,
@@ -22,9 +21,8 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import type { AuthSettings, AuthorizedUser } from '@app-types/auth';
 import UserDialog from '@features/authentication/UserDialog';
 import { apiRequest } from '@services/api';
+import { usePortalContainer } from '@contexts/PortalContainerContext';
 
-
-// Extend MUI's slot overrides so slotProps.toolbar accepts our custom props
 declare module '@mui/x-data-grid' {
   interface ToolbarPropsOverrides {
     onAddUser: () => void;
@@ -77,6 +75,7 @@ export default function Authentication(): JSX.Element {
     auth_users: [],
   });
 
+  const portalContainer = usePortalContainer();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AuthorizedUser | null>(null);
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
@@ -89,7 +88,6 @@ export default function Authentication(): JSX.Element {
     severity: 'success',
   });
 
-  // Fetch WordPress users when dialog opens for adding new user
   const [wpUsers, setWpUsers] = useState<AuthorizedUser[]>([]);
   const [wpUsersLoading, setWpUsersLoading] = useState(false);
   const fetchWordPressUsers = useCallback(async () => {
@@ -109,7 +107,6 @@ export default function Authentication(): JSX.Element {
       setWpUsersLoading(false);
     }
   }, []);
-  console.log(wpUsers);
 
 
   const update = <K extends keyof AuthSettings>(
@@ -203,7 +200,6 @@ export default function Authentication(): JSX.Element {
       headerName: 'Role', 
       width: 120,
       valueGetter: (_, row) => {
-        // If we have roles array, use first role, else use wp_role
         if (row.roles && row.roles.length > 0) {
           return row.roles[0];
         }
@@ -268,7 +264,6 @@ export default function Authentication(): JSX.Element {
     },
   ];
 
-  // Convert auth_users to include email and roles for DataGrid
   const dataGridRows = settings.auth_users;
 
   const toolbarSlots = useMemo(() => ({
@@ -284,49 +279,36 @@ export default function Authentication(): JSX.Element {
   }), [handleAddUser, handleDeleteSelected, rowSelectionModel.ids.size]);
 
   return (
-    <Box>
-      <Typography variant="h5" fontWeight={600} mb={2}>
-        Authentication
-      </Typography>
-
+    <Stack flexDirection={"column"} gap={2}>
+     
       <Paper sx={{ p: 2, mb: 2 }}>
-        <Typography variant="h6" mb={2}>
+         <Typography variant="h6" mb={2}>
           Core Settings
         </Typography>
+    <Stack flexDirection={"column"} gap={2}>
 
-        <Stack spacing={2}>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Box>
-              <Typography fontWeight={600}>
-                Require authentication for all API routes
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Force authentication unless route is explicitly public
-              </Typography>
-            </Box>
+          <FormControl>
+            <FormLabel>Authentication method</FormLabel>
+            <RadioGroup
+              row
+              value={settings.auth_methods}
+              onChange={(e) => update('auth_methods', e.target.value as any)}
+            >
+              <FormControlLabel value="wp_auth" control={<Radio size="small" />} label="WordPress Auth" />
+              <FormControlLabel value="jwt"     control={<Radio size="small" />} label="JWT" />
+            </RadioGroup>
+          </FormControl>
 
+          <FormControl>
+            <FormLabel>Require authentication for all API routes</FormLabel>
             <Switch
               checked={settings.auth_enforce}
               onChange={(e) =>
                 update('auth_enforce', e.target.checked)
               }
             />
-          </Box>
-
-          <FormControl fullWidth>
-            <InputLabel>Authentication method</InputLabel>
-            <Select
-              value={settings.auth_methods}
-              label="Authentication method"
-              onChange={(e) =>
-                update('auth_methods', e.target.value as any)
-              }
-            >
-              <MenuItem value="wp_auth">WordPress Auth</MenuItem>
-              <MenuItem value="jwt">JWT</MenuItem>
-            </Select>
           </FormControl>
-        </Stack>
+          </Stack>
       </Paper>
 
       {settings.auth_methods === 'jwt' && (
@@ -339,6 +321,7 @@ export default function Authentication(): JSX.Element {
             <FormControl fullWidth>
               <InputLabel>JWT Algorithm</InputLabel>
               <Select
+                MenuProps={{container:portalContainer}}
                 value={settings.auth_jwt_algorithm}
                 label="JWT Algorithm"
                 onChange={(e) =>
@@ -434,6 +417,6 @@ export default function Authentication(): JSX.Element {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </Stack>
   );
 }

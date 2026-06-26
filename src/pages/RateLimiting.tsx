@@ -12,7 +12,7 @@ export default function RateLimiting(): JSX.Element {
     rate_limit_time: 60,
     rate_limit_block_duration: 300,
     rate_limit_blacklist_threshold: 5,
-	rate_limit_emergency_token_hash: '',
+	  rate_limit_emergency_token_hash: '',
   });
 
   const update = <K extends keyof RateLimitSettings>(
@@ -83,10 +83,6 @@ export default function RateLimiting(): JSX.Element {
         />
       </Paper>
 
-      <Divider sx={{ my: 3 }} />
-      <Typography variant="body2" color="text.secondary">
-        These settings will be synced with RateLimiter.php
-      </Typography>
     </Box>
   );
 }

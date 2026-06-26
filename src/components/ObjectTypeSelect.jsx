@@ -1,4 +1,6 @@
 import { useAdminData } from '@contexts/AdminDataContext';
+import { usePortalContainer } from '@contexts/PortalContainerContext';
+
 import MultipleSelect from '@components/MultipleSelect';
 
 import FormControl from '@mui/material/FormControl';
@@ -147,6 +149,8 @@ export default function ObjectTypeSelect( {
 	const options = buildOptions( adminData.post_types, types, visibility, __, extraGroups );
 
 	if ( isSingle ) {
+		const portalContainer = usePortalContainer();
+
 		return (
 			<FormControl fullWidth sx={ sx } disabled={ disabled }>
 				<InputLabel id={ `${ name }-label` }>{ label }</InputLabel>
@@ -165,6 +169,7 @@ export default function ObjectTypeSelect( {
 						PaperProps: {
 							style: { maxHeight: 48 * 9 + 8, width: 250 },
 						},
+						container:portalContainer
 					} }
 				>
 					{ renderGroupedChildren( options ) }

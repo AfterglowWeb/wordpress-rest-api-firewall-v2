@@ -9,6 +9,8 @@ import ListItemText from '@mui/material/ListItemText';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 
+import { usePortalContainer } from '@contexts/PortalContainerContext';
+
 export default function MultipleSelect( {
 	disabled,
 	label,
@@ -19,6 +21,8 @@ export default function MultipleSelect( {
 	onChange,
 	sx,
 } ) {
+	const portalContainer = usePortalContainer();
+
 	const MenuProps = {
 		PaperProps: {
 			style: {
@@ -26,6 +30,7 @@ export default function MultipleSelect( {
 				width: 250,
 			},
 		},
+		container:portalContainer
 	};
 
 	const safeValue = Array.isArray( value ) ? value : [];

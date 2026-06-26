@@ -1,6 +1,6 @@
 // components/UserDialog.tsx
 
-import { useState, useEffect, useContext } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import {
   Dialog,
   DialogTitle,
@@ -9,10 +9,6 @@ import {
   Button,
   TextField,
   Stack,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Autocomplete,
   CircularProgress,
   Chip,
@@ -22,6 +18,9 @@ import {
   Card, 
   CardContent,
 } from '@mui/material';
+
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
 
 import type { AuthorizedUser, UserStatus } from '@app-types/auth';
 import { usePortalContainer } from '@contexts/PortalContainerContext';
@@ -205,19 +204,15 @@ export default function UserDialog({
                     helperText="Expected value in the incoming token's `sub` claim"
                     fullWidth
                   />
-                  <FormControl fullWidth>
-                    <InputLabel>Status</InputLabel>
-                    <Select
-                      value={form.status}
-                      onChange={(e) => updateField('status', e.target.value as UserStatus)}
-                    >
-                      {STATUS_OPTIONS.map((o) => (
-                        <MenuItem key={o.value} value={o.value}>
-                          {o.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <FormControlLabel
+  label="Active"
+  control={
+    <Switch
+      checked={form.status === 'active'}
+      onChange={(e) => updateField('status', e.target.checked ? 'active' : 'revoked')}
+    />
+  }
+/>
                   <TextField
                   label="Expires at"
                       type="date"
