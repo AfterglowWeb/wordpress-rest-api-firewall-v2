@@ -45,6 +45,7 @@ export default function AdminLayout() {
 				</Stack>
 			</Navigation>
 
+							<ConfirmDialog />
 			
 		</Stack>
 	);

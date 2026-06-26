@@ -16,24 +16,16 @@ export async function apiRequest<T>(
 	data: Record<string, any> = {}
 ): Promise<T> {
 	const nonce = getNonce();
-	return fetch( getAjaxurl(), {
+	const response = await fetch(getAjaxurl(), {
 		method: 'POST',
 		headers: {
-				'Content-Type':
-					'application/x-www-form-urlencoded; charset=UTF-8',
-			},
-		body: new URLSearchParams( {
-				action,
-				nonce,
-				...data
-			} ),
-	})
-	.then( ( r ) => r.json() )
-	.then((res:AjaxResponse<T>) => {
-		if (!res.success) {
-			throw new Error('Request failed');
-		}
-		return res.data;
+			'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+		},
+		body: new URLSearchParams({
+			action,
+			nonce,
+			...data,
+		}),
 	});
 
 	if (!response.ok) {

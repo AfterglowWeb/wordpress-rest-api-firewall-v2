@@ -1,29 +1,17 @@
-import { createRoot } from '@wordpress/element';
-
-import App from './App';
+import { createShadowRootMount } from './shadowMount';
 import { type AdminData } from '@app-types/admin';
-import { AdminDataProvider } from '@contexts/AdminDataContext';
 
-document.addEventListener( 'DOMContentLoaded', function () {
-	const container = document.getElementById( 'bromate-rest-api-firewall-page' );
-	const raw = window.bromateRestApiFirewall ;
-	const adminData: AdminData = {
-		...raw,
-		plugin_name: raw.plugin?.name ?? raw.plugin_name,
-		plugin_version: raw.plugin?.version ?? raw.plugin_version,
-	};
+document.addEventListener('DOMContentLoaded', function () {
+  const raw = window.bromateRestApiFirewall;
+  if (!raw) {
+	return;
+  }
 
-	if ( container && adminData ) {
-	
-		const root = createRoot( container );
+  const adminData: AdminData = {
+    ...raw,
+    plugin_name: raw.plugin?.name ?? raw.plugin_name,
+    plugin_version: raw.plugin?.version ?? raw.plugin_version,
+  };
 
-		root.render(
-			<AdminDataProvider adminData={adminData}>
-				<App />
-			</AdminDataProvider>
-		);
-
-	}
+  createShadowRootMount(adminData);
 });
-
-

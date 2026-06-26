@@ -149,9 +149,12 @@ export default function Navigation({children}) {
                     sx={ {
                         '.MuiPaper-root': {
                             width: DRAWER_WIDTH,
-                            top: APP_BAR_HEIGHT,
+                            top: {xs:WP_ADMIN_BAR_HEIGHT_MOBILE,lg:WP_ADMIN_BAR_HEIGHT_DESKTOP},
                             position: 'sticky',
-                            height: `calc(100vh - ${ APP_BAR_HEIGHT }px)`,
+                            height: {
+                                xs:`calc(100vh - ${ WP_ADMIN_BAR_HEIGHT_MOBILE }px)`,
+                                lg:`calc(100vh - ${ WP_ADMIN_BAR_HEIGHT_DESKTOP }px)`
+                            },
                             overflowY: 'auto',
                         },
                     } }
