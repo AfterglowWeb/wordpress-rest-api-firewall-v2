@@ -1,24 +1,20 @@
-import { useEffect, useState, useCallback, useMemo } from '@wordpress/element';
+import { useState, useCallback, useEffect, useMemo } from '@wordpress/element';
 import {
-  Box, Paper, Typography, Button, Stack,
-  TextField, FormControl, InputLabel, Select, MenuItem,
+  Box, Paper, Typography, Switch,
+  Stack, TextField, Divider, Button,
   Dialog, DialogTitle, DialogContent, DialogActions, Toolbar,
   Alert, CircularProgress, List, ListItem, ListItemText,
-  RadioGroup, FormControlLabel, Radio, FormLabel
+  FormControlLabel, Radio, RadioGroup, FormLabel, FormControl,
 } from '@mui/material';
 import {
   DataGrid, GridColDef, GridRowSelectionModel,
 } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import type { RateLimitSettings } from '@app-types/rate-limiting';
 import { IpAPI, type IpEntry, type ListType } from '@services/ip';
 import { usePortalContainer } from '@contexts/PortalContainerContext';
 
-interface AddEntryForm {
-  value: string;
-  entry_type: EntryType;
-  list_type: ListType;
-}
 
 type EntryType = 'ip' | 'cidr';
 
@@ -28,11 +24,17 @@ interface AddEntryForm {
   list_type: ListType;
 }
 
+interface LineResult {
+  value: string;
+  error: string;
+}
+
 const EMPTY_FORM: AddEntryForm = {
   value: '',
   entry_type: 'ip',
   list_type: 'blacklist',
 };
+
 
 declare module '@mui/x-data-grid' {
   interface ToolbarPropsOverrides {
@@ -52,12 +54,7 @@ function CustomToolbar({ onAdd, onDeleteSelected, selectedCount }: CustomToolbar
   return (
     <Toolbar>
       <Box sx={{ display: 'flex', gap: 1 }}>
-        <Button
-          startIcon={<AddIcon />}
-          size="small"
-          variant="contained"
-          onClick={onAdd}
-        >
+        <Button startIcon={<AddIcon />} size="small" variant="contained" onClick={onAdd}>
           Add IPs
         </Button>
         <Button
@@ -75,11 +72,6 @@ function CustomToolbar({ onAdd, onDeleteSelected, selectedCount }: CustomToolbar
   );
 }
 
-interface LineResult {
-  value: string;
-  error: string;
-}
-
 interface AddEntryDialogProps {
   open: boolean;
   defaultListType: ListType;
@@ -91,7 +83,6 @@ function AddEntryDialog({ open, defaultListType, onSave, onClose }: AddEntryDial
   const [form, setForm] = useState<AddEntryForm>({ ...EMPTY_FORM, list_type: defaultListType });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<LineResult[]>([]);
-
   const portalContainer = usePortalContainer();
 
   useEffect(() => {
@@ -109,21 +100,21 @@ function AddEntryDialog({ open, defaultListType, onSave, onClose }: AddEntryDial
     setErrors([]);
     const lineErrors = await onSave(form);
     setSaving(false);
-    if (lineErrors.length > 0) {
-      setErrors(lineErrors);
-    }
+    if (lineErrors.length > 0) setErrors(lineErrors);
   };
 
-  const isValid = form.value.trim() !== '';
-  const placeholder = '203.0.113.1\n203.0.113.2\n203.0.113.0/24';
-
   return (
-    <Dialog container={portalContainer} open={open} onClose={saving ? undefined : onClose} fullWidth maxWidth="xs">
+    <Dialog
+      container={portalContainer}
+      open={open}
+      onClose={saving ? undefined : onClose}
+      fullWidth
+      maxWidth="xs"
+    >
       <DialogTitle>Add access control entries</DialogTitle>
 
       <DialogContent dividers>
         <Stack spacing={2} sx={{ pt: 0.5 }}>
-
           <FormControl>
             <FormLabel>List</FormLabel>
             <RadioGroup
@@ -153,7 +144,7 @@ function AddEntryDialog({ open, defaultListType, onSave, onClose }: AddEntryDial
 
           <TextField
             label="IPs / CIDRs (one per line)"
-            placeholder={placeholder}
+            placeholder={'203.0.113.1\n203.0.113.2\n203.0.113.0/24'}
             value={form.value}
             onChange={(e) => update('value', e.target.value)}
             multiline
@@ -184,18 +175,15 @@ function AddEntryDialog({ open, defaultListType, onSave, onClose }: AddEntryDial
               </List>
             </Alert>
           )}
-
         </Stack>
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} color="inherit" disabled={saving}>
-          Cancel
-        </Button>
+        <Button onClick={onClose} color="inherit" disabled={saving}>Cancel</Button>
         <Button
           onClick={handleSave}
           variant="contained"
-          disabled={!isValid || saving}
+          disabled={form.value.trim() === '' || saving}
           startIcon={saving ? <CircularProgress size={14} color="inherit" /> : undefined}
         >
           {saving ? 'Adding…' : 'Add entries'}
@@ -205,11 +193,45 @@ function AddEntryDialog({ open, defaultListType, onSave, onClose }: AddEntryDial
   );
 }
 
-export default function AccessControl(): JSX.Element {
-  const [listType, setListType] = useState<ListType>('blacklist');
-  const [rows, setRows]         = useState<IpEntry[]>([]);
+const IP_COLUMNS: GridColDef[] = [
+  { field: 'ip',           headerName: 'IP / CIDR', flex: 1 },
+  { field: 'list_type',    headerName: 'List',      width: 110 },
+  { field: 'entry_type',   headerName: 'Type',      width: 110 },
+  { field: 'country_code', headerName: 'Country',   width: 100 },
+  {
+    field: 'blocked_at',
+    headerName: 'Blocked at',
+    width: 160,
+    valueFormatter: ({ value }) => value ? new Date(value).toLocaleString() : '—',
+  },
+  {
+    field: 'created_at',
+    headerName: 'Added',
+    width: 160,
+    valueFormatter: ({ value }) => value ? new Date(value).toLocaleString() : '—',
+  },
+];
+
+export default function Firewall(): JSX.Element {
+
+  // ── Rate limiting state ──
+  const [settings, setSettings] = useState<RateLimitSettings>({
+    rate_limit_enabled: false,
+    rate_limit_max: 30,
+    rate_limit_time: 60,
+    rate_limit_block_duration: 300,
+    rate_limit_blacklist_threshold: 5,
+    rate_limit_emergency_token_hash: '',
+  });
+
+  const updateSetting = <K extends keyof RateLimitSettings>(key: K, value: RateLimitSettings[K]) =>
+    setSettings((prev) => ({ ...prev, [key]: value }));
+
+  // ── Access control state ──
+  const [listType, setListType]     = useState<ListType>('blacklist');
+  const [rows, setRows]             = useState<IpEntry[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selection, setSelection] = useState<GridRowSelectionModel>({
+  const [selection, setSelection]   = useState<GridRowSelectionModel>({
     type: 'include',
     ids: new Set(),
   });
@@ -222,10 +244,7 @@ export default function AccessControl(): JSX.Element {
   useEffect(() => { void load(); }, [load]);
 
   const handleAddEntries = async (form: AddEntryForm): Promise<LineResult[]> => {
-    const lines = form.value
-      .split('\n')
-      .map((l) => l.trim())
-      .filter(Boolean);
+    const lines = form.value.split('\n').map((l) => l.trim()).filter(Boolean);
 
     const results = await Promise.allSettled(
       lines.map((val) => IpAPI.addEntry(val, form.list_type))
@@ -239,16 +258,13 @@ export default function AccessControl(): JSX.Element {
         error: (result as PromiseRejectedResult).reason?.message ?? 'Unknown error',
       }));
 
-    // Reload if at least one succeeded
     const anySuccess = results.some((r) => r.status === 'fulfilled');
     if (anySuccess) {
       if (form.list_type !== listType) setListType(form.list_type);
       else await load();
     }
 
-    // Close only if all succeeded
     if (errors.length === 0) setDialogOpen(false);
-
     return errors;
   };
 
@@ -258,27 +274,6 @@ export default function AccessControl(): JSX.Element {
     setSelection({ type: 'include', ids: new Set() });
     await load();
   }, [selection, load]);
-
-  const columns: GridColDef[] = [
-    { field: 'ip',           headerName: 'IP / CIDR',  flex: 1 },
-    { field: 'list_type',    headerName: 'List',        width: 110 },
-    { field: 'entry_type',   headerName: 'Type',        width: 110 },
-    { field: 'country_code', headerName: 'Country',     width: 100 },
-    {
-      field: 'blocked_at',
-      headerName: 'Blocked at',
-      width: 160,
-      valueFormatter: ({ value }) =>
-        value ? new Date(value).toLocaleString() : '—',
-    },
-    {
-      field: 'created_at',
-      headerName: 'Added',
-      width: 160,
-      valueFormatter: ({ value }) =>
-        value ? new Date(value).toLocaleString() : '—',
-    },
-  ];
 
   const toolbarSlots = useMemo(() => ({ toolbar: CustomToolbar }), []);
 
@@ -290,17 +285,66 @@ export default function AccessControl(): JSX.Element {
     },
   }), [handleDeleteSelected, selection.ids.size]);
 
+  // ── Render ──
   return (
     <Box>
       <Typography variant="h5" fontWeight={600} mb={2}>
-        Access Control
+        Security
       </Typography>
 
-      <Paper sx={{ height: 600 }}>
+      {/* ── Rate limiting ── */}
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Box>
+            <Typography fontWeight={600}>Enable API rate limiting</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Protect against excessive API requests
+            </Typography>
+          </Box>
+          <Switch
+            checked={settings.rate_limit_enabled}
+            onChange={(e) => updateSetting('rate_limit_enabled', e.target.checked)}
+          />
+        </Stack>
+      </Paper>
+
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Typography variant="h6" mb={2}>Limits</Typography>
+        <Stack direction="row" flexWrap="wrap" gap={2} alignItems="flex-start">
+          <TextField
+            label="Maximum requests"
+            type="number"
+            value={settings.rate_limit_max}
+            onChange={(e) => updateSetting('rate_limit_max', Number(e.target.value))}
+          />
+          <TextField
+            label="Time window (seconds)"
+            type="number"
+            value={settings.rate_limit_time}
+            onChange={(e) => updateSetting('rate_limit_time', Number(e.target.value))}
+          />
+          <TextField
+            label="Block duration (seconds)"
+            type="number"
+            value={settings.rate_limit_block_duration}
+            onChange={(e) => updateSetting('rate_limit_block_duration', Number(e.target.value))}
+          />
+          <TextField
+            label="Blacklist threshold"
+            type="number"
+            value={settings.rate_limit_blacklist_threshold}
+            onChange={(e) => updateSetting('rate_limit_blacklist_threshold', Number(e.target.value))}
+            helperText="Violations before auto-ban"
+          />
+        </Stack>
+      </Paper>
+
+      {/* ── IP access control ── */}
+      <Paper sx={{ height: 600, mb: 2 }}>
         <DataGrid
           rows={rows}
           getRowId={(row) => row.id}
-          columns={columns}
+          columns={IP_COLUMNS}
           checkboxSelection
           disableRowSelectionOnClick
           rowSelectionModel={selection}
@@ -310,6 +354,23 @@ export default function AccessControl(): JSX.Element {
           slotProps={toolbarSlotProps}
         />
       </Paper>
+
+      {/* ── Emergency access ── */}
+      <Paper sx={{ p: 2 }}>
+        <Typography variant="h6" mb={2}>Emergency Access</Typography>
+        <TextField
+          label="Emergency bypass token hash"
+          value={settings.rate_limit_emergency_token_hash}
+          onChange={(e) => updateSetting('rate_limit_emergency_token_hash', e.target.value)}
+          fullWidth
+          helperText="Stored as hash — never expose the raw token"
+        />
+      </Paper>
+
+      <Divider sx={{ my: 3 }} />
+      <Typography variant="body2" color="text.secondary">
+        These settings will be synced with RateLimiter.php
+      </Typography>
 
       <AddEntryDialog
         open={dialogOpen}

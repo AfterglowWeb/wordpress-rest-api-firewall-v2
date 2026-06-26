@@ -1,4 +1,4 @@
-import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
 
 import Navigation from '@components/Navigation';
 
@@ -8,38 +8,34 @@ import ConfirmDialog from '@components/ConfirmDialog';
 
 import Dashboard from '@pages/Dashboard';
 import Authentication from '@pages/Authentication';
-import AccessControl from '@pages/AccessControl';
-import RateLimiting from '@pages/RateLimiting';
+import Firewall from '@pages/Firewall';
 import Routes from '@pages/Routes';
-//import Wordpress from '@pages/Wordpress';
+//import WordPress from '@pages/WordPress';
 //import Logs from '@pages/Logs';
 
 export default function AdminLayout() {
 	const { panel } = useNavigation();
 
 	return (
-		<Box display="flex">
-			<Navigation />
+		<Stack>
+			<Navigation>
+				<Stack>
+					{panel === 'dashboard' && <Dashboard />}
 
-			<Box flex={1}>
-				{panel === 'dashboard' && <Dashboard />}
-
+					{panel === 'authentication' && <Authentication />}
 					
-					{panel === 'rate-limiting' && (
-						<RateLimiting />
-					)}
-
-					{panel === 'access-control' && (
-						<AccessControl />
-					)}
-
+					{panel === 'firewall' && <Firewall />}
 
 					{panel === 'routes' && <Routes />}
 
-				{/*panel === 'wordpress' && <Wordpress />*/}
+					{/*panel === 'wordpress' && <WordPress />*/}
 
-				{/*panel === 'logs' && <Logs />*/}
-			</Box>
-		</Box>
+					{/*panel === 'logs' && <Logs />*/}
+				</Stack>
+			</Navigation>
+
+			<ConfirmDialog />
+			
+		</Stack>
 	);
 }

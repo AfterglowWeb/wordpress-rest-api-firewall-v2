@@ -133,17 +133,9 @@ function renderGroupedChildren( options ) {
 }
 
 export default function ObjectTypeSelect( {
-	types = [ 'post_type', 'taxonomy' ],
-	visibility = [ 'public', 'private' ],
-	extraGroups = [],
-	isSingle = false,
-	name,
 	label,
 	value,
 	onChange,
-	helperText,
-	disabled,
-	sx,
 } ) {
 	const { adminData } = useAdminData();
 	const { __ } = wp.i18n || {};

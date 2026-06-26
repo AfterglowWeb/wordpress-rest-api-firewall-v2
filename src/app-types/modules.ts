@@ -1,7 +1,6 @@
 export type SecurityModuleKey =
 	| 'authentication'
-	| 'access-control'
-	| 'rate-limiting'
+	| 'firewall'
 	| 'routes'
 	| 'wordpress'
 	| 'logs';

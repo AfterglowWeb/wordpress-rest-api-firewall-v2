@@ -1,6 +1,6 @@
 import { useMemo, useState } from '@wordpress/element';
 import { Box, Grid, Paper, Typography, Stack, Switch, Chip } from '@mui/material';
-import type { SecurityModule } from '@types/modules';
+import type { SecurityModule } from '@app-types/modules';
 
 type StatCardProps = {
 	title: string;
@@ -75,15 +75,9 @@ export default function Dashboard(): JSX.Element {
 			enabled: true,
 		},
 		{
-			key: 'access-control',
-			title: 'Access Control',
-			description: 'IP filtering, CIDR, GeoIP blocking',
-			enabled: true,
-		},
-		{
-			key: 'rate-limiting',
-			title: 'Rate Limiting',
-			description: 'Request throttling & auto-blacklist',
+			key: 'firewall',
+			title: 'Firewall',
+			description: 'Rate Limiting, IP filtering, CIDR, GeoIP blocking',
 			enabled: true,
 		},
 		{
@@ -122,9 +116,9 @@ export default function Dashboard(): JSX.Element {
 	return (
         <>
 
-		<Box p={3}>
+		<Box>
 			{/* Header */}
-			<Box mb={3}>
+			<Box>
 				<Typography variant="h5" fontWeight={600}>
 					Security Modules
 				</Typography>

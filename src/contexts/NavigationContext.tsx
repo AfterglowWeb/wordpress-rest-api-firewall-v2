@@ -1,11 +1,8 @@
-import type { PropsWithChildren } from 'react';
-import {
-	createContext,
-	useContext,
-	useState,
-} from 'react';
-
-export type PanelKey = 'dashboard' | 'authentication' | 'access-control' | 'rate-limiting' | 'routes' | 'wordpress' | 'logs';
+import { createContext, useContext, useState } from '@wordpress/element';
+import type { PanelKey, PanelDefinition } from '@app-types/navigation';
+import { parseLocalizedPanels } from '@app-utils/parseLocalizedPanels';
+import { buildMenuItems } from '@app-utils/buildMenuItems';
+import type { MenuItem } from '@app-utils/buildMenuItems';
 
 type NavigationContextValue = {
     panel: PanelKey;
@@ -17,7 +14,11 @@ type NavigationContextValue = {
 
 const NavigationContext = createContext<NavigationContextValue | undefined>( undefined );
 
-export function NavigationProvider( { children }: ChildrenProps ): JSX.Element {
+type NavigationProviderProps = {
+    children?: JSX.Element;
+};
+
+export function NavigationProvider( { children }: NavigationProviderProps ): JSX.Element {
     const panels = parseLocalizedPanels();
     const firstKey = panels[ 0 ]?.key ?? 'auth';
 
@@ -45,5 +46,5 @@ export function useNavigation(): NavigationContextValue {
         throw new Error( 'useNavigation must be used within NavigationProvider' );
     }
 
-	return ctx;
+    return ctx;
 }

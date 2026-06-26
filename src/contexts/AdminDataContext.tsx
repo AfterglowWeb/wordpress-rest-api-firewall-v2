@@ -3,10 +3,10 @@ import {
 	useContext,
 	useState,
 	useCallback,
-	type PropsWithChildren,
-} from 'react';
+} from '@wordpress/element';
 
-export type AdminData = Record<string, any>;
+
+import type { AdminData } from '@app-types/admin';
 
 export type AdminDataContextValue = {
 	adminData: AdminData;
@@ -16,9 +16,10 @@ export type AdminDataContextValue = {
 
 const AdminDataContext = createContext<AdminDataContextValue | undefined>(undefined);
 
-type AdminDataProviderProps = PropsWithChildren<{
+type AdminDataProviderProps = {
+	children?: JSX.Element;
 	adminData?: AdminData;
-}>;
+};
 
 export const AdminDataProvider = ({
 	children,
