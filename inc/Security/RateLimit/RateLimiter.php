@@ -86,7 +86,4 @@ class RateLimiter {
 
         return $count;
     }
-
-		return $count;
-	}
 }
