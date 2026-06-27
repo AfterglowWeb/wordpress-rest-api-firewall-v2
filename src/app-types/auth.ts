@@ -5,7 +5,7 @@ export type JwtAlgorithm =
 
 export type AuthMethod = 'wp_auth' | 'jwt';
 
-export type UserStatus = 'active' | 'revoked' | 'expiring';
+export type UserStatus = 'active' | 'revoked';
 
 export interface AuthorizedUser {
   id: number;
@@ -19,6 +19,13 @@ export interface AuthorizedUser {
   expires_at?: string;   // ISO 8601, undefined = pas d'expiration
 }
 
+export interface AuthorizedUserMeta {
+  id:            number;
+  jwt_claim_sub: string;
+  status:        'active' | 'revoked';
+  expires_at:    string;
+}
+
 export interface AuthSettings {
   auth_enforce: boolean;
   auth_methods: AuthMethod;
@@ -26,5 +33,7 @@ export interface AuthSettings {
   auth_jwt_public_key: string;
   auth_jwt_audience: string;
   auth_jwt_issuer: string;
-  auth_users: AuthorizedUser[];
+  auth_users: AuthorizedUserMeta[];
 }
+
+

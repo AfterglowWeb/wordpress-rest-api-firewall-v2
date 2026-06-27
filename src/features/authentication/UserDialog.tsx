@@ -13,7 +13,6 @@ import {
   CircularProgress,
   Typography,
   Box,
-  useTheme,
 } from '@mui/material';
 
 import Switch from '@mui/material/Switch';
@@ -23,7 +22,6 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import type { AuthorizedUser } from '@app-types/auth';
 import { usePortalContainer } from '@contexts/PortalContainerContext';
 
-
 interface UserDialogProps {
   open: boolean;
   user: AuthorizedUser | null;
@@ -32,6 +30,7 @@ interface UserDialogProps {
   wpUsers: AuthorizedUser[];
   wpUsersLoading: boolean;
   fetchWordPressUsers: () => void;
+  authorizedUserIds: number[];
 }
 
 const EMPTY_FORM: Omit<AuthorizedUser, 'id'> = {
@@ -53,6 +52,7 @@ export default function UserDialog({
   wpUsers,
   wpUsersLoading,
   fetchWordPressUsers,
+  authorizedUserIds
 }: UserDialogProps): JSX.Element {
 
   const isEditing = user !== null;
@@ -60,9 +60,8 @@ export default function UserDialog({
   const [form, setForm]           = useState(EMPTY_FORM);
   const [selectedWpUser, setSelectedWpUser] = useState<AuthorizedUser | null>(null);
   const portalContainer = usePortalContainer();
-  const theme = useTheme();
-
   const noUser = !isEditing && selectedWpUser === null;
+
 
   useEffect(() => {
     if (!open) return;
@@ -163,6 +162,7 @@ export default function UserDialog({
               isOptionEqualToValue={isOptionEqualToValue}
               value={selectedWpUser}
               onChange={handleWpUserSelect}
+              getOptionDisabled={(option) => authorizedUserIds.includes(option.id)}
               disablePortal
               renderOption={(props, option) => (
                 <li {...props} key={option.id}>

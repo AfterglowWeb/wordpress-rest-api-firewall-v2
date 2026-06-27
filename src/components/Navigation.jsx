@@ -3,7 +3,6 @@ import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { __ } from '@wordpress/i18n';
 
-import { useAdminData } from '@contexts/AdminDataContext';
 import { useNavigation } from '@contexts/NavigationContext';
 import { SettingsAPI } from '@services/settings';
 
@@ -42,42 +41,23 @@ export default function Navigation({children}) {
 
     const { panel, menuItems, navigateGuarded } = useNavigation();
 
-    const { options, setOptions, formDirty, setFormDirty } = useAdminData();
-
-    const [ saving, setSaving ] = useState( false );
-
     const activeMenuItem =
         menuItems.find( ( m ) => ! m.hidden && 'key' in m && m.key === panel )
         ?? menuItems.find( ( m ) => 'key' in m && m.key === panel )
         ?? null;
-
-    const onSave = useCallback( async () => {
-        if ( saving || ! formDirty ) return;
-
-        setSaving( true );
-        try {
-            const updated = await SettingsAPI.updateOptions( options );
-            setOptions( updated );
-            setFormDirty( false );
-        } catch ( err ) {
-            console.error( 'Failed to save options', err );
-        } finally {
-            setSaving( false );
-        }
-    }, [ saving, formDirty, options, setOptions, setFormDirty ] );
 
     return (
         <Box sx={{
 			position:'relative',
 			}}>
 		 <AppBar
-                elevation={ 0 }
-                sx={ {
-                    '&.MuiAppBar-root': {
-                        position: 'relative',
-                        width: '100%'
-                    },
-                } }
+            elevation={ 0 }
+            sx={ {
+                '&.MuiAppBar-root': {
+                    position: 'relative',
+                    width: '100%'
+                },
+            } }
             >
                 <Toolbar
                     variant="dense"
@@ -121,25 +101,9 @@ export default function Navigation({children}) {
 
                     <Stack flex={ 1 } />
 
-                    <Stack direction="row" gap={ 2 } alignItems="center">
-
-                        <Box>
-                            <Button
-                                variant="contained"
-                                disableElevation
-                                size="small"
-                                onClick={ onSave }
-                                disabled={ saving || ! formDirty }
-                            >
-                                { saving
-                                    ? __( 'Saving…', 'bromate-rest-api-firewall' )
-                                    : __( 'Save', 'bromate-rest-api-firewall' )
-                                }
-                            </Button>
-                        </Box>
-                    </Stack>
                 </Toolbar>
             </AppBar>
+
             <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                 <Drawer
                     variant={ isMobile ? 'temporary' : 'permanent' }

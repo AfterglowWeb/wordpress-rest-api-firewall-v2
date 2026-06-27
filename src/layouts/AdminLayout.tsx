@@ -4,8 +4,6 @@ import Navigation from '@components/Navigation';
 
 import { useNavigation } from '@contexts/NavigationContext';
 
-import ConfirmDialog from '@components/ConfirmDialog';
-
 import Dashboard from '@pages/Dashboard';
 import Authentication from '@pages/Authentication';
 import Firewall from '@pages/Firewall';
@@ -34,7 +32,6 @@ export default function AdminLayout() {
 				</Stack>
 			</Navigation>
 
-			<ConfirmDialog />
 			
 		</Stack>
 	);

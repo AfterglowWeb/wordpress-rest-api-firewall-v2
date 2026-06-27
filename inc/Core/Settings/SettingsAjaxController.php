@@ -3,7 +3,6 @@
 use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
 use Bromate\RestApiFirewall\Api\Routing\RoutesPolicyRepository;
 use Bromate\RestApiFirewall\Api\Response\ModelsPropertiesRepository;
-use WP_User;
 
 class SettingsAjaxController {
 
@@ -18,7 +17,7 @@ class SettingsAjaxController {
 		add_action( 'wp_ajax_bromate_rest_api_firewall_flush_rewrite_rules', array( $self, 'ajax_flush_rewrite_rules' ) );
 		add_action( 'wp_ajax_bromate_get_routes_policy_tree', array( $self, 'ajax_get_routes_policy_tree' ) );
 		add_action( 'wp_ajax_bromate_save_routes_policy_tree', array( $self, 'ajax_save_routes_policy_tree' ) );
-		add_action( 'wp_ajax_bromate_get_authorized_users', array( $self, 'ajax_get_authorized_users' ) );
+		add_action( 'wp_ajax_bromate_authorized_users_options', array( $self, 'ajax_authorized_users_options' ) );
 		add_action( 'wp_ajax_bromate_get_wordpress_objects', array( $self, 'ajax_get_wordpress_objects' ) );
 	}
 
@@ -75,9 +74,9 @@ class SettingsAjaxController {
 			}
 
 			$key   = isset( $option['key'] ) && ! empty( $option['key'] ) ? $option['key'] : '';
-			$value = isset( $option['value'] ) && ! empty( $option['value'] ) ? $option['value'] : null;
+			$value = array_key_exists( 'value', $option ) ? $option['value'] : null;
 
-			if ( empty( $key ) || empty( $value ) ) {
+			if ( $key === '' || $value === null ) {
 				wp_send_json_error( array( 'error' => esc_html__( 'Invalid option data', 'bromate-rest-api-firewall' ) ), 422 );
 			}
 
@@ -108,11 +107,11 @@ class SettingsAjaxController {
 		);
 	}
 
-	public function ajax_get_authorized_users(): void {
+	public function ajax_authorized_users_options(): void {
 		if ( false === self::ajax_validate_has_firewall_admin_caps() ) {
 			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-api-firewall' ) ), 403 );
 		}
-		$wordpress_users = self::list_authorized_users();
+		$wordpress_users = SettingsRepository::authorized_users_options();
 		wp_send_json_success( $wordpress_users );
 	}
 
@@ -190,41 +189,4 @@ class SettingsAjaxController {
 		wp_send_json_success( array( 'message' => esc_html__( 'Rewrite rules flushed successfully.', 'bromate-rest-api-firewall' ) ) );
 	}
 
-
-	private static function list_authorized_users(): array {
-		$users = get_users(
-			array(
-				'role__in' => array( 'administrator' ),
-				'number'   => 500,
-				'orderby'  => 'display_name',
-				'order'    => 'ASC',
-			)
-		);
-
-		if ( empty( $users ) ) {
-			return array();
-		}
-
-		$current_user_id = get_current_user_id();
-
-		return array_map(
-			static function ( WP_User $user ) use ( $current_user_id ): array {
-				return array(
-					'id'            => absint( $user->ID ),
-					'display_name'  => sanitize_text_field( $user->display_name ?? '' ),
-					'email'         => sanitize_email( $user->user_email ),
-					'current_user'  => $current_user_id === $user->ID ? true : false,
-					'admin_url'     => sanitize_url( get_edit_user_link( $user->ID ) ),
-					'roles'         => array_map( 'sanitize_key', $user->roles ),
-					'jwt_claim_sub' => '',
-					'status'        => '',
-					'expires_at'    => '',
-				);
-			},
-			array_filter(
-				(array) $users,
-				static fn ( $user ) => $user instanceof WP_User
-			)
-		);
-	}
 }
