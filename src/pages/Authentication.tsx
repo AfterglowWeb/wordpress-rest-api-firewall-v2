@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from '@wordpress/element';
 import {
-  Box, Paper, Typography, Switch, Stack,
+  Paper, Typography, Switch, Stack,
   TextField, Select, MenuItem, FormControl,
   InputLabel, Button, Alert, Snackbar, Chip,
   RadioGroup, FormControlLabel, Radio, FormLabel
@@ -13,12 +13,9 @@ import {
   GridRowSelectionModel,
   Toolbar,
   useGridApiContext,
-  useGridApiRef
 } from '@mui/x-data-grid';
-import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 
 import type { AuthSettings, AuthorizedUser, AuthorizedUserMeta } from '@app-types/auth';
 import UserDialog from '@features/authentication/UserDialog';
@@ -374,11 +371,11 @@ export default function Authentication(): JSX.Element {
           }}
           slots={toolbarSlots}
           slotProps={{
-    toolbar: {
-        onAddUser: handleAddUser,
-        onDeleteSelected: handleDeleteSelected,
-    },
-}}
+            toolbar: {
+                onAddUser: handleAddUser,
+                onDeleteSelected: handleDeleteSelected,
+            },
+          }}
         />
       </Paper>
 

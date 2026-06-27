@@ -1,16 +1,15 @@
 import { useState, useCallback, useEffect, useMemo } from '@wordpress/element';
 import {
   Box, Paper, Typography, Switch,
-  Stack, TextField, Divider, Button,
+  Stack, TextField, Button,
   Dialog, DialogTitle, DialogContent, DialogActions, Toolbar,
   Alert, CircularProgress, List, ListItem, ListItemText,
   FormControlLabel, Radio, RadioGroup, FormLabel, FormControl,
 } from '@mui/material';
 import {
-  DataGrid, GridColDef, GridRowSelectionModel,
+  DataGrid, GridColDef, GridRowId,
+  GridRowSelectionModel, useGridApiContext
 } from '@mui/x-data-grid';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import type { RateLimitSettings } from '@app-types/rate-limiting';
 import { IpAPI, type IpEntry, type ListType } from '@services/ip';
 import { usePortalContainer } from '@contexts/PortalContainerContext';
@@ -35,39 +34,36 @@ const EMPTY_FORM: AddEntryForm = {
   list_type: 'blacklist',
 };
 
-
-declare module '@mui/x-data-grid' {
-  interface ToolbarPropsOverrides {
-    onAdd: () => void;
-    onDeleteSelected: () => void;
-    selectedCount: number;
-  }
-}
-
 interface CustomToolbarProps {
   onAdd: () => void;
-  onDeleteSelected: () => void;
-  selectedCount: number;
+  onDeleteSelected: (rows: Map<GridRowId, IpEntry>) => void;
 }
 
-function CustomToolbar({ onAdd, onDeleteSelected, selectedCount }: CustomToolbarProps) {
+function CustomToolbar({ onAdd, onDeleteSelected }: CustomToolbarProps) {
+  const apiRef = useGridApiContext();
+  const [selectedCount, setSelectedCount] = useState(0);
+  const [selectedRows, setSelectedRows] = useState<Map<GridRowId, IpEntry>>(new Map());
+
+  useEffect(() => {
+    const update = () => {
+      const rows = apiRef.current.getSelectedRows() as Map<GridRowId, IpEntry>;
+      setSelectedCount(rows.size);
+      setSelectedRows(rows);
+    };
+    update();
+    return apiRef.current.subscribeEvent('rowSelectionChange', update);
+  }, [apiRef]);
+
   return (
     <Toolbar>
-      <Box sx={{ display: 'flex', gap: 1 }}>
-        <Button startIcon={<AddIcon />} size="small" variant="contained" onClick={onAdd}>
-          Add IPs
-        </Button>
-        <Button
-          startIcon={<DeleteForeverIcon />}
-          size="small"
-          variant="outlined"
-          color="error"
-          onClick={onDeleteSelected}
-          disabled={selectedCount === 0}
-        >
-          Delete selected ({selectedCount})
-        </Button>
-      </Box>
+      <Button onClick={onAdd}>Add IPs</Button>
+      <Button
+        color="error"
+        disabled={selectedCount === 0}
+        onClick={() => onDeleteSelected(selectedRows)}
+      >
+        Delete ({selectedCount})
+      </Button>
     </Toolbar>
   );
 }
@@ -216,6 +212,7 @@ export default function Firewall(): JSX.Element {
 
   const [settings, setSettings] = useState<RateLimitSettings>({
     rate_limit_enabled: false,
+    rate_limit_wordpress_enabled: false,
     rate_limit_max: 30,
     rate_limit_time: 60,
     rate_limit_block_duration: 300,
@@ -266,22 +263,16 @@ export default function Firewall(): JSX.Element {
     return errors;
   };
 
-  const handleDeleteSelected = useCallback(async () => {
-    const ids = Array.from(selection.ids).map(Number);
-    await IpAPI.deleteEntries(ids);
-    setSelection({ type: 'include', ids: new Set() });
-    await load();
-  }, [selection, load]);
+  // handleDeleteSelected now receives the rows map directly:
+const handleDeleteSelected = useCallback(async (rows: Map<GridRowId, IpEntry>) => {
+  if (rows.size === 0) return;
+  const ids = Array.from(rows.keys()).map(Number);
+  await IpAPI.deleteEntries(ids);
+  setSelection({ type: 'include', ids: new Set() });
+  await load();
+}, [load]);
 
   const toolbarSlots = useMemo(() => ({ toolbar: CustomToolbar }), []);
-
-  const toolbarSlotProps = useMemo(() => ({
-    toolbar: {
-      onAdd: () => setDialogOpen(true),
-      onDeleteSelected: handleDeleteSelected,
-      selectedCount: selection.ids.size,
-    },
-  }), [handleDeleteSelected, selection.ids.size]);
 
   return (
     <Box>
@@ -296,6 +287,18 @@ export default function Firewall(): JSX.Element {
           <Switch
             checked={settings.rate_limit_enabled}
             onChange={(e) => updateSetting('rate_limit_enabled', e.target.checked)}
+          />
+        </Stack>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Box>
+            <Typography fontWeight={600}>Enable global rate limiting</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Protect all WordPress installation against excessive requests
+            </Typography>
+          </Box>
+          <Switch
+            checked={settings.rate_limit_wordpress_enabled}
+            onChange={(e) => updateSetting('rate_limit_wordpress_enabled', e.target.checked)}
           />
         </Stack>
       </Paper>
@@ -342,7 +345,12 @@ export default function Firewall(): JSX.Element {
           onRowSelectionModelChange={setSelection}
           showToolbar
           slots={toolbarSlots}
-          slotProps={toolbarSlotProps}
+          slotProps={{
+            toolbar: {
+              onAdd: () => setDialogOpen(true),
+              onDeleteSelected: handleDeleteSelected,
+            } as any,
+          }}
         />
       </Paper>
 

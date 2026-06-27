@@ -2,18 +2,18 @@ import { apiRequest } from './api';
 
 export type ListType = 'blacklist' | 'whitelist';
 
-export type IpEntry = {
+export interface IpEntry {
   id: number;
   ip: string;
-  list_type: ListType;
+  list_type: ListType;       // 'blacklist' | 'whitelist'
   entry_type: 'manual' | 'rate_limit';
   agent?: string | null;
   country_code?: string | null;
   country_name?: string | null;
+  user_id?: number | null;
   blocked_at?: string;
-  created_at?: string;
-  updated_at?: string;
-};
+  created_at: string;
+}
 
 export const IpAPI = {
   getEntries: (list_type: ListType) =>
