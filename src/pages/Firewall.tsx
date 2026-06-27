@@ -2,13 +2,14 @@ import { useState, useCallback, useEffect, useMemo } from '@wordpress/element';
 import {
   Box, Paper, Typography, Switch,
   Stack, TextField, Button,
-  Dialog, DialogTitle, DialogContent, DialogActions, Toolbar,
+  Dialog, DialogTitle, DialogContent, DialogActions,
   Alert, CircularProgress, List, ListItem, ListItemText,
   FormControlLabel, Radio, RadioGroup, FormLabel, FormControl,
 } from '@mui/material';
 import {
   DataGrid, GridColDef, GridRowId,
-  GridRowSelectionModel, useGridApiContext
+  GridRowSelectionModel, useGridApiContext,
+  Toolbar
 } from '@mui/x-data-grid';
 import type { RateLimitSettings } from '@app-types/rate-limiting';
 import { IpAPI, type IpEntry, type ListType } from '@services/ip';
@@ -34,12 +35,13 @@ const EMPTY_FORM: AddEntryForm = {
   list_type: 'blacklist',
 };
 
-interface CustomToolbarProps {
-  onAdd: () => void;
-  onDeleteSelected: (rows: Map<GridRowId, IpEntry>) => void;
+interface FirewallToolbarProps {
+  onAdd?: () => void;
+  onDeleteSelectedIps?: (rows: Map<GridRowId, IpEntry>) => void;
+  selectedCount: number;
 }
 
-function CustomToolbar({ onAdd, onDeleteSelected }: CustomToolbarProps) {
+function CustomToolbar({ onAdd, onDeleteSelectedIps }: FirewallToolbarProps) {
   const apiRef = useGridApiContext();
   const [selectedCount, setSelectedCount] = useState(0);
   const [selectedRows, setSelectedRows] = useState<Map<GridRowId, IpEntry>>(new Map());
@@ -55,12 +57,20 @@ function CustomToolbar({ onAdd, onDeleteSelected }: CustomToolbarProps) {
   }, [apiRef]);
 
   return (
-    <Toolbar>
-      <Button onClick={onAdd}>Add IPs</Button>
+    <Toolbar style={{gap:'16px'}}>
+      <Button 
+      variant="contained"
+      disableElevation 
+      onClick={onAdd}
+      size="small"
+      >Add IPs</Button>
       <Button
+        variant="contained" 
+        disableElevation 
         color="error"
         disabled={selectedCount === 0}
-        onClick={() => onDeleteSelected(selectedRows)}
+        onClick={() => onDeleteSelectedIps ? onDeleteSelectedIps(selectedRows) : false}
+        size="small"
       >
         Delete ({selectedCount})
       </Button>
@@ -175,10 +185,11 @@ function AddEntryDialog({ open, defaultListType, onSave, onClose }: AddEntryDial
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} color="inherit" disabled={saving}>Cancel</Button>
+        <Button onClick={onClose} variant="contained" disableElevation color="inherit" disabled={saving}>Cancel</Button>
         <Button
           onClick={handleSave}
           variant="contained"
+          disableElevation 
           disabled={form.value.trim() === '' || saving}
           startIcon={saving ? <CircularProgress size={14} color="inherit" /> : undefined}
         >
@@ -348,7 +359,7 @@ const handleDeleteSelected = useCallback(async (rows: Map<GridRowId, IpEntry>) =
           slotProps={{
             toolbar: {
               onAdd: () => setDialogOpen(true),
-              onDeleteSelected: handleDeleteSelected,
+              onDeleteSelectedIps: handleDeleteSelected,
             } as any,
           }}
         />
