@@ -18,6 +18,8 @@ class IpEntryAjaxController {
 		add_action( 'wp_ajax_bromate_delete_ip_entry', array( $self, 'ajax_delete_ip_entry' ) );
 		add_action( 'wp_ajax_bromate_delete_ip_entries', array( $self, 'ajax_delete_ip_entries' ) );
 		add_action( 'wp_ajax_bromate_get_country_stats', array( $self, 'ajax_get_country_stats' ) );
+		add_action( 'wp_ajax_bromate_get_user_ip_entries', array( $self, 'ajax_get_user_ip_entries' ) );
+
 	}
 
 	public function ajax_get_ip_entries(): void {
@@ -43,7 +45,12 @@ class IpEntryAjaxController {
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
 		$ip        = isset( $_POST['ip'] ) ? sanitize_text_field( wp_unslash( $_POST['ip'] ) ) : '';
 		$list_type = isset( $_POST['list_type'] ) ? sanitize_text_field( wp_unslash( $_POST['list_type'] ) ) : 'blacklist';
+		$user_id   = isset( $_POST['user_id'] ) ? absint(  wp_unslash( $_POST['user_id'] ) ) : null;
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
+
+		if ( null !== $user_id && ! get_userdata( $user_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid user', 'bromate-rest-api-firewall' ) ), 400 );
+		}
 
 		if ( empty( $ip ) || ! CidrMatcher::is_valid_ip_or_cidr( $ip ) ) {
 			wp_send_json_error( array( 'message' => __( 'Invalid IP address or CIDR', 'bromate-rest-api-firewall' ) ), 400 );
@@ -57,6 +64,8 @@ class IpEntryAjaxController {
 			'ip'         => $ip,
 			'list_type'  => $list_type,
 			'entry_type' => 'manual',
+			'user_id'    => $user_id ? $user_id : null,
+
 		);
 
 		$geoip = GeoIpApi::get_geoip( $ip );
@@ -117,6 +126,22 @@ class IpEntryAjaxController {
 		$count = IpEntryRepository::delete_many( $ids );
 
 		wp_send_json_success( array( 'deleted' => $count ), 200 );
+	}
+
+	public function ajax_get_user_ip_entries(): void {
+		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$user_id = isset( $_POST['user_id'] ) ? absint( $_POST['user_id'] ) : 0;
+
+		if ( ! $user_id ) {
+			wp_send_json_error( array( 'message' => __( 'User ID required', 'bromate-rest-api-firewall' ) ), 400 );
+		}
+
+		$entries = IpEntryRepository::find_by_user( $user_id );
+		wp_send_json_success( array( 'entries' => $entries ), 200 );
 	}
 
 	public function ajax_get_country_stats(): void {

@@ -18,6 +18,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 import type { AuthSettings, AuthorizedUser, AuthorizedUserMeta } from '@app-types/auth';
+import type { IpEntry } from '@services/ip'
 import UserDialog from '@features/authentication/UserDialog';
 import { apiRequest } from '@services/api';
 import { SettingsAPI } from '@services/settings';
@@ -26,19 +27,21 @@ import ConfirmDialog from '@components/ConfirmDialog';
 
 declare module '@mui/x-data-grid' {
   interface ToolbarPropsOverrides {
-    onAddUser: () => void;
-    onDeleteSelected: (rows: Map<GridRowId, AuthorizedUser>) => void; // ← updated
+    onAddUser?: () => void;
+    onAdd?: () => void;
+    onDeleteSelectedUser?: (rows: Map<GridRowId, AuthorizedUser>) => void; // ← updated
+    onDeleteSelectedIps?: (rows: Map<GridRowId, IpEntry>) => void; // ← updated
     selectedCount: number;
   }
 }
 
-interface CustomToolbarProps {
-  onAddUser: () => void;
-  onDeleteSelected: (rows: Map<GridRowId, AuthorizedUser>) => void; // ← typed, accepts rows
+interface AuthenticationToolbarProps {
+  onAddUser?: () => void;
+  onDeleteSelectedUser?: (rows: Map<GridRowId, AuthorizedUser>) => void; // ← typed, accepts rows
   selectedCount: number;
 }
 
-function CustomToolbar({ onAddUser, onDeleteSelected }: CustomToolbarProps) {
+function CustomToolbar({ onAddUser, onDeleteSelectedUser }: AuthenticationToolbarProps) {
   const apiRef = useGridApiContext();
   const [selectedCount, setSelectedCount] = useState(0);
   const [selectedRows, setSelectedRows] = useState<Map<GridRowId, AuthorizedUser>>(new Map()); // ← typed
@@ -56,11 +59,18 @@ function CustomToolbar({ onAddUser, onDeleteSelected }: CustomToolbarProps) {
 
   return (
     <Toolbar>
-      <Button onClick={onAddUser}>Add user</Button>
+      <Button 
+      variant="contained" 
+      disableElevation 
+      onClick={onAddUser}
+      size="small">Add user</Button>
       <Button
         color="error"
+        variant="contained" 
+        disableElevation 
         disabled={selectedCount === 0}
-        onClick={() => onDeleteSelected(selectedRows)} // ← pass the map
+        onClick={ () => onDeleteSelectedUser ? onDeleteSelectedUser(selectedRows) : false}
+        size="small"
       >
         Delete ({selectedCount})
       </Button>
@@ -236,6 +246,7 @@ export default function Authentication(): JSX.Element {
   }, []);
 
   const toolbarSlots = useMemo(() => ({ toolbar: CustomToolbar }), []);
+
   const columns: GridColDef<AuthorizedUser>[] = [
     { field: 'id', headerName: 'WP ID', width: 80 },
     { field: 'display_name', headerName: 'User', flex: 1 },
@@ -380,9 +391,9 @@ export default function Authentication(): JSX.Element {
           slotProps={{
             toolbar: {
                 onAddUser: handleAddUser,
-                onDeleteSelected: handleDeleteSelected,
+                onDeleteSelectedUser: handleDeleteSelected,
             },
-          }}
+        }}
         />
       </Paper>
 

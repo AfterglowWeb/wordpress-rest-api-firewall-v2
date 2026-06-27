@@ -1,4 +1,3 @@
-import { AdminData } from './admin';
 
 export {};
 
@@ -7,3 +6,4 @@ declare global {
 		bromateRestApiFirewall: AdminData;
 	}
 }
+

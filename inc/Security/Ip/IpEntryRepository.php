@@ -41,6 +41,11 @@ class IpEntryRepository {
 				'default'           => null,
 				'sortable'          => false,
 			),
+			'user_id' => array(
+				'type'     => 'integer',
+				'default'  => null,
+				'sortable' => true,
+			),
 			'country_code' => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
@@ -185,6 +190,16 @@ class IpEntryRepository {
 		$row = $wpdb->get_row( $wpdb->prepare( $sql, $ip, $list_type ), ARRAY_A );
 
 		return $row ? self::normalize( $row ) : array();
+	}
+
+	public static function find_by_user( int $user_id ): array {
+		global $wpdb;
+
+		$sql = 'SELECT * FROM ' . self::table() . ' WHERE user_id = %d ORDER BY created_at DESC';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, $user_id ), ARRAY_A );
+
+		return array_map( array( self::class, 'normalize' ), is_array( $rows ) ? $rows : array() );
 	}
 
 	public static function ip_in_list( string $ip, string $list_type = 'blacklist' ): bool {
