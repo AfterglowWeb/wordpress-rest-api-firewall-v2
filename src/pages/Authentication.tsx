@@ -56,21 +56,14 @@ function CustomToolbar({ onAddUser, onDeleteSelected }: CustomToolbarProps) {
 
   return (
     <Toolbar>
-      <Box sx={{ display: 'flex', gap: 1 }}>
-        <Button startIcon={<AddIcon />} size="small" variant="contained" onClick={onAddUser}>
-          Add user
-        </Button>
-        <Button
-          startIcon={<DeleteForeverIcon />}
-          size="small"
-          variant="outlined"
-          color="error"
-          onClick={onDeleteSelected}
-          disabled={selectedCount === 0}
-        >
-          Delete selected ({selectedCount})
-        </Button>
-      </Box>
+      <Button onClick={onAddUser}>Add user</Button>
+      <Button
+        color="error"
+        disabled={selectedCount === 0}
+        onClick={() => onDeleteSelected(selectedRows)} // ← pass the map
+      >
+        Delete ({selectedCount})
+      </Button>
     </Toolbar>
   );
 }
@@ -89,7 +82,7 @@ export default function Authentication(): JSX.Element {
   const portalContainer = usePortalContainer();
   const [dialogOpen, setDialogOpen]   = useState(false);
   const [editingUser, setEditingUser] = useState<AuthorizedUser | null>(null);
-  const [wpUsers, setWpUsers]         = useState<AuthorizedUser[]>([]);
+  const [wpUsers, setWpUsers] = useState<AuthorizedUser[]>([]);
   const [wpUsersLoading, setWpUsersLoading] = useState(false);
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
     type: 'include',
@@ -176,10 +169,10 @@ export default function Authentication(): JSX.Element {
 
   const handleSaveUser = useCallback((user: AuthorizedUser) => {
     const meta: AuthorizedUserMeta = {
-      id:            user.id,
+      id: user.id,
       jwt_claim_sub: user.jwt_claim_sub ?? '',
-      status:        user.status ?? 'active',
-      expires_at:    user.expires_at ?? '',
+      status: user.status ?? 'active',
+      expires_at: user.expires_at ?? '',
     };
 
     setSettings((prev) => {
@@ -283,9 +276,11 @@ export default function Authentication(): JSX.Element {
         );
       },
     },
-    { field: 'expires_at', headerName: 'Expires', width: 120,
+    {
+      field: 'expires_at', headerName: 'Expires', width: 120,
       valueFormatter: (value: string | undefined) =>
-        value ? new Date(value).toLocaleDateString() : '—' },
+        value ? new Date(value).toLocaleDateString() : '—'
+    },
     {
       field: 'expires_at',
       headerName: 'Expires',
@@ -296,7 +291,7 @@ export default function Authentication(): JSX.Element {
     {
       field: 'actions', type: 'actions', width: 80,
       getActions: ({ row }) => [
-        <GridActionsCellItem icon={<EditIcon />}   label="Edit"   onClick={() => handleEditUser(row)} />,
+        <GridActionsCellItem icon={<EditIcon />} label="Edit" onClick={() => handleEditUser(row)} />,
         <GridActionsCellItem icon={<DeleteIcon />} label="Remove" onClick={() => handleDeleteUser(row.id)} />,
       ],
     },
@@ -382,7 +377,12 @@ export default function Authentication(): JSX.Element {
           rowSelectionModel={rowSelectionModel}
           onRowSelectionModelChange={setRowSelectionModel}
           slots={toolbarSlots}
-          slotProps={toolbarSlotProps}
+          slotProps={{
+    toolbar: {
+        onAddUser: handleAddUser,
+        onDeleteSelected: handleDeleteSelected,
+    },
+}}
         />
       </Paper>
 
