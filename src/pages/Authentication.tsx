@@ -11,7 +11,9 @@ import {
   GridActionsCellItem,
   GridRowId,
   GridRowSelectionModel,
-  Toolbar
+  Toolbar,
+  useGridApiContext,
+  useGridApiRef
 } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -29,35 +31,43 @@ import ConfirmDialog from '@components/ConfirmDialog';
 declare module '@mui/x-data-grid' {
   interface ToolbarPropsOverrides {
     onAddUser: () => void;
-    onDeleteSelected: () => void;
+    onDeleteSelected: (rows: Map<GridRowId, AuthorizedUser>) => void; // ← updated
     selectedCount: number;
   }
 }
 
 interface CustomToolbarProps {
   onAddUser: () => void;
-  onDeleteSelected: () => void;
+  onDeleteSelected: (rows: Map<GridRowId, AuthorizedUser>) => void; // ← typed, accepts rows
   selectedCount: number;
 }
 
-function CustomToolbar({ onAddUser, onDeleteSelected, selectedCount }: CustomToolbarProps) {
+function CustomToolbar({ onAddUser, onDeleteSelected }: CustomToolbarProps) {
+  const apiRef = useGridApiContext();
+  const [selectedCount, setSelectedCount] = useState(0);
+  const [selectedRows, setSelectedRows] = useState<Map<GridRowId, AuthorizedUser>>(new Map()); // ← typed
+
+  useEffect(() => {
+    const update = () => {
+      const rows = apiRef.current.getSelectedRows() as Map<GridRowId, AuthorizedUser>;
+      setSelectedCount(rows.size);
+      setSelectedRows(rows); // ← store the map
+    };
+
+    update();
+    return apiRef.current.subscribeEvent('rowSelectionChange', update);
+  }, [apiRef]);
+
   return (
     <Toolbar>
-      <Box sx={{ display: 'flex', gap: 1 }}>
-        <Button startIcon={<AddIcon />} size="small" variant="contained" onClick={onAddUser}>
-          Add user
-        </Button>
-        <Button
-          startIcon={<DeleteForeverIcon />}
-          size="small"
-          variant="outlined"
-          color="error"
-          onClick={onDeleteSelected}
-          disabled={selectedCount === 0}
-        >
-          Delete selected ({selectedCount})
-        </Button>
-      </Box>
+      <Button onClick={onAddUser}>Add user</Button>
+      <Button
+        color="error"
+        disabled={selectedCount === 0}
+        onClick={() => onDeleteSelected(selectedRows)} // ← pass the map
+      >
+        Delete ({selectedCount})
+      </Button>
     </Toolbar>
   );
 }
@@ -73,15 +83,19 @@ export default function Authentication(): JSX.Element {
     auth_users: [],
   });
 
-  const portalContainer  = usePortalContainer();
-  const { openDialog }   = useDialog();
-  const [dialogOpen, setDialogOpen]   = useState(false);
+  const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
+    type: 'include',
+    ids: new Set(),
+  });
+
+
+  const portalContainer = usePortalContainer();
+  const { openDialog } = useDialog();
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AuthorizedUser | null>(null);
-  const [wpUsers, setWpUsers]         = useState<AuthorizedUser[]>([]);
+  const [wpUsers, setWpUsers] = useState<AuthorizedUser[]>([]);
   const [wpUsersLoading, setWpUsersLoading] = useState(false);
 
-  // Plain array of selected IDs — simpler than wrestling with GridRowSelectionModel shape
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -96,8 +110,8 @@ export default function Authentication(): JSX.Element {
       return [{
         ...wpUser,
         jwt_claim_sub: meta.jwt_claim_sub,
-        status:        meta.status,
-        expires_at:    meta.expires_at,
+        status: meta.status,
+        expires_at: meta.expires_at,
       }];
     }),
     [settings.auth_users, wpUsers]
@@ -114,7 +128,7 @@ export default function Authentication(): JSX.Element {
       const days = Math.ceil(
         (new Date(user.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
       );
-      if (days <= 0)  return 'revoked';
+      if (days <= 0) return 'revoked';
       if (days <= 30) return 'expiring';
     }
     return 'active';
@@ -162,13 +176,13 @@ export default function Authentication(): JSX.Element {
 
   const doSaveUser = useCallback((user: AuthorizedUser) => {
     const meta: AuthorizedUserMeta = {
-      id:            user.id,
+      id: user.id,
       jwt_claim_sub: user.jwt_claim_sub ?? '',
-      status:        user.status ?? 'active',
-      expires_at:    user.expires_at ?? '',
+      status: user.status ?? 'active',
+      expires_at: user.expires_at ?? '',
     };
     setSettings((prev) => {
-      const exists  = prev.auth_users.some((u) => u.id === meta.id);
+      const exists = prev.auth_users.some((u) => u.id === meta.id);
       const newUsers = exists
         ? prev.auth_users.map((u) => (u.id === meta.id ? meta : u))
         : [...prev.auth_users, meta];
@@ -184,26 +198,25 @@ export default function Authentication(): JSX.Element {
     setEditingUser(null);
   }, [persistUsers]);
 
-  // Dialog closes → on confirm → save
   const handleSaveUser = useCallback((user: AuthorizedUser) => {
     const exists = settings.auth_users.some((u) => u.id === user.id);
     openDialog({
-      type:         DIALOG_TYPES.CONFIRM,
-      title:        exists ? 'Save changes?' : 'Add user?',
-      content:      exists
+      type: DIALOG_TYPES.CONFIRM,
+      title: exists ? 'Save changes?' : 'Add user?',
+      content: exists
         ? `Save changes for ${user.display_name}?`
         : `Add ${user.display_name} to authorized users?`,
       confirmLabel: exists ? 'Save' : 'Add',
-      onConfirm:    () => doSaveUser(user),
+      onConfirm: () => doSaveUser(user),
     });
   }, [settings.auth_users, openDialog, doSaveUser]);
 
   const handleDeleteUser = useCallback((id: GridRowId) => {
     const user = authorizedUsers.find((u) => u.id === id);
     openDialog({
-      type:         DIALOG_TYPES.CONFIRM,
-      title:        'Remove user?',
-      content:      `Remove ${user?.display_name ?? id} from authorized users?`,
+      type: DIALOG_TYPES.CONFIRM,
+      title: 'Remove user?',
+      content: `Remove ${user?.display_name ?? id} from authorized users?`,
       confirmLabel: 'Remove',
       onConfirm: () => {
         setSettings((prev) => {
@@ -216,33 +229,35 @@ export default function Authentication(): JSX.Element {
     });
   }, [authorizedUsers, openDialog, persistUsers]);
 
-  const handleDeleteSelected = useCallback(() => {
-    if (selectedIds.length === 0) return;
-    const names = authorizedUsers
-      .filter((u) => selectedIds.includes(u.id))
-      .map((u) => u.display_name)
-      .join(', ');
 
-    openDialog({
-      type:         DIALOG_TYPES.CONFIRM,
-      title:        `Remove ${selectedIds.length} user(s)?`,
-      content:      `This will remove: ${names}`,
-      confirmLabel: 'Remove all',
-      onConfirm: () => {
-        setSettings((prev) => {
-          const newUsers = prev.auth_users.filter((u) => !selectedIds.includes(u.id));
-          persistUsers(newUsers);
-          return { ...prev, auth_users: newUsers };
-        });
-        setSnackbar({
-          open: true,
-          message: `Removed ${selectedIds.length} user(s)`,
-          severity: 'success',
-        });
-        setSelectedIds([]);
-      },
-    });
-  }, [selectedIds, authorizedUsers, openDialog, persistUsers]);
+  const handleDeleteSelected = useCallback((rows: Map<GridRowId, AuthorizedUser>) => {
+  if (rows.size === 0) return;
+
+  const ids = new Set(rows.keys());
+  const names = Array.from(rows.values())
+    .map((u) => u.display_name)
+    .join(', ');
+
+  openDialog({
+    type: DIALOG_TYPES.CONFIRM,
+    title: `Remove ${rows.size} user(s)?`,
+    content: `This will remove: ${names}`,
+    confirmLabel: 'Remove all',
+    onConfirm: () => {
+      setSettings((prev) => {
+        const newUsers = prev.auth_users.filter((u) => !ids.has(u.id));
+        persistUsers(newUsers);
+        return { ...prev, auth_users: newUsers };
+      });
+      setSnackbar({
+        open: true,
+        message: `Removed ${rows.size} user(s)`,
+        severity: 'success',
+      });
+      setRowSelectionModel({ type: 'include', ids: new Set() });
+    },
+  });
+}, [openDialog, persistUsers]);
 
   const handleAddUser = useCallback(() => {
     setEditingUser(null);
@@ -254,17 +269,22 @@ export default function Authentication(): JSX.Element {
     setDialogOpen(true);
   }, []);
 
-  // ── DataGrid ──────────────────────────────────────────────────────────────
-
+  const toolbarSlots = useMemo(() => ({ toolbar: CustomToolbar }), []);
   const columns: GridColDef<AuthorizedUser>[] = [
     { field: 'id', headerName: 'WP ID', width: 80 },
     { field: 'display_name', headerName: 'User', flex: 1 },
-    { field: 'email', headerName: 'Email', flex: 1,
-      valueGetter: (_, row) => row.email || '—' },
-    { field: 'wp_role', headerName: 'Role', width: 120,
-      valueGetter: (_, row) => row.roles?.length > 0 ? row.roles[0] : '—' },
-    { field: 'jwt_claim_sub', headerName: 'JWT sub claim', flex: 1,
-      valueGetter: (_, row) => row.jwt_claim_sub || '—' },
+    {
+      field: 'email', headerName: 'Email', flex: 1,
+      valueGetter: (_, row) => row.email || '—'
+    },
+    {
+      field: 'wp_role', headerName: 'Role', width: 120,
+      valueGetter: (_, row) => row.roles?.length > 0 ? row.roles[0] : '—'
+    },
+    {
+      field: 'jwt_claim_sub', headerName: 'JWT sub claim', flex: 1,
+      valueGetter: (_, row) => row.jwt_claim_sub || '—'
+    },
     {
       field: 'status', headerName: 'Status', width: 110,
       renderCell: ({ row }) => {
@@ -277,28 +297,19 @@ export default function Authentication(): JSX.Element {
         );
       },
     },
-    { field: 'expires_at', headerName: 'Expires', width: 120,
+    {
+      field: 'expires_at', headerName: 'Expires', width: 120,
       valueFormatter: (value: string | undefined) =>
-        value ? new Date(value).toLocaleDateString() : '—' },
+        value ? new Date(value).toLocaleDateString() : '—'
+    },
     {
       field: 'actions', type: 'actions', width: 80,
       getActions: ({ row }) => [
-        <GridActionsCellItem icon={<EditIcon />}   label="Edit"   onClick={() => handleEditUser(row)} />,
+        <GridActionsCellItem icon={<EditIcon />} label="Edit" onClick={() => handleEditUser(row)} />,
         <GridActionsCellItem icon={<DeleteIcon />} label="Remove" onClick={() => handleDeleteUser(row.id)} />,
       ],
     },
   ];
-
-  const toolbarSlots = useMemo(() => ({ toolbar: CustomToolbar }), []);
-
-  // Recompute whenever selectedIds changes — no useMemo needed, inline is fine
-  const toolbarSlotProps = {
-    toolbar: {
-      onAddUser: handleAddUser,
-      onDeleteSelected: handleDeleteSelected,
-      selectedCount: selectedIds.length,  // ← plain array length, always fresh
-    },
-  };
 
   return (
     <Stack flexDirection="column" gap={2}>
@@ -310,7 +321,7 @@ export default function Authentication(): JSX.Element {
             <RadioGroup row value={settings.auth_methods}
               onChange={(e) => update('auth_methods', e.target.value as any)}>
               <FormControlLabel value="wp_auth" control={<Radio size="small" />} label="WordPress Auth" />
-              <FormControlLabel value="jwt"     control={<Radio size="small" />} label="JWT" />
+              <FormControlLabel value="jwt" control={<Radio size="small" />} label="JWT" />
             </RadioGroup>
           </FormControl>
           <FormControl>
@@ -330,7 +341,7 @@ export default function Authentication(): JSX.Element {
               <Select MenuProps={{ container: portalContainer }}
                 value={settings.auth_jwt_algorithm} label="JWT Algorithm"
                 onChange={(e) => update('auth_jwt_algorithm', e.target.value as any)}>
-                {['RS256','RS384','RS512','HS256','HS384','HS512','ES256'].map((alg) => (
+                {['RS256', 'RS384', 'RS512', 'HS256', 'HS384', 'HS512', 'ES256'].map((alg) => (
                   <MenuItem key={alg} value={alg}>{alg}</MenuItem>
                 ))}
               </Select>
@@ -357,15 +368,17 @@ export default function Authentication(): JSX.Element {
           checkboxSelection
           disableRowSelectionOnClick
           loading={wpUsersLoading}
-          // ← Uncontrolled selection: let DataGrid own it, read changes via callback
-          onRowSelectionModelChange={(model) => {
-            const ids = Array.from(
-              (model as GridRowSelectionModel & { ids?: Set<GridRowId> }).ids ?? model
-            ) as number[];
-            setSelectedIds(ids);
+          rowSelectionModel={rowSelectionModel}
+          onRowSelectionModelChange={(newSelection) => {
+            setRowSelectionModel(newSelection);
           }}
           slots={toolbarSlots}
-          slotProps={toolbarSlotProps}
+          slotProps={{
+    toolbar: {
+        onAddUser: handleAddUser,
+        onDeleteSelected: handleDeleteSelected,
+    },
+}}
         />
       </Paper>
 
