@@ -378,11 +378,11 @@ export default function Authentication(): JSX.Element {
           onRowSelectionModelChange={setRowSelectionModel}
           slots={toolbarSlots}
           slotProps={{
-    toolbar: {
-        onAddUser: handleAddUser,
-        onDeleteSelected: handleDeleteSelected,
-    },
-}}
+            toolbar: {
+                onAddUser: handleAddUser,
+                onDeleteSelected: handleDeleteSelected,
+            },
+          }}
         />
       </Paper>
 
