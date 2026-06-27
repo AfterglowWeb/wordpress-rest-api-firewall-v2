@@ -274,78 +274,67 @@ export default function Firewall(): JSX.Element {
     return errors;
   };
 
-  // handleDeleteSelected now receives the rows map directly:
-const handleDeleteSelected = useCallback(async (rows: Map<GridRowId, IpEntry>) => {
-  if (rows.size === 0) return;
-  const ids = Array.from(rows.keys()).map(Number);
-  await IpAPI.deleteEntries(ids);
-  setSelection({ type: 'include', ids: new Set() });
-  await load();
-}, [load]);
+  const handleDeleteSelected = useCallback(async (rows: Map<GridRowId, IpEntry>) => {
+    if (rows.size === 0) return;
+    const ids = Array.from(rows.keys()).map(Number);
+    await IpAPI.deleteEntries(ids);
+    setSelection({ type: 'include', ids: new Set() });
+    await load();
+  }, [load]);
 
   const toolbarSlots = useMemo(() => ({ toolbar: CustomToolbar }), []);
 
   return (
     <Box>
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Typography fontWeight={600}>Enable API rate limiting</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Protect against excessive API requests
-            </Typography>
-          </Box>
-          <Switch
+      <Paper sx={{ p: 2, mb: 2 }} elevation={0}>        
+        <Stack flexDirection="column" gap={2}>
+         
+          <FormControlLabel
+            label="Enable Firewall"
+            control={
+              <Switch
             checked={settings.rate_limit_enabled}
-            onChange={(e) => updateSetting('rate_limit_enabled', e.target.checked)}
+                onChange={(e) => updateSetting('rate_limit_enabled', e.target.checked)}
+              />
+            }
           />
+
+          <Stack>
+            <Typography variant="h6" mb={2}>Rate Limiting</Typography>
+            <Stack direction="row" flexWrap="wrap" gap={2} alignItems="flex-start">
+              <TextField
+                label="Maximum requests"
+                type="number"
+                value={settings.rate_limit_max}
+                onChange={(e) => updateSetting('rate_limit_max', Number(e.target.value))}
+              />
+              <TextField
+                label="Time window (seconds)"
+                type="number"
+                value={settings.rate_limit_time}
+                onChange={(e) => updateSetting('rate_limit_time', Number(e.target.value))}
+              />
+              <TextField
+                label="Block duration (seconds)"
+                type="number"
+                value={settings.rate_limit_block_duration}
+                onChange={(e) => updateSetting('rate_limit_block_duration', Number(e.target.value))}
+              />
+              <TextField
+                label="Blacklist threshold"
+                type="number"
+                value={settings.rate_limit_blacklist_threshold}
+                onChange={(e) => updateSetting('rate_limit_blacklist_threshold', Number(e.target.value))}
+                helperText="Violations before auto-ban"
+              />
+            </Stack>
+          </Stack>
         </Stack>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Typography fontWeight={600}>Enable global rate limiting</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Protect all WordPress installation against excessive requests
-            </Typography>
-          </Box>
-          <Switch
-            checked={settings.rate_limit_wordpress_enabled}
-            onChange={(e) => updateSetting('rate_limit_wordpress_enabled', e.target.checked)}
-          />
-        </Stack>
+
       </Paper>
 
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Typography variant="h6" mb={2}>Limits</Typography>
-        <Stack direction="row" flexWrap="wrap" gap={2} alignItems="flex-start">
-          <TextField
-            label="Maximum requests"
-            type="number"
-            value={settings.rate_limit_max}
-            onChange={(e) => updateSetting('rate_limit_max', Number(e.target.value))}
-          />
-          <TextField
-            label="Time window (seconds)"
-            type="number"
-            value={settings.rate_limit_time}
-            onChange={(e) => updateSetting('rate_limit_time', Number(e.target.value))}
-          />
-          <TextField
-            label="Block duration (seconds)"
-            type="number"
-            value={settings.rate_limit_block_duration}
-            onChange={(e) => updateSetting('rate_limit_block_duration', Number(e.target.value))}
-          />
-          <TextField
-            label="Blacklist threshold"
-            type="number"
-            value={settings.rate_limit_blacklist_threshold}
-            onChange={(e) => updateSetting('rate_limit_blacklist_threshold', Number(e.target.value))}
-            helperText="Violations before auto-ban"
-          />
-        </Stack>
-      </Paper>
-
-      <Paper sx={{ height: 600, mb: 2 }}>
+      <Paper sx={{ p: 2, mb: 2 }} elevation={0}>
+        <Typography variant="h6" mb={2}>IPs Management</Typography>
         <DataGrid
           rows={rows}
           getRowId={(row) => row.id}
@@ -365,7 +354,7 @@ const handleDeleteSelected = useCallback(async (rows: Map<GridRowId, IpEntry>) =
         />
       </Paper>
 
-      <Paper sx={{ p: 2 }}>
+      <Paper sx={{ p: 2, mb: 2 }} elevation={0}>
         <Typography variant="h6" mb={2}>Emergency Access</Typography>
         <TextField
           label="Emergency bypass token hash"

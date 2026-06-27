@@ -321,51 +321,54 @@ export default function Authentication(): JSX.Element {
 
   return (
     <Stack flexDirection="column" gap={2}>
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Typography variant="h6" mb={2}>Core Settings</Typography>
+      <Paper sx={{ p: 2, mb: 2 }} elevation={0}>
         <Stack flexDirection="column" gap={2}>
+
+          <FormControlLabel
+            label="Enforce Authentication"
+            control={
+              <Switch 
+              checked={settings.auth_enforce}
+              onChange={(e) => update('auth_enforce', e.target.checked)} />
+            }
+          />
+
           <FormControl>
-            <FormLabel>Authentication method</FormLabel>
+          <Typography variant="h6">Authentication method</Typography>
             <RadioGroup row value={settings.auth_methods}
               onChange={(e) => update('auth_methods', e.target.value as any)}>
               <FormControlLabel value="wp_auth" control={<Radio size="small" />} label="WordPress Auth" />
               <FormControlLabel value="jwt" control={<Radio size="small" />} label="JWT" />
             </RadioGroup>
           </FormControl>
-          <FormControl>
-            <FormLabel>Require authentication for all API routes</FormLabel>
-            <Switch checked={settings.auth_enforce}
-              onChange={(e) => update('auth_enforce', e.target.checked)} />
-          </FormControl>
+         
+          {settings.auth_methods === 'jwt' && (
+            <Stack spacing={2}>
+              <FormControl fullWidth>
+                <InputLabel>JWT Algorithm</InputLabel>
+                <Select MenuProps={{ container: portalContainer }}
+                  value={settings.auth_jwt_algorithm} label="JWT Algorithm"
+                  onChange={(e) => update('auth_jwt_algorithm', e.target.value as any)}>
+                  {['RS256', 'RS384', 'RS512', 'HS256', 'HS384', 'HS512', 'ES256'].map((alg) => (
+                    <MenuItem key={alg} value={alg}>{alg}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField label="JWT Public Key" multiline minRows={4}
+                value={settings.auth_jwt_public_key}
+                onChange={(e) => update('auth_jwt_public_key', e.target.value)} />
+              <TextField label="JWT Audience" value={settings.auth_jwt_audience}
+                onChange={(e) => update('auth_jwt_audience', e.target.value)} />
+              <TextField label="JWT Issuer" value={settings.auth_jwt_issuer}
+                onChange={(e) => update('auth_jwt_issuer', e.target.value)} />
+            </Stack>)}
+
         </Stack>
       </Paper>
 
-      {settings.auth_methods === 'jwt' && (
-        <Paper sx={{ p: 2, mb: 2 }}>
-          <Typography variant="h6" mb={2}>JWT Configuration</Typography>
-          <Stack spacing={2}>
-            <FormControl fullWidth>
-              <InputLabel>JWT Algorithm</InputLabel>
-              <Select MenuProps={{ container: portalContainer }}
-                value={settings.auth_jwt_algorithm} label="JWT Algorithm"
-                onChange={(e) => update('auth_jwt_algorithm', e.target.value as any)}>
-                {['RS256', 'RS384', 'RS512', 'HS256', 'HS384', 'HS512', 'ES256'].map((alg) => (
-                  <MenuItem key={alg} value={alg}>{alg}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField label="JWT Public Key" multiline minRows={4}
-              value={settings.auth_jwt_public_key}
-              onChange={(e) => update('auth_jwt_public_key', e.target.value)} />
-            <TextField label="JWT Audience" value={settings.auth_jwt_audience}
-              onChange={(e) => update('auth_jwt_audience', e.target.value)} />
-            <TextField label="JWT Issuer" value={settings.auth_jwt_issuer}
-              onChange={(e) => update('auth_jwt_issuer', e.target.value)} />
-          </Stack>
-        </Paper>
-      )}
+     
 
-      <Paper sx={{ p: 2 }}>
+      <Paper sx={{ p: 2 }} elevation={0}>
         <Typography variant="h6" mb={2}>Authorized users</Typography>
         <DataGrid
           rows={authorizedUsers}

@@ -532,7 +532,7 @@ final class SettingsConfig {
 			),
 
 			'authentication'  => array(
-				'label' => __( 'Authentication', 'bromate-rest-api-firewall' ),
+				'label' => __( 'REST API Auth.', 'bromate-rest-api-firewall' ),
 				'icon'  => 'lock',
 			),
 
