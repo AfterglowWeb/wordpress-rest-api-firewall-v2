@@ -59,7 +59,7 @@ function CustomToolbar({ onAddUser, onDeleteSelectedUser }: AuthenticationToolba
   }, [apiRef]);
 
   return (
-    <Toolbar>
+    <Toolbar style={{gap:'16px'}}>
       <Button 
       variant="contained" 
       disableElevation 

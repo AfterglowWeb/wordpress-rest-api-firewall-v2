@@ -1,5 +1,6 @@
 <?php namespace Bromate\RestApiFirewall\Core\Settings;
 
+use Bromate\RestApiFirewall\Security\Ip\IpEntryRepository;
 use WP_User;
 
 class SettingsRepository {
@@ -126,6 +127,7 @@ class SettingsRepository {
 					'jwt_claim_sub' => '',
 					'status'        => '',
 					'expires_at'    => '',
+					'ip_entries'    => IpEntryRepository::find_by_user( $user->ID ),
 				);
 			},
 			array_filter(

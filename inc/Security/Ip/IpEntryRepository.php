@@ -46,6 +46,12 @@ class IpEntryRepository {
 				'default'  => null,
 				'sortable' => true,
 			),
+			'referrer' => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => null,
+				'sortable'          => false,
+			),
 			'country_code' => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
@@ -86,6 +92,8 @@ class IpEntryRepository {
 			'list_type'    => $row['list_type'],
 			'entry_type'   => $row['entry_type'],
 			'agent'        => $row['agent'],
+			'user_id'      => $row['user_id'],
+			'referrer'     => $row['referrer'],
 			'country_code' => $row['country_code'],
 			'country_name' => $row['country_name'],
 			'blocked_at'   => $row['blocked_at'],
@@ -164,7 +172,15 @@ class IpEntryRepository {
 		$entries = $wpdb->get_results( $wpdb->prepare( $sql, $values ), ARRAY_A );
 
 		return array(
-			'entries'     => array_map( array( self::class, 'normalize' ), is_array( $entries ) ? $entries : array() ),
+			'entries'     => array_map( function( $entry ) {
+				if ( ! empty( $entry['user_id'] ) ) {
+					$user = get_userdata( $entry['user_id'] );
+					$entry['user_display_name'] = $user ? $user->display_name : null;
+				} else {
+					$entry['user_display_name'] = null;
+				}
+				return $entry;
+			}, array_map( array( self::class, 'normalize' ), is_array( $entries ) ? $entries : array() ) ),
 			'total'       => $total,
 			'page'        => $page,
 			'per_page'    => $per_page,

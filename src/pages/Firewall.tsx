@@ -14,26 +14,191 @@ import {
 import type { RateLimitSettings } from '@app-types/rate-limiting';
 import { IpAPI, type IpEntry, type ListType } from '@services/ip';
 import { usePortalContainer } from '@contexts/PortalContainerContext';
-
+import { Autocomplete } from '@mui/material';
+import type { AuthorizedUser } from '@app-types/auth';
+import { apiRequest } from '@services/api';
 
 type EntryType = 'ip' | 'cidr';
-
-interface AddEntryForm {
-  value: string;
-  entry_type: EntryType;
-  list_type: ListType;
-}
 
 interface LineResult {
   value: string;
   error: string;
 }
 
+interface AddEntryForm {
+  value: string;
+  entry_type: EntryType;
+  list_type: ListType;
+  user_id: number | null;
+  referrer: string;
+}
+
 const EMPTY_FORM: AddEntryForm = {
   value: '',
   entry_type: 'ip',
   list_type: 'blacklist',
+  user_id: null,
+  referrer: '',
 };
+
+interface AddEntryDialogProps {
+  open: boolean;
+  defaultListType: ListType;
+  onSave: (form: AddEntryForm) => Promise<LineResult[]>;
+  onClose: () => void;
+  wpUsers: AuthorizedUser[];
+  wpUsersLoading: boolean;
+}
+
+function AddEntryDialog({ open, defaultListType, onSave, onClose, wpUsers, wpUsersLoading }: AddEntryDialogProps) {
+  const [form, setForm] = useState<AddEntryForm>({ ...EMPTY_FORM, list_type: defaultListType });
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<LineResult[]>([]);
+  const portalContainer = usePortalContainer();
+
+  useEffect(() => {
+    if (open) {
+      setForm({ ...EMPTY_FORM, list_type: defaultListType });
+      setErrors([]);
+    }
+  }, [open, defaultListType]);
+
+  const update = <K extends keyof AddEntryForm>(key: K, value: AddEntryForm[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  const handleSave = async () => {
+    setSaving(true);
+    setErrors([]);
+    const lineErrors = await onSave(form);
+    setSaving(false);
+    if (lineErrors.length > 0) setErrors(lineErrors);
+  };
+
+  return (
+    <Dialog
+      container={portalContainer} open={open}
+      onClose={saving ? undefined : onClose}
+      fullWidth maxWidth="xs"
+    >
+      <DialogTitle>Add access control entries</DialogTitle>
+      <DialogContent dividers>
+        <Stack spacing={2} sx={{ pt: 0.5 }}>
+
+          <FormControl>
+            <FormLabel>List</FormLabel>
+            <RadioGroup row value={form.list_type}
+              onChange={(e) => update('list_type', e.target.value as ListType)}>
+              <FormControlLabel value="blacklist" control={<Radio size="small" />} label="Blacklist" />
+              <FormControlLabel value="whitelist" control={<Radio size="small" />} label="Whitelist" />
+            </RadioGroup>
+          </FormControl>
+
+          <FormControl>
+            <FormLabel>Entry type</FormLabel>
+            <RadioGroup row value={form.entry_type}
+              onChange={(e) => {
+                update('entry_type', e.target.value as EntryType);
+                update('value', '');
+              }}>
+              <FormControlLabel value="ip"   control={<Radio size="small" />} label="IP" />
+              <FormControlLabel value="cidr" control={<Radio size="small" />} label="CIDR range" />
+            </RadioGroup>
+          </FormControl>
+
+          <TextField
+            label="IPs / CIDRs (one per line)"
+            placeholder={'203.0.113.1\n203.0.113.2\n203.0.113.0/24'}
+            value={form.value}
+            onChange={(e) => update('value', e.target.value)}
+            multiline minRows={4} maxRows={10}
+            fullWidth size="small" disabled={saving}
+          />
+
+          {/* Referrer — always available, useful on both lists */}
+          <TextField
+            label="Referrer (optional)"
+            placeholder="https://app.example.com"
+            value={form.referrer}
+            onChange={(e) => update('referrer', e.target.value)}
+            fullWidth size="small" disabled={saving}
+            helperText="If set, access is only allowed from this origin"
+          />
+
+          {/* User binding — only meaningful for whitelist */}
+          {form.list_type === 'whitelist' && (
+            <Autocomplete<AuthorizedUser>
+              options={wpUsers}
+              loading={wpUsersLoading}
+              getOptionLabel={(o) => o.display_name}
+              isOptionEqualToValue={(o, v) => o.id === v.id}
+              onChange={(_, v) => update('user_id', v?.id ?? null)}
+              disablePortal
+              renderOption={(props, option) => (
+                <li {...props} key={option.id}>
+                  <Box>
+                    <Typography variant="body2" fontWeight={500}>
+                      {option.display_name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {option.email} · {option.roles.join(', ')}
+                    </Typography>
+                  </Box>
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Bind to user (optional)"
+                  size="small"
+                  slotProps={{ input: {
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {wpUsersLoading && <CircularProgress size={16} />}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  }}}
+                />
+              )}
+            />
+          )}
+
+          {errors.length > 0 && (
+            <Alert severity="error" variant="outlined">
+              <Typography variant="body2" fontWeight={600} mb={0.5}>
+                {errors.length} entr{errors.length > 1 ? 'ies' : 'y'} failed:
+              </Typography>
+              <List dense disablePadding>
+                {errors.map((e) => (
+                  <ListItem key={e.value} disablePadding>
+                    <ListItemText primary={
+                      <Typography variant="body2" fontFamily="monospace">
+                        {e.value} — {e.error}
+                      </Typography>
+                    } />
+                  </ListItem>
+                ))}
+              </List>
+            </Alert>
+          )}
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} variant="contained" disableElevation color="inherit" disabled={saving}>
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSave} variant="contained" disableElevation
+          disabled={form.value.trim() === '' || saving}
+          startIcon={saving ? <CircularProgress size={14} color="inherit" /> : undefined}
+        >
+          {saving ? 'Adding…' : 'Add entries'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
 
 interface FirewallToolbarProps {
   onAdd?: () => void;
@@ -78,144 +243,22 @@ function CustomToolbar({ onAdd, onDeleteSelectedIps }: FirewallToolbarProps) {
   );
 }
 
-interface AddEntryDialogProps {
-  open: boolean;
-  defaultListType: ListType;
-  onSave: (form: AddEntryForm) => Promise<LineResult[]>;
-  onClose: () => void;
-}
-
-function AddEntryDialog({ open, defaultListType, onSave, onClose }: AddEntryDialogProps) {
-  const [form, setForm] = useState<AddEntryForm>({ ...EMPTY_FORM, list_type: defaultListType });
-  const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<LineResult[]>([]);
-  const portalContainer = usePortalContainer();
-
-  useEffect(() => {
-    if (open) {
-      setForm({ ...EMPTY_FORM, list_type: defaultListType });
-      setErrors([]);
-    }
-  }, [open, defaultListType]);
-
-  const update = <K extends keyof AddEntryForm>(key: K, value: AddEntryForm[K]) =>
-    setForm((prev) => ({ ...prev, [key]: value }));
-
-  const handleSave = async () => {
-    setSaving(true);
-    setErrors([]);
-    const lineErrors = await onSave(form);
-    setSaving(false);
-    if (lineErrors.length > 0) setErrors(lineErrors);
-  };
-
-  return (
-    <Dialog
-      container={portalContainer}
-      open={open}
-      onClose={saving ? undefined : onClose}
-      fullWidth
-      maxWidth="xs"
-    >
-      <DialogTitle>Add access control entries</DialogTitle>
-
-      <DialogContent dividers>
-        <Stack spacing={2} sx={{ pt: 0.5 }}>
-          <FormControl>
-            <FormLabel>List</FormLabel>
-            <RadioGroup
-              row
-              value={form.list_type}
-              onChange={(e) => update('list_type', e.target.value as ListType)}
-            >
-              <FormControlLabel value="blacklist" control={<Radio size="small" />} label="Blacklist" />
-              <FormControlLabel value="whitelist" control={<Radio size="small" />} label="Whitelist" />
-            </RadioGroup>
-          </FormControl>
-
-          <FormControl>
-            <FormLabel>Entry type</FormLabel>
-            <RadioGroup
-              row
-              value={form.entry_type}
-              onChange={(e) => {
-                update('entry_type', e.target.value as EntryType);
-                update('value', '');
-              }}
-            >
-              <FormControlLabel value="ip"   control={<Radio size="small" />} label="IP" />
-              <FormControlLabel value="cidr" control={<Radio size="small" />} label="CIDR range" />
-            </RadioGroup>
-          </FormControl>
-
-          <TextField
-            label="IPs / CIDRs (one per line)"
-            placeholder={'203.0.113.1\n203.0.113.2\n203.0.113.0/24'}
-            value={form.value}
-            onChange={(e) => update('value', e.target.value)}
-            multiline
-            minRows={4}
-            maxRows={10}
-            fullWidth
-            size="small"
-            disabled={saving}
-          />
-
-          {errors.length > 0 && (
-            <Alert severity="error" variant="outlined">
-              <Typography variant="body2" fontWeight={600} mb={0.5}>
-                {errors.length} entr{errors.length > 1 ? 'ies' : 'y'} failed:
-              </Typography>
-              <List dense disablePadding>
-                {errors.map((e) => (
-                  <ListItem key={e.value} disablePadding>
-                    <ListItemText
-                      primary={
-                        <Typography variant="body2" fontFamily="monospace">
-                          {e.value} — {e.error}
-                        </Typography>
-                      }
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            </Alert>
-          )}
-        </Stack>
-      </DialogContent>
-
-      <DialogActions>
-        <Button onClick={onClose} variant="contained" disableElevation color="inherit" disabled={saving}>Cancel</Button>
-        <Button
-          onClick={handleSave}
-          variant="contained"
-          disableElevation 
-          disabled={form.value.trim() === '' || saving}
-          startIcon={saving ? <CircularProgress size={14} color="inherit" /> : undefined}
-        >
-          {saving ? 'Adding…' : 'Add entries'}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
-
-const IP_COLUMNS: GridColDef[] = [
-  { field: 'ip',           headerName: 'IP / CIDR', flex: 1 },
-  { field: 'list_type',    headerName: 'List',      width: 110 },
-  { field: 'entry_type',   headerName: 'Type',      width: 110 },
-  { field: 'country_code', headerName: 'Country',   width: 100 },
+const IP_COLUMNS: GridColDef<IpEntry>[] = [
+  { field: 'ip', headerName: 'IP / CIDR', flex: 1 },
+  { field: 'list_type', headerName: 'List', width: 90 },
+  { field: 'entry_type', headerName: 'Type', width: 110 },
   {
-    field: 'blocked_at',
-    headerName: 'Blocked at',
-    width: 160,
-    valueFormatter: ({ value }) => value ? new Date(value).toLocaleString() : '—',
+    field: 'user_id', headerName: 'User', width: 150,
+    valueGetter: (_, row) => row.user_id ? `#${row.user_id}` : '—',
   },
   {
-    field: 'created_at',
-    headerName: 'Added',
-    width: 160,
-    valueFormatter: ({ value }) => value ? new Date(value).toLocaleString() : '—',
+    field: 'referrer', headerName: 'Referrer', flex: 1,
+    valueGetter: (_, row) => row.referrer || '—',
+  },
+  { field: 'country_code', headerName: 'Country', width: 90 },
+  {
+    field: 'created_at', headerName: 'Added', width: 150,
+    valueFormatter: (value: string) => new Date(value).toLocaleString(),
   },
 ];
 
@@ -247,13 +290,24 @@ export default function Firewall(): JSX.Element {
     setRows(res.entries);
   }, [listType]);
 
+  const [wpUsers, setWpUsers] = useState<AuthorizedUser[]>([]);
+  const [wpUsersLoading, setWpUsersLoading] = useState(false);
+
+  useEffect(() => {
+    setWpUsersLoading(true);
+    apiRequest<AuthorizedUser[]>('bromate_authorized_users_options')
+      .then(setWpUsers)
+      .catch(() => {/* optionally show snackbar */})
+      .finally(() => setWpUsersLoading(false));
+  }, []);
+
   useEffect(() => { void load(); }, [load]);
 
   const handleAddEntries = async (form: AddEntryForm): Promise<LineResult[]> => {
     const lines = form.value.split('\n').map((l) => l.trim()).filter(Boolean);
 
     const results = await Promise.allSettled(
-      lines.map((val) => IpAPI.addEntry(val, form.list_type))
+      lines.map((val) => IpAPI.addEntry(val, form.list_type, form.user_id, form.referrer || null))
     );
 
     const errors: LineResult[] = results
@@ -370,6 +424,8 @@ export default function Firewall(): JSX.Element {
         defaultListType={listType}
         onSave={handleAddEntries}
         onClose={() => setDialogOpen(false)}
+        wpUsers={wpUsers}
+        wpUsersLoading={wpUsersLoading}
       />
     </Box>
   );

@@ -8,6 +8,7 @@ export interface IpEntry {
   list_type: ListType; 
   entry_type: EntyType;
   agent?: string | null;
+  referrer?: string | null;
   country_code?: string | null;
   country_name?: string | null;
   user_id?: number | null;
@@ -19,11 +20,13 @@ export const IpAPI = {
   getEntries: (list_type: ListType) =>
     apiRequest<{ entries: IpEntry[] }>('bromate_get_ip_entries', { list_type }),
 
-  addEntry: (ip: string, list_type: ListType, user_id?: number | null) =>
+
+  addEntry: (ip: string, list_type: ListType, user_id?: number | null, referrer?: string | null) =>
     apiRequest<{ entry: IpEntry }>('bromate_add_ip_entry', {
       ip,
       list_type,
       ...(user_id ? { user_id } : {}),
+      ...(referrer ? { referrer } : {}),
     }),
 
   deleteEntry: (id: number) =>

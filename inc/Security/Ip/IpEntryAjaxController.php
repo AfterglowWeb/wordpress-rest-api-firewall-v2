@@ -43,14 +43,11 @@ class IpEntryAjaxController {
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
-		$ip        = isset( $_POST['ip'] ) ? sanitize_text_field( wp_unslash( $_POST['ip'] ) ) : '';
+		$ip        = isset( $_POST['ip'] )       ? sanitize_text_field( wp_unslash( $_POST['ip'] ) )       : '';
 		$list_type = isset( $_POST['list_type'] ) ? sanitize_text_field( wp_unslash( $_POST['list_type'] ) ) : 'blacklist';
-		$user_id   = isset( $_POST['user_id'] ) ? absint(  wp_unslash( $_POST['user_id'] ) ) : null;
+		$user_id   = isset( $_POST['user_id'] )  ? absint( $_POST['user_id'] )                              : null;
+		$referrer  = isset( $_POST['referrer'] ) ? sanitize_url( wp_unslash( $_POST['referrer'] ) )  : null;
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
-
-		if ( null !== $user_id && ! get_userdata( $user_id ) ) {
-			wp_send_json_error( array( 'message' => __( 'Invalid user', 'bromate-rest-api-firewall' ) ), 400 );
-		}
 
 		if ( empty( $ip ) || ! CidrMatcher::is_valid_ip_or_cidr( $ip ) ) {
 			wp_send_json_error( array( 'message' => __( 'Invalid IP address or CIDR', 'bromate-rest-api-firewall' ) ), 400 );
@@ -60,17 +57,21 @@ class IpEntryAjaxController {
 			wp_send_json_error( array( 'message' => __( 'IP already in list', 'bromate-rest-api-firewall' ) ), 400 );
 		}
 
+		if ( $user_id && ! get_userdata( $user_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid user', 'bromate-rest-api-firewall' ) ), 400 );
+		}
+
 		$data = array(
 			'ip'         => $ip,
 			'list_type'  => $list_type,
 			'entry_type' => 'manual',
-			'user_id'    => $user_id ? $user_id : null,
-
+			'user_id'    => $user_id ?: null,
+			'referrer'   => ! empty( $referrer ) ? $referrer : null,
 		);
 
 		$geoip = GeoIpApi::get_geoip( $ip );
 		if ( $geoip ) {
-			$data['country_code'] = $geoip['country'] ?? null;
+			$data['country_code'] = $geoip['country']     ?? null;
 			$data['country_name'] = $geoip['countryName'] ?? null;
 		}
 
