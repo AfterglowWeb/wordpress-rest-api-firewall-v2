@@ -13,6 +13,9 @@ import {
   Toolbar, GridFilterModel // NEW: added GridFilterModel
 } from '@mui/x-data-grid';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { countries } from 'country-flag-icons'
+import * as Flags from 'country-flag-icons/react/3x2'
+
 
 import type { RateLimitSettings } from '@app-types/rate-limiting';
 import { IpAPI, type IpEntry, type ListType } from '@services/ip';
@@ -419,9 +422,8 @@ export default function Firewall(): JSX.Element {
   });
 
   const ipColumns = useMemo<GridColDef<IpEntry>[]>(() => [
-    { field: 'ip', headerName: 'IP / CIDR', flex: 1 },
+    { field: 'ip', headerName: 'IP / CIDR', width: 150},
     { field: 'list_type', headerName: 'List', width: 90 },
-    { field: 'entry_type', headerName: 'Type', width: 110 },
     {
       field: 'user_id', headerName: 'User', width: 170,
       valueGetter: (_, row) => row.user_id ?? null,
@@ -440,9 +442,21 @@ export default function Firewall(): JSX.Element {
       field: 'referrer', headerName: 'Referrer', flex: 1,
       valueGetter: (_, row) => row.referrer || '—',
     },
-    { field: 'country_code', headerName: 'CC', width: 60 },
     { field: 'country_name', headerName: 'Country', width: 130,
       valueGetter: (_, row) => row.country_name || '—',
+    },
+    { field: 'country_code', headerName: 'Code', width: 80,
+      renderCell: ({ row }) => {
+        const countryCode = row.country_code;
+        if (!countryCode) return '—';
+        const Flag = (Flags as Record<string, React.ComponentType<{ style?: React.CSSProperties }>>)[countryCode];
+        return Flag
+          ? <Stack direction="row" alignItems="center" gap={0.75}>
+              <Flag style={{ width: 20, borderRadius: 2, boxShadow: '0px 0px 3px rgba(0,0,0,0.3)' }} />
+              <span>{countryCode}</span>
+            </Stack>
+          : countryCode;
+      },
     },
     {
       field: 'created_at', headerName: 'Added', width: 150,
@@ -456,6 +470,7 @@ export default function Firewall(): JSX.Element {
       field: 'expires_at', headerName: 'Expires', width: 150,
       valueFormatter: (value: string | null) => value ? new Date(value).toLocaleString() : 'Never',
     },
+    { field: 'entry_type', headerName: 'Type', flex: 1 },
   ], [wpUsers]);
 
   return (
