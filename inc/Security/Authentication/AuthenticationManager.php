@@ -5,6 +5,7 @@ defined( 'ABSPATH' ) || exit;
 use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
 use Bromate\RestApiFirewall\Security\Authentication\ApplicationPasswordAuthenticator;
 use Bromate\RestApiFirewall\Security\Authentication\JwtAuthenticator;
+use Bromate\RestApiFirewall\Logs\FirewallLogger;
 
 class AuthenticationManager {
 
@@ -14,7 +15,8 @@ class AuthenticationManager {
 		$method  = $options['firewall_auth_method'] ?? 'wp_auth';
 
 		if ( 'jwt' === $method ) {
-			return JwtAuthenticator::validate_bearer_jwt(
+
+			$auth_result = JwtAuthenticator::validate_bearer_jwt(
 				array(
 					'algorithm'  => $options['firewall_jwt_algorithm'] ?? 'RS256',
 					'public_key' => $options['firewall_jwt_public_key'] ?? '',
@@ -24,6 +26,8 @@ class AuthenticationManager {
 			);
 		}
 
-		return ApplicationPasswordAuthenticator::validate_wp_application_password();
+		$auth_result = ApplicationPasswordAuthenticator::validate_wp_application_password();
+		true === $auth_result ? FirewallLogger::auth_success( true ) : FirewallLogger::auth_failed( 'invalid_jwt' );
+		return $auth_result;
 	}
 }

@@ -12,6 +12,7 @@ import DataObjectOutlinedIcon    from '@mui/icons-material/DataObjectOutlined';
 import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import SpaceDashboardOutlinedIcon from '@mui/icons-material/SpaceDashboardOutlined';
 import VpnLockIcon from '@mui/icons-material/VpnLock';
+import ManageHistoryOutlinedIcon from '@mui/icons-material/ManageHistoryOutlined';
 
 type IconComponent = ComponentType<SvgIconProps>;
 
@@ -24,6 +25,7 @@ const ICON_MAP: Record<string, IconComponent> = {
     data_object:   DataObjectOutlinedIcon,
     wordpress:     AdminPanelSettingsOutlinedIcon,
     world:         VpnLockIcon,
+    logs: ManageHistoryOutlinedIcon,
 };
 
 export interface MenuItemAction {

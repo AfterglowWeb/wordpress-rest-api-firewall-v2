@@ -76,7 +76,7 @@ class SettingsAjaxController {
 			$key   = isset( $option['key'] ) && ! empty( $option['key'] ) ? $option['key'] : '';
 			$value = array_key_exists( 'value', $option ) ? $option['value'] : null;
 
-			if ( $key === '' || $value === null ) {
+			if ( '' === $key || null === $value ) {
 				wp_send_json_error( array( 'error' => esc_html__( 'Invalid option data', 'bromate-rest-api-firewall' ) ), 422 );
 			}
 
@@ -188,5 +188,4 @@ class SettingsAjaxController {
 		flush_rewrite_rules( false );
 		wp_send_json_success( array( 'message' => esc_html__( 'Rewrite rules flushed successfully.', 'bromate-rest-api-firewall' ) ) );
 	}
-
 }

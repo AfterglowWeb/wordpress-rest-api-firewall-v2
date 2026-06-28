@@ -1,13 +1,10 @@
-<?php
-
-namespace Bromate\RestApiFirewall\Api\Routing;
+<?php namespace Bromate\RestApiFirewall\Api\Routing;
 
 defined( 'ABSPATH' ) || exit;
 
 use Bromate\RestApiFirewall\Security\Authentication\AuthenticationManager;
 use Bromate\RestApiFirewall\Security\RateLimit\RateLimiter;
 use Bromate\RestApiFirewall\Security\Ip\IpAccessControl;
-use WP_REST_Request;
 
 final class RestRequestBootstrap {
 

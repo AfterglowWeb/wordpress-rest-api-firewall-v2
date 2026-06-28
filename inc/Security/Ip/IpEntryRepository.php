@@ -28,7 +28,7 @@ class IpEntryRepository {
 				'allowed_values'    => array( 'whitelist', 'blacklist', 'global_blacklist' ),
 				'sortable'          => true,
 			),
-			'entry_origin'   => array(
+			'entry_origin' => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
 				'default'           => 'manual',
@@ -48,12 +48,12 @@ class IpEntryRepository {
 				'default'           => null,
 				'sortable'          => false,
 			),
-			'user_id' => array(
+			'user_id'      => array(
 				'type'     => 'integer',
 				'default'  => null,
 				'sortable' => true,
 			),
-			'referrer' => array(
+			'referrer'     => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
 				'default'           => null,
@@ -93,7 +93,7 @@ class IpEntryRepository {
 			'ip'           => $row['ip'],
 			'list_type'    => $row['list_type'],
 			'entry_type'   => $row['entry_type'],
-			'entry_origin'   => $row['entry_origin'],
+			'entry_origin' => $row['entry_origin'],
 			'agent'        => $row['agent'],
 			'user_id'      => $row['user_id'],
 			'referrer'     => $row['referrer'],
@@ -109,14 +109,14 @@ class IpEntryRepository {
 		global $wpdb;
 
 		$defaults = array(
-			'list_type'  => null,
-			'entry_type' => null,
+			'list_type'    => null,
+			'entry_type'   => null,
 			'entry_origin' => null,
-			'search'     => null,
-			'page'       => 1,
-			'per_page'   => 25,
-			'order_by'   => 'created_at',
-			'order'      => 'DESC',
+			'search'       => null,
+			'page'         => 1,
+			'per_page'     => 25,
+			'order_by'     => 'created_at',
+			'order'        => 'DESC',
 		);
 
 		$args   = wp_parse_args( $args, $defaults );
@@ -180,15 +180,18 @@ class IpEntryRepository {
 		$entries = $wpdb->get_results( $wpdb->prepare( $sql, $values ), ARRAY_A );
 
 		return array(
-			'entries'     => array_map( function( $entry ) {
-				if ( ! empty( $entry['user_id'] ) ) {
-					$user = get_userdata( $entry['user_id'] );
-					$entry['user_display_name'] = $user ? $user->display_name : null;
-				} else {
-					$entry['user_display_name'] = null;
-				}
-				return $entry;
-			}, array_map( array( self::class, 'normalize' ), is_array( $entries ) ? $entries : array() ) ),
+			'entries'     => array_map(
+				function ( $entry ) {
+					if ( ! empty( $entry['user_id'] ) ) {
+							$user = get_userdata( $entry['user_id'] );
+							$entry['user_display_name'] = $user ? $user->display_name : null;
+					} else {
+						$entry['user_display_name'] = null;
+					}
+					return $entry;
+				},
+				array_map( array( self::class, 'normalize' ), is_array( $entries ) ? $entries : array() )
+			),
 			'total'       => $total,
 			'page'        => $page,
 			'per_page'    => $per_page,
