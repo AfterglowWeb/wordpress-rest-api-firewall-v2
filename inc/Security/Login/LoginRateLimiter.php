@@ -123,10 +123,10 @@ final class LoginRateLimiter {
 
 		IpEntryRepository::insert(
 			array(
-				'ip'         => $ip,
-				'list_type'  => 'global_blacklist',
+				'ip'           => $ip,
+				'list_type'    => 'global_blacklist',
 				'entry_origin' => 'rate_limit',
-				'expires_at' => gmdate( 'Y-m-d H:i:s', time() + $duration ),
+				'expires_at'   => gmdate( 'Y-m-d H:i:s', time() + $duration ),
 			)
 		);
 	}

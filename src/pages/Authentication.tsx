@@ -27,13 +27,18 @@ import { usePortalContainer } from '@contexts/PortalContainerContext';
 import { useDialog, DIALOG_TYPES } from '@contexts/DialogContext';
 import ConfirmDialog from '@components/ConfirmDialog';
 
+import { type LogEntry, type LogSeverity } from '@services/log';
+
 declare module '@mui/x-data-grid' {
   interface ToolbarPropsOverrides {
     onAddUser?: () => void;
     onAdd?: () => void;
     onDeleteSelectedUser?: (rows: Map<GridRowId, AuthorizedUser>) => void; // ← updated
     onDeleteSelectedIps?: (rows: Map<GridRowId, IpEntry>) => void; // ← updated
+    onDeleteSelected?: (rows: Map<GridRowId, LogEntry>) => void; // ← updated
     selectedCount: number;
+    severityFilter?: LogSeverity | 'all';
+    onSeverityChange?: (v: LogSeverity | 'all') => void;
   }
 }
 

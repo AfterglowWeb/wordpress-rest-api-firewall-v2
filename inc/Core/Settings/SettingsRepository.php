@@ -138,46 +138,45 @@ class SettingsRepository {
 	}
 
 	public static function sanitize_authorized_users( array $users ): array {
-		$allowed_statuses = [ 'active', 'revoked' ];
+		$allowed_statuses = array( 'active', 'revoked' );
 
 		$mapped = array_map(
-			static function ( $user ) use ( $allowed_statuses ): ?array {  
+			static function ( $user ) use ( $allowed_statuses ): ?array {
 				if ( ! is_array( $user ) || empty( $user['id'] ) ) {
 					return null;
 				}
 
-				return [
+				return array(
 					'id'            => absint( $user['id'] ),
 					'jwt_claim_sub' => sanitize_text_field( $user['jwt_claim_sub'] ?? '' ),
 					'status'        => in_array( $user['status'] ?? '', $allowed_statuses, true )
 										? $user['status']
 										: 'active',
 					'expires_at'    => sanitize_text_field( $user['expires_at'] ?? '' ),
-				];
+				);
 			},
 			$users
 		);
 
 		return array_values(
-			array_filter( $mapped, static fn( $u ) => $u !== null )
+			array_filter( $mapped, static fn( $u ) => null !== $u )
 		);
 	}
 
 	public static function sanitize_authorized_user( array $user ): array {
-		$allowed_statuses = [ 'active', 'revoked' ];
+		$allowed_statuses = array( 'active', 'revoked' );
 
 		if ( ! is_array( $user ) || empty( $user['id'] ) ) {
-			return [];
+			return array();
 		}
 
-		return [
+		return array(
 			'id'            => absint( $user['id'] ),
 			'jwt_claim_sub' => sanitize_text_field( $user['jwt_claim_sub'] ?? '' ),
 			'status'        => in_array( $user['status'] ?? '', $allowed_statuses, true )
 								? $user['status']
 								: 'active',
 			'expires_at'    => sanitize_text_field( $user['expires_at'] ?? '' ),
-		];
+		);
 	}
-	
 }

@@ -95,21 +95,21 @@ final class SettingsConfig {
 				'group'             => 'authentication',
 			),
 
-			'auth_users'          => array(
+			'auth_users'                              => array(
 				'label'             => esc_html__( 'Authorized API users', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Restrict API access to specific WordPress user accounts.', 'bromate-rest-api-firewall' ),
-				'default_value'     => [],
+				'default_value'     => array(),
 				'type'              => 'array',
-    			'sanitize_callback' => [ SettingsRepository::class, 'sanitize_authorized_user' ],  // ← singular
+				'sanitize_callback' => array( SettingsRepository::class, 'sanitize_authorized_user' ),  // ← singular
 				'group'             => 'authentication',
-			),  
+			),
 
 			'auth_user_ids'                           => array(
 				'label'             => esc_html__( 'Authorized API users', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Restrict API access to specific WordPress user accounts.', 'bromate-rest-api-firewall' ),
-				'default_value'     => [],
+				'default_value'     => array(),
 				'type'              => 'array',
-				'sanitize_callback' =>'absint',
+				'sanitize_callback' => 'absint',
 				'group'             => 'authentication',
 			),
 
@@ -122,7 +122,7 @@ final class SettingsConfig {
 				'group'             => 'firewall',
 			),
 
-			'rate_limit_wordpress_enabled'                      => array(
+			'rate_limit_wordpress_enabled'            => array(
 				'label'             => esc_html__( 'Enable rate limiting everywhere', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Protect all WordPress against excessive requests and abuse.', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
@@ -208,7 +208,7 @@ final class SettingsConfig {
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
-				'group'             => 'routes_policy',
+				'group'             => 'routes',
 			),
 
 			'routes_policy_rules'                     => array(
@@ -220,7 +220,7 @@ final class SettingsConfig {
 				),
 				'type'              => 'array',
 				'sanitize_callback' => '',
-				'group'             => 'routes_policy',
+				'group'             => 'routes',
 			),
 
 			'routes_policy_hidden_routes'             => array(
@@ -234,7 +234,7 @@ final class SettingsConfig {
 					'batch',
 				),
 				'sanitize_callback' => '',
-				'group'             => 'routes_policy',
+				'group'             => 'routes',
 			),
 
 			'routes_policy_hidden_response_code'      => array(
@@ -248,7 +248,7 @@ final class SettingsConfig {
 				),
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
-				'group'             => 'routes_policy',
+				'group'             => 'routes',
 			),
 
 			// Auth hardening.
@@ -541,7 +541,7 @@ final class SettingsConfig {
 				'icon'  => 'world',
 			),
 
-			'routes_policy'   => array(
+			'routes'          => array(
 				'label' => __( 'Route Policies', 'bromate-rest-api-firewall' ),
 				'icon'  => 'route',
 			),
@@ -559,6 +559,10 @@ final class SettingsConfig {
 			'wordpress'       => array(
 				'label' => __( 'WordPress Hardening', 'bromate-rest-api-firewall' ),
 				'icon'  => 'wordpress',
+			),
+			'logs'       => array(
+				'label' => __( 'Logs', 'bromate-rest-api-firewall' ),
+				'icon'  => 'logs',
 			),
 
 		);

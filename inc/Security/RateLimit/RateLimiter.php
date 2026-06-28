@@ -6,6 +6,8 @@ use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
 use Bromate\RestApiFirewall\Security\Ip\ClientIpResolver;
 use Bromate\RestApiFirewall\Security\RateLimit\AutoBlacklist;
 use Bromate\RestApiFirewall\Security\RateLimit\ViolationTracker;
+use Bromate\RestApiFirewall\Logs\FirewallLogger;
+
 use WP_Error;
 
 class RateLimiter {
@@ -53,12 +55,16 @@ class RateLimiter {
 				$client_ip
 			);
 
+			FirewallLogger::ip_banned( $client_ip, $violations );
+
 			return new WP_Error(
 				'rest_firewall_ip_blacklisted',
 				__( 'Your IP has been temporarily blocked.', 'bromate-rest-api-firewall' ),
 				array( 'status' => 403 )
 			);
 		}
+
+		FirewallLogger::ip_rate_limited( $client_ip, $count, $violation_window );
 
 		return new WP_Error(
 			'rest_firewall_rate_limited',

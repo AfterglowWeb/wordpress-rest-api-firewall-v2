@@ -19,7 +19,6 @@ class IpEntryAjaxController {
 		add_action( 'wp_ajax_bromate_delete_ip_entries', array( $self, 'ajax_delete_ip_entries' ) );
 		add_action( 'wp_ajax_bromate_get_country_stats', array( $self, 'ajax_get_country_stats' ) );
 		add_action( 'wp_ajax_bromate_get_user_ip_entries', array( $self, 'ajax_get_user_ip_entries' ) );
-
 	}
 
 	public function ajax_get_ip_entries(): void {
@@ -33,7 +32,7 @@ class IpEntryAjaxController {
 
 		$result = IpEntryRepository::get_entries( array( 'list_type' => $list_type ) );
 
-		wp_send_json_success( array( 'entries' => $result['entries'] ?? array() ), 200 );
+		wp_send_json_success( array( 'entries' => isset( $result['entries'] ) ? $result['entries'] : array() ), 200 );
 	}
 
 	public function ajax_add_ip_entry(): void {
@@ -43,10 +42,10 @@ class IpEntryAjaxController {
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
-		$ip         = isset( $_POST['ip'] )       ? sanitize_text_field( wp_unslash( $_POST['ip'] ) )       : '';
+		$ip         = isset( $_POST['ip'] ) ? sanitize_text_field( wp_unslash( $_POST['ip'] ) ) : '';
 		$list_type  = isset( $_POST['list_type'] ) ? sanitize_text_field( wp_unslash( $_POST['list_type'] ) ) : 'blacklist';
-		$user_id    = isset( $_POST['user_id'] )  ? absint( wp_unslash( $_POST['user_id'] ) ) : null;
-		$referrer   = isset( $_POST['referrer'] ) ? sanitize_url( wp_unslash( $_POST['referrer'] ) )  : null;
+		$user_id    = isset( $_POST['user_id'] ) ? absint( wp_unslash( $_POST['user_id'] ) ) : null;
+		$referrer   = isset( $_POST['referrer'] ) ? sanitize_url( wp_unslash( $_POST['referrer'] ) ) : null;
 		$expires_at = isset( $_POST['expires_at'] ) ? sanitize_text_field( wp_unslash( $_POST['expires_at'] ) ) : null;
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
@@ -63,17 +62,17 @@ class IpEntryAjaxController {
 		}
 
 		$data = array(
-			'ip'         => CidrMatcher::sanitize_ip_array($ip),
-			'list_type'  => 'blacklist' === $list_type ? 'blacklist' : 'whitelist',
+			'ip'           => CidrMatcher::sanitize_ip_array( $ip ),
+			'list_type'    => 'blacklist' === $list_type ? 'blacklist' : 'whitelist',
 			'entry_origin' => 'manual',
-			'user_id'    => ! empty( $user_id ) ? $user_id : null,
-			'referrer'   => ! empty( $referrer ) ? $referrer : null,
-			'expires_at' => ! empty( $expires_at ) ? date ('Y-m-d H:i:s', $expires_at ) : null,
+			'user_id'      => ! empty( $user_id ) ? $user_id : null,
+			'referrer'     => ! empty( $referrer ) ? $referrer : null,
+			'expires_at'   => ! empty( $expires_at ) ? gmdate( 'Y-m-d H:i:s', $expires_at ) : null,
 		);
 
 		$geoip = GeoIpApi::get_geoip( $ip );
 		if ( $geoip ) {
-			$data['country_code'] = $geoip['country']     ?? null;
+			$data['country_code'] = $geoip['country'] ?? null;
 			$data['country_name'] = $geoip['countryName'] ?? null;
 		}
 
@@ -95,11 +94,11 @@ class IpEntryAjaxController {
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
-		$id         = isset( $_POST['id'] )         ? absint( $_POST['id'] )                                         : 0;
-		$list_type  = isset( $_POST['list_type'] )  ? sanitize_text_field( wp_unslash( $_POST['list_type'] ) )       : null;
-		$user_id    = isset( $_POST['user_id'] )    ? absint( $_POST['user_id'] )                                    : null;
-		$referrer   = isset( $_POST['referrer'] )   ? sanitize_url( wp_unslash( $_POST['referrer'] ) )               : null;
-		$expires_at = isset( $_POST['expires_at'] ) ? sanitize_text_field( wp_unslash( $_POST['expires_at'] ) )      : null;
+		$id         = isset( $_POST['id'] ) ? absint( $_POST['id'] ) : 0;
+		$list_type  = isset( $_POST['list_type'] ) ? sanitize_text_field( wp_unslash( $_POST['list_type'] ) ) : null;
+		$user_id    = isset( $_POST['user_id'] ) ? absint( $_POST['user_id'] ) : null;
+		$referrer   = isset( $_POST['referrer'] ) ? sanitize_url( wp_unslash( $_POST['referrer'] ) ) : null;
+		$expires_at = isset( $_POST['expires_at'] ) ? sanitize_text_field( wp_unslash( $_POST['expires_at'] ) ) : null;
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
 		if ( ! $id ) {
@@ -112,6 +111,7 @@ class IpEntryAjaxController {
 			$data['list_type'] = 'blacklist' === $list_type ? 'blacklist' : 'whitelist';
 		}
 
+		// phpcs:disable WordPress.Security.NonceVerification.Missing
 		if ( array_key_exists( 'user_id', $_POST ) ) {
 			$data['user_id'] = ! empty( $user_id ) ? $user_id : null;
 		}
@@ -119,8 +119,9 @@ class IpEntryAjaxController {
 			$data['referrer'] = ! empty( $referrer ) ? $referrer : null;
 		}
 		if ( array_key_exists( 'expires_at', $_POST ) ) {
-			$data['expires_at'] = ! empty( $expires_at ) ? date( 'Y-m-d H:i:s', strtotime( $expires_at ) ) : null;
+			$data['expires_at'] = ! empty( $expires_at ) ? gmdate( 'Y-m-d H:i:s', strtotime( $expires_at ) ) : null;
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
 		if ( empty( $data ) ) {
 			wp_send_json_error( array( 'message' => __( 'Nothing to update', 'bromate-rest-api-firewall' ) ), 400 );
@@ -133,7 +134,7 @@ class IpEntryAjaxController {
 		}
 
 		$entry = IpEntryRepository::find_by_id( $id );
-		if ( $entry === null ) {
+		if ( null === $entry ) {
 			wp_send_json_error( array( 'message' => __( 'Entry not found', 'bromate-rest-api-firewall' ) ), 404 );
 		}
 		wp_send_json_success( array( 'entry' => $entry ), 200 );
