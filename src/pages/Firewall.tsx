@@ -381,6 +381,17 @@ export default function Firewall(): JSX.Element {
       .finally(() => setWpUsersLoading(false));
   }, []);
 
+  const [wpUsers, setWpUsers] = useState<AuthorizedUser[]>([]);
+  const [wpUsersLoading, setWpUsersLoading] = useState(false);
+
+  useEffect(() => {
+    setWpUsersLoading(true);
+    apiRequest<AuthorizedUser[]>('bromate_authorized_users_options')
+      .then(setWpUsers)
+      .catch(() => {/* optionally show snackbar */})
+      .finally(() => setWpUsersLoading(false));
+  }, []);
+
   useEffect(() => { void load(); }, [load]);
 
   const handleAddEntries = async (form: AddEntryForm): Promise<LineResult[]> => {
