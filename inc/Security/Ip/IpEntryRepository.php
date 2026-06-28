@@ -28,11 +28,18 @@ class IpEntryRepository {
 				'allowed_values'    => array( 'whitelist', 'blacklist', 'global_blacklist' ),
 				'sortable'          => true,
 			),
-			'entry_type'   => array(
+			'entry_origin'   => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
 				'default'           => 'manual',
 				'allowed_values'    => array( 'manual', 'rate_limit' ),
+				'sortable'          => true,
+			),
+			'entry_type'   => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => 'manual',
+				'allowed_values'    => array( 'ip', 'cidr' ),
 				'sortable'          => true,
 			),
 			'agent'        => array(
@@ -46,6 +53,12 @@ class IpEntryRepository {
 				'default'  => null,
 				'sortable' => true,
 			),
+			'referrer' => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => null,
+				'sortable'          => false,
+			),
 			'country_code' => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
@@ -58,18 +71,13 @@ class IpEntryRepository {
 				'default'           => null,
 				'sortable'          => true,
 			),
-			'blocked_at'   => array(
+			'created_at'   => array(
 				'type'     => 'datetime',
-				'default'  => null,
 				'sortable' => true,
 			),
 			'expires_at'   => array(
 				'type'     => 'datetime',
 				'default'  => null,
-				'sortable' => true,
-			),
-			'created_at'   => array(
-				'type'     => 'datetime',
 				'sortable' => true,
 			),
 			'updated_at'   => array(
@@ -85,10 +93,12 @@ class IpEntryRepository {
 			'ip'           => $row['ip'],
 			'list_type'    => $row['list_type'],
 			'entry_type'   => $row['entry_type'],
+			'entry_origin'   => $row['entry_origin'],
 			'agent'        => $row['agent'],
+			'user_id'      => $row['user_id'],
+			'referrer'     => $row['referrer'],
 			'country_code' => $row['country_code'],
 			'country_name' => $row['country_name'],
-			'blocked_at'   => $row['blocked_at'],
 			'expires_at'   => $row['expires_at'],
 			'created_at'   => $row['created_at'],
 			'updated_at'   => $row['updated_at'],
@@ -101,10 +111,11 @@ class IpEntryRepository {
 		$defaults = array(
 			'list_type'  => null,
 			'entry_type' => null,
+			'entry_origin' => null,
 			'search'     => null,
 			'page'       => 1,
 			'per_page'   => 25,
-			'order_by'   => 'blocked_at',
+			'order_by'   => 'created_at',
 			'order'      => 'DESC',
 		);
 
@@ -124,6 +135,11 @@ class IpEntryRepository {
 			$values[] = $args['entry_type'];
 		}
 
+		if ( ! empty( $args['entry_origin'] ) ) {
+			$where[]  = 'entry_origin = %s';
+			$values[] = $args['entry_origin'];
+		}
+
 		if ( ! isset( $args['include_expired'] ) || ! $args['include_expired'] ) {
 			$where[] = '(expires_at IS NULL OR expires_at > NOW())';
 		}
@@ -136,7 +152,7 @@ class IpEntryRepository {
 			$values[] = $search;
 		}
 
-		$order_by = 'blocked_at';
+		$order_by = 'created_at';
 		if ( isset( $config[ $args['order_by'] ] ) && ! empty( $config[ $args['order_by'] ]['sortable'] ) ) {
 			$order_by = $args['order_by'];
 		}
@@ -164,12 +180,30 @@ class IpEntryRepository {
 		$entries = $wpdb->get_results( $wpdb->prepare( $sql, $values ), ARRAY_A );
 
 		return array(
-			'entries'     => array_map( array( self::class, 'normalize' ), is_array( $entries ) ? $entries : array() ),
+			'entries'     => array_map( function( $entry ) {
+				if ( ! empty( $entry['user_id'] ) ) {
+					$user = get_userdata( $entry['user_id'] );
+					$entry['user_display_name'] = $user ? $user->display_name : null;
+				} else {
+					$entry['user_display_name'] = null;
+				}
+				return $entry;
+			}, array_map( array( self::class, 'normalize' ), is_array( $entries ) ? $entries : array() ) ),
 			'total'       => $total,
 			'page'        => $page,
 			'per_page'    => $per_page,
 			'total_pages' => ceil( $total / $per_page ),
 		);
+	}
+
+	public static function find_by_id( int $id ): ?array {
+		global $wpdb;
+
+		$sql = 'SELECT * FROM ' . self::table() . ' WHERE id = %d LIMIT 1';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$row = $wpdb->get_row( $wpdb->prepare( $sql, $id ), ARRAY_A );
+
+		return $row ? self::normalize( $row ) : null;
 	}
 
 	public static function find_by_ip( string $ip, string $list_type = 'blacklist' ): array {
@@ -242,10 +276,6 @@ class IpEntryRepository {
 		$now                     = current_time( 'mysql' );
 		$sanitized['created_at'] = $now;
 		$sanitized['updated_at'] = $now;
-
-		if ( empty( $sanitized['blocked_at'] ) ) {
-			$sanitized['blocked_at'] = $now;
-		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$result = $wpdb->insert( self::table(), $sanitized );

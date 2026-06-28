@@ -1,3 +1,5 @@
+import type { IpEntry } from "@services/ip";
+
 export type JwtAlgorithm =
   | 'RS256' | 'RS384' | 'RS512'
   | 'HS256' | 'HS384' | 'HS512'
@@ -16,7 +18,8 @@ export interface AuthorizedUser {
   admin_url: string;
   jwt_claim_sub?: string;
   status: UserStatus;
-  expires_at?: string;   // ISO 8601, undefined = pas d'expiration
+  expires_at?: string;
+  ip_entries?: IpEntry[];
 }
 
 export interface AuthorizedUserMeta {
@@ -35,5 +38,3 @@ export interface AuthSettings {
   auth_jwt_issuer: string;
   auth_users: AuthorizedUserMeta[];
 }
-
-

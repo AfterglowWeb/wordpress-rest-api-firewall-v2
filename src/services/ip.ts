@@ -1,29 +1,50 @@
 import { apiRequest } from '@services/api';
 
 export type ListType = 'blacklist' | 'whitelist';
-export type EntyType = 'manual' | 'rate_limit';
+export type EntryOrigin = 'manual' | 'rate_limit';
+export type EntryType = 'ip' | 'cidr';
 export interface IpEntry {
   id: number;
   ip: string;
   list_type: ListType; 
-  entry_type: EntyType;
-  agent?: string | null;
+  entry_origin: EntryOrigin;
+  entry_type: EntryType;
+  referrer?: string | null;
   country_code?: string | null;
   country_name?: string | null;
   user_id?: number | null;
-  blocked_at?: string;
   created_at: string;
+  updated_at: string | null;
+  expires_at?: string | null;
 }
 
 export const IpAPI = {
   getEntries: (list_type: ListType) =>
     apiRequest<{ entries: IpEntry[] }>('bromate_get_ip_entries', { list_type }),
 
-  addEntry: (ip: string, list_type: ListType, user_id?: number | null) =>
+
+  addEntry: (ip: string, list_type: ListType, user_id?: number | null, referrer?: string | null, expires_at?: string | null) =>
     apiRequest<{ entry: IpEntry }>('bromate_add_ip_entry', {
       ip,
       list_type,
       ...(user_id ? { user_id } : {}),
+      ...(referrer ? { referrer } : {}),
+      ...(expires_at ? { expires_at } : {}),
+    }),
+
+
+  updateEntry: (id: number, data: {
+    list_type: ListType;
+    user_id?: number | null;
+    referrer?: string | null;
+    expires_at?: string | null;
+  }) =>
+    apiRequest<{ entry: IpEntry }>('bromate_update_ip_entry', {
+      id,
+      list_type: data.list_type,
+      ...(data.user_id   != null ? { user_id:    data.user_id }   : {}),
+      ...(data.referrer  != null ? { referrer:   data.referrer }  : {}),
+      ...(data.expires_at != null ? { expires_at: data.expires_at } : {}),
     }),
 
   deleteEntry: (id: number) =>

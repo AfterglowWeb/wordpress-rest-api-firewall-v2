@@ -125,7 +125,7 @@ final class LoginRateLimiter {
 			array(
 				'ip'         => $ip,
 				'list_type'  => 'global_blacklist',
-				'entry_type' => 'rate_limit',
+				'entry_origin' => 'rate_limit',
 				'expires_at' => gmdate( 'Y-m-d H:i:s', time() + $duration ),
 			)
 		);

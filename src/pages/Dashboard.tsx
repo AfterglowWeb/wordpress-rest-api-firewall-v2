@@ -77,8 +77,8 @@ export default function Dashboard(): JSX.Element {
 	const [modules, setModules] = useState<SecurityModule[]>([
 		{
 			key: 'authentication',
-			title: 'Authentication',
-			description: 'JWT & Application Password protection',
+			title: 'REST API Auth.',
+			description: 'REST API JWT & Application Password protection',
 			enabled: true,
 		},
 		{
@@ -125,21 +125,9 @@ export default function Dashboard(): JSX.Element {
 
 			<Card>
 			<CardContent>
-				<Box sx={{mb:2}}>
-					<Typography variant="h6">
-						Security Modules
-					</Typography>
-					<Typography variant="body2" color="text.secondary">
-						Enable or disable Security Modules
-					</Typography>
-
-					<Chip
-						label={`${enabledCount}/${modules.length} active`}
-						sx={{ mt: 1 }}
-						color={enabledCount === modules.length ? 'success' : 'default'}
-					/>
-				</Box>
-
+				<Typography variant="h6" mb={2}>
+					Security Modules
+				</Typography>
 				<Grid container spacing={2}>
 					{modules.map((module) => (
 						<Grid size={4}>
@@ -194,15 +182,9 @@ export default function Dashboard(): JSX.Element {
 
 			<Card>
 				<CardContent>
-					<Box sx={{mb:2}}>
-						<Typography variant="h6">
-							Stats
-						</Typography>
-
-						<Typography variant="body2" color="text.secondary">
-							Overview of firewall activity and protection status
-						</Typography>
-					</Box>
+					<Typography variant="h6" mb={2}>
+						Stats
+					</Typography>
 
 					<Grid container spacing={2}>
 						{stats.map((stat) => (
