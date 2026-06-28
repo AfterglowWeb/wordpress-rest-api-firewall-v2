@@ -16,6 +16,7 @@ import {
 } from '@mui/x-data-grid';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 import type { AuthSettings, AuthorizedUser, AuthorizedUserMeta } from '@app-types/auth';
 import type { IpEntry } from '@services/ip'
@@ -279,8 +280,21 @@ export default function Authentication(): JSX.Element {
   const toolbarSlots = useMemo(() => ({ toolbar: CustomToolbar }), []);
 
   const columns: GridColDef<AuthorizedUser>[] = [
-    { field: 'id', headerName: 'WP ID', width: 80 },
-    { field: 'display_name', headerName: 'User', flex: 1 },
+    { field: 'id', headerName: 'ID', width: 80 },
+    {
+      field: 'display_name', headerName: 'User', width: 170,
+      valueGetter: (_, row) => row.id ?? null,
+      renderCell: ({ row }) => {
+        const userId = row.id != null ? Number(row.id) : null;
+        if (!userId) return '—';
+        const user = wpUsers.find((u) => u.id === userId);
+        return user
+          ? <a href={user.admin_url} target="_blank" style={{display:'flex',alignItems:'center',gap:'4px'}}>
+            {user.display_name}<OpenInNewIcon fontSize="inherit"/>
+            </a>
+          : `${userId}`;
+      },
+    },
     {
       field: 'email', headerName: 'Email', flex: 1,
       valueGetter: (_, row) => row.email || '—'

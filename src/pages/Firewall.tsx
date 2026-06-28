@@ -5,12 +5,15 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Alert, CircularProgress, List, ListItem, ListItemText,
   FormControlLabel, Radio, RadioGroup, FormLabel, FormControl,
+  ToggleButton, ToggleButtonGroup
 } from '@mui/material';
 import {
   DataGrid, GridColDef, GridRowId,
   GridRowSelectionModel, useGridApiContext,
-  Toolbar
+  Toolbar, GridFilterModel // NEW: added GridFilterModel
 } from '@mui/x-data-grid';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+
 import type { RateLimitSettings } from '@app-types/rate-limiting';
 import { IpAPI, type IpEntry, type ListType } from '@services/ip';
 import { usePortalContainer } from '@contexts/PortalContainerContext';
@@ -31,6 +34,7 @@ interface AddEntryForm {
   list_type: ListType;
   user_id: number | null;
   referrer: string;
+  expires_at: string | null;
 }
 
 const EMPTY_FORM: AddEntryForm = {
@@ -39,6 +43,7 @@ const EMPTY_FORM: AddEntryForm = {
   list_type: 'blacklist',
   user_id: null,
   referrer: '',
+  expires_at: null,
 };
 
 interface AddEntryDialogProps {
@@ -124,6 +129,16 @@ function AddEntryDialog({ open, defaultListType, onSave, onClose, wpUsers, wpUse
             helperText="If set, access is only allowed from this origin"
           />
 
+          <TextField
+            label="Expires at (optional)"
+            type="datetime-local"
+            value={form.expires_at ?? ''}
+            onChange={(e) => update('expires_at', e.target.value || null)}
+            fullWidth size="small" disabled={saving}
+            helperText="Leave empty for no expiration"
+            slotProps={{ inputLabel: { shrink: true } }}
+          />
+
           {/* User binding — only meaningful for whitelist */}
           {form.list_type === 'whitelist' && (
             <Autocomplete<AuthorizedUser>
@@ -200,6 +215,81 @@ function AddEntryDialog({ open, defaultListType, onSave, onClose, wpUsers, wpUse
   );
 }
 
+function FilterToolbar() {
+  const apiRef = useGridApiContext();
+  const [filterModel, setFilterModel] = useState<GridFilterModel>({
+    items: [],
+    quickFilterExcludeHiddenColumns: false,
+  });
+
+  const [listFilter, setListFilter] = useState<'all' | 'whitelist' | 'blacklist'>('all');
+
+  const handleListFilterChange = (
+    event: React.MouseEvent<HTMLElement>,
+    newFilter: 'all' | 'whitelist' | 'blacklist' | null,
+  ) => {
+    if (newFilter === null) return;
+    setListFilter(newFilter);
+    
+    // Update the filter model
+    const newFilterModel: GridFilterModel = {
+      items: [],
+      quickFilterExcludeHiddenColumns: false,
+    };
+
+    if (newFilter !== 'all') {
+      newFilterModel.items = [{
+        id: 1,
+        field: 'list_type',
+        operator: 'equals',
+        value: newFilter,
+      }];
+    }
+
+    setFilterModel(newFilterModel);
+    apiRef.current.setFilterModel(newFilterModel);
+  };
+
+  // Subscribe to filter model changes from the grid
+  useEffect(() => {
+    const updateFilter = () => {
+      const model = filterModel;
+      if (model.items.length > 0 && model.items[0].field === 'list_type') {
+        const value = model.items[0].value;
+        if (value === 'whitelist' || value === 'blacklist') {
+          setListFilter(value);
+        }
+      } else {
+        setListFilter('all');
+      }
+    };
+    
+    updateFilter();
+  }, [filterModel]);
+
+  return (
+    <Stack direction="row" alignItems="center" spacing={2} sx={{ p: 1 }}>
+      <Typography variant="body2" color="text.secondary">
+        Filter by list:
+      </Typography>
+      <ToggleButtonGroup
+        value={listFilter}
+        exclusive
+        onChange={handleListFilterChange}
+        size="small"
+      >
+        <ToggleButton value="all">All</ToggleButton>
+        <ToggleButton value="whitelist">
+          Whitelist
+        </ToggleButton>
+        <ToggleButton value="blacklist">
+          Blacklist
+        </ToggleButton>
+      </ToggleButtonGroup>
+    </Stack>
+  );
+}
+
 interface FirewallToolbarProps {
   onAdd?: () => void;
   onDeleteSelectedIps?: (rows: Map<GridRowId, IpEntry>) => void;
@@ -239,28 +329,10 @@ function CustomToolbar({ onAdd, onDeleteSelectedIps }: FirewallToolbarProps) {
       >
         Delete ({selectedCount})
       </Button>
+      <FilterToolbar />
     </Toolbar>
   );
 }
-
-const IP_COLUMNS: GridColDef<IpEntry>[] = [
-  { field: 'ip', headerName: 'IP / CIDR', flex: 1 },
-  { field: 'list_type', headerName: 'List', width: 90 },
-  { field: 'entry_type', headerName: 'Type', width: 110 },
-  {
-    field: 'user_id', headerName: 'User', width: 150,
-    valueGetter: (_, row) => row.user_id ? `#${row.user_id}` : '—',
-  },
-  {
-    field: 'referrer', headerName: 'Referrer', flex: 1,
-    valueGetter: (_, row) => row.referrer || '—',
-  },
-  { field: 'country_code', headerName: 'Country', width: 90 },
-  {
-    field: 'created_at', headerName: 'Added', width: 150,
-    valueFormatter: (value: string) => new Date(value).toLocaleString(),
-  },
-];
 
 export default function Firewall(): JSX.Element {
 
@@ -286,9 +358,12 @@ export default function Firewall(): JSX.Element {
   });
 
   const load = useCallback(async () => {
-    const res = await IpAPI.getEntries(listType);
-    setRows(res.entries);
-  }, [listType]);
+    const [black, white] = await Promise.all([
+      IpAPI.getEntries('blacklist'),
+      IpAPI.getEntries('whitelist'),
+    ]);
+    setRows([...black.entries, ...white.entries]);
+  }, []);
 
   const [wpUsers, setWpUsers] = useState<AuthorizedUser[]>([]);
   const [wpUsersLoading, setWpUsersLoading] = useState(false);
@@ -337,6 +412,51 @@ export default function Firewall(): JSX.Element {
   }, [load]);
 
   const toolbarSlots = useMemo(() => ({ toolbar: CustomToolbar }), []);
+
+  const [filterModel, setFilterModel] = useState<GridFilterModel>({
+    items: [],
+    quickFilterExcludeHiddenColumns: false,
+  });
+
+  const ipColumns = useMemo<GridColDef<IpEntry>[]>(() => [
+    { field: 'ip', headerName: 'IP / CIDR', flex: 1 },
+    { field: 'list_type', headerName: 'List', width: 90 },
+    { field: 'entry_type', headerName: 'Type', width: 110 },
+    {
+      field: 'user_id', headerName: 'User', width: 170,
+      valueGetter: (_, row) => row.user_id ?? null,
+      renderCell: ({ row }) => {
+        const userId = row.user_id != null ? Number(row.user_id) : null;
+        if (!userId) return '—';
+        const user = wpUsers.find((u) => u.id === userId);
+        return user
+          ? <a href={user.admin_url} target="_blank" style={{display:'flex',alignItems:'center',gap:'4px'}}>
+            {user.display_name}<OpenInNewIcon fontSize="inherit"/>
+            </a>
+          : `${userId}`;
+      },
+    },
+    {
+      field: 'referrer', headerName: 'Referrer', flex: 1,
+      valueGetter: (_, row) => row.referrer || '—',
+    },
+    { field: 'country_code', headerName: 'CC', width: 60 },
+    { field: 'country_name', headerName: 'Country', width: 130,
+      valueGetter: (_, row) => row.country_name || '—',
+    },
+    {
+      field: 'created_at', headerName: 'Added', width: 150,
+      valueFormatter: (value: string) => new Date(value).toLocaleString(),
+    },
+    {
+      field: 'updated_at', headerName: 'Updated', width: 150,
+      valueFormatter: (value: string | null) => value ? new Date(value).toLocaleString() : '—',
+    },
+    {
+      field: 'expires_at', headerName: 'Expires', width: 150,
+      valueFormatter: (value: string | null) => value ? new Date(value).toLocaleString() : 'Never',
+    },
+  ], [wpUsers]);
 
   return (
     <Box>
@@ -392,7 +512,7 @@ export default function Firewall(): JSX.Element {
         <DataGrid
           rows={rows}
           getRowId={(row) => row.id}
-          columns={IP_COLUMNS}
+          columns={ipColumns}
           checkboxSelection
           disableRowSelectionOnClick
           rowSelectionModel={selection}
@@ -405,6 +525,8 @@ export default function Firewall(): JSX.Element {
               onDeleteSelectedIps: handleDeleteSelected,
             } as any,
           }}
+          filterModel={filterModel}
+          onFilterModelChange={setFilterModel}
         />
       </Paper>
 

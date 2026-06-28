@@ -7,13 +7,13 @@ export interface IpEntry {
   ip: string;
   list_type: ListType; 
   entry_type: EntyType;
-  agent?: string | null;
   referrer?: string | null;
   country_code?: string | null;
   country_name?: string | null;
   user_id?: number | null;
-  blocked_at?: string;
   created_at: string;
+  updated_at: string | null;
+  expires_at: string | null;
 }
 
 export const IpAPI = {

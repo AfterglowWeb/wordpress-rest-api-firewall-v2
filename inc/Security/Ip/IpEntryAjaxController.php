@@ -43,10 +43,11 @@ class IpEntryAjaxController {
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
-		$ip        = isset( $_POST['ip'] )       ? sanitize_text_field( wp_unslash( $_POST['ip'] ) )       : '';
-		$list_type = isset( $_POST['list_type'] ) ? sanitize_text_field( wp_unslash( $_POST['list_type'] ) ) : 'blacklist';
-		$user_id   = isset( $_POST['user_id'] )  ? absint( $_POST['user_id'] )                              : null;
-		$referrer  = isset( $_POST['referrer'] ) ? sanitize_url( wp_unslash( $_POST['referrer'] ) )  : null;
+		$ip         = isset( $_POST['ip'] )       ? sanitize_text_field( wp_unslash( $_POST['ip'] ) )       : '';
+		$list_type  = isset( $_POST['list_type'] ) ? sanitize_text_field( wp_unslash( $_POST['list_type'] ) ) : 'blacklist';
+		$user_id    = isset( $_POST['user_id'] )  ? absint( wp_unslash( $_POST['user_id'] ) ) : null;
+		$referrer   = isset( $_POST['referrer'] ) ? sanitize_url( wp_unslash( $_POST['referrer'] ) )  : null;
+		$expires_at = isset( $_POST['expires_at'] ) ? sanitize_text_field( wp_unslash( $_POST['expires_at'] ) ) : null;
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
 		if ( empty( $ip ) || ! CidrMatcher::is_valid_ip_or_cidr( $ip ) ) {
@@ -62,11 +63,12 @@ class IpEntryAjaxController {
 		}
 
 		$data = array(
-			'ip'         => $ip,
-			'list_type'  => $list_type,
+			'ip'         => CidrMatcher::sanitize_ip_array($ip),
+			'list_type'  => 'blacklist' === $list_type ? 'blacklist' : 'whitelist',
 			'entry_type' => 'manual',
-			'user_id'    => $user_id ?: null,
+			'user_id'    => ! empty( $user_id ) ? $user_id : null,
 			'referrer'   => ! empty( $referrer ) ? $referrer : null,
+			'expires_at' => ! empty( $expires_at ) ? date ('Y-m-d H:i:s', $expires_at ) : null,
 		);
 
 		$geoip = GeoIpApi::get_geoip( $ip );

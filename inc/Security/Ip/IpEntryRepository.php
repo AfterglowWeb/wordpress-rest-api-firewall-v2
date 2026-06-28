@@ -64,18 +64,13 @@ class IpEntryRepository {
 				'default'           => null,
 				'sortable'          => true,
 			),
-			'blocked_at'   => array(
+			'created_at'   => array(
 				'type'     => 'datetime',
-				'default'  => null,
 				'sortable' => true,
 			),
 			'expires_at'   => array(
 				'type'     => 'datetime',
 				'default'  => null,
-				'sortable' => true,
-			),
-			'created_at'   => array(
-				'type'     => 'datetime',
 				'sortable' => true,
 			),
 			'updated_at'   => array(
@@ -96,7 +91,6 @@ class IpEntryRepository {
 			'referrer'     => $row['referrer'],
 			'country_code' => $row['country_code'],
 			'country_name' => $row['country_name'],
-			'blocked_at'   => $row['blocked_at'],
 			'expires_at'   => $row['expires_at'],
 			'created_at'   => $row['created_at'],
 			'updated_at'   => $row['updated_at'],
@@ -112,7 +106,7 @@ class IpEntryRepository {
 			'search'     => null,
 			'page'       => 1,
 			'per_page'   => 25,
-			'order_by'   => 'blocked_at',
+			'order_by'   => 'created_at',
 			'order'      => 'DESC',
 		);
 
@@ -144,7 +138,7 @@ class IpEntryRepository {
 			$values[] = $search;
 		}
 
-		$order_by = 'blocked_at';
+		$order_by = 'created_at';
 		if ( isset( $config[ $args['order_by'] ] ) && ! empty( $config[ $args['order_by'] ]['sortable'] ) ) {
 			$order_by = $args['order_by'];
 		}
@@ -258,10 +252,6 @@ class IpEntryRepository {
 		$now                     = current_time( 'mysql' );
 		$sanitized['created_at'] = $now;
 		$sanitized['updated_at'] = $now;
-
-		if ( empty( $sanitized['blocked_at'] ) ) {
-			$sanitized['blocked_at'] = $now;
-		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$result = $wpdb->insert( self::table(), $sanitized );

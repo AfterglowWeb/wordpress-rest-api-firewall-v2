@@ -23,6 +23,7 @@ interface UserDialogProps {
   wpUsersLoading: boolean;
   fetchWordPressUsers: () => void;
   authorizedUserIds: number[];
+  onIpAdded?: () => void;
 }
 
 const EMPTY_FORM: Omit<AuthorizedUser, 'id'> = {
@@ -39,7 +40,7 @@ const EMPTY_FORM: Omit<AuthorizedUser, 'id'> = {
 
 export default function UserDialog({
   open, user, onSave, onClose,
-  wpUsers, wpUsersLoading, fetchWordPressUsers, authorizedUserIds,
+  wpUsers, wpUsersLoading, fetchWordPressUsers, authorizedUserIds, onIpAdded,
 }: UserDialogProps): JSX.Element {
 
   const isEditing = user !== null;
@@ -130,6 +131,7 @@ setNewReferrer(sharedReferrer);
     setSaving(true);
     setIpError(null);
 
+    let ipAdded = false;
     if (currentUserId && newIpValue.trim()) {
       const lines = newIpValue.split('\n').map(l => l.trim()).filter(Boolean);
       const results = await Promise.allSettled(
@@ -153,6 +155,7 @@ setNewReferrer(sharedReferrer);
       setIpEntries(fresh.entries);
       setNewIpValue('');
       setNewReferrer('');
+      ipAdded = true;
     }
 
     onSave({
@@ -166,6 +169,11 @@ setNewReferrer(sharedReferrer);
         roles: selectedWpUser.roles,
       }),
     });
+
+    if (ipAdded && onIpAdded) {
+      onIpAdded();
+    }
+
 
     setSaving(false);
   };
