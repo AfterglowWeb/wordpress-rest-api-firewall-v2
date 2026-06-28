@@ -10,10 +10,11 @@ import {
 import {
   DataGrid, GridColDef, GridRowId,
   GridRowSelectionModel, useGridApiContext,
-  Toolbar, GridFilterModel // NEW: added GridFilterModel
+  Toolbar, GridFilterModel, GridActionsCellItem
 } from '@mui/x-data-grid';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { countries } from 'country-flag-icons'
 import * as Flags from 'country-flag-icons/react/3x2'
 
 
@@ -23,8 +24,8 @@ import { usePortalContainer } from '@contexts/PortalContainerContext';
 import { Autocomplete } from '@mui/material';
 import type { AuthorizedUser } from '@app-types/auth';
 import { apiRequest } from '@services/api';
-
-type EntryType = 'ip' | 'cidr';
+import { useDialog, DIALOG_TYPES } from '@contexts/DialogContext';
+import ConfirmDialog from '@components/ConfirmDialog';
 
 interface LineResult {
   value: string;
@@ -33,7 +34,6 @@ interface LineResult {
 
 interface AddEntryForm {
   value: string;
-  entry_type: EntryType;
   list_type: ListType;
   user_id: number | null;
   referrer: string;
@@ -42,7 +42,6 @@ interface AddEntryForm {
 
 const EMPTY_FORM: AddEntryForm = {
   value: '',
-  entry_type: 'ip',
   list_type: 'blacklist',
   user_id: null,
   referrer: '',
@@ -56,20 +55,32 @@ interface AddEntryDialogProps {
   onClose: () => void;
   wpUsers: AuthorizedUser[];
   wpUsersLoading: boolean;
+  editingEntry: IpEntry | null;
+
 }
 
-function AddEntryDialog({ open, defaultListType, onSave, onClose, wpUsers, wpUsersLoading }: AddEntryDialogProps) {
+function AddEntryDialog({ open, defaultListType, onSave, onClose, wpUsers, wpUsersLoading, editingEntry }: AddEntryDialogProps) {
   const [form, setForm] = useState<AddEntryForm>({ ...EMPTY_FORM, list_type: defaultListType });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<LineResult[]>([]);
   const portalContainer = usePortalContainer();
 
   useEffect(() => {
-    if (open) {
+  if (open) {
+    if (editingEntry) {
+      setForm({
+        value: editingEntry.ip,
+        list_type: editingEntry.list_type,
+        user_id: editingEntry.user_id ?? null,
+        referrer: editingEntry.referrer ?? '',
+        expires_at: editingEntry.expires_at ?? null,
+      });
+    } else {
       setForm({ ...EMPTY_FORM, list_type: defaultListType });
-      setErrors([]);
     }
-  }, [open, defaultListType]);
+    setErrors([]);
+  }
+}, [open, defaultListType, editingEntry]);
 
   const update = <K extends keyof AddEntryForm>(key: K, value: AddEntryForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -88,7 +99,7 @@ function AddEntryDialog({ open, defaultListType, onSave, onClose, wpUsers, wpUse
       onClose={saving ? undefined : onClose}
       fullWidth maxWidth="xs"
     >
-      <DialogTitle>Add access control entries</DialogTitle>
+      <DialogTitle>{editingEntry ? 'Edit entry' : 'Add access control entries'}</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2} sx={{ pt: 0.5 }}>
 
@@ -98,18 +109,6 @@ function AddEntryDialog({ open, defaultListType, onSave, onClose, wpUsers, wpUse
               onChange={(e) => update('list_type', e.target.value as ListType)}>
               <FormControlLabel value="blacklist" control={<Radio size="small" />} label="Blacklist" />
               <FormControlLabel value="whitelist" control={<Radio size="small" />} label="Whitelist" />
-            </RadioGroup>
-          </FormControl>
-
-          <FormControl>
-            <FormLabel>Entry type</FormLabel>
-            <RadioGroup row value={form.entry_type}
-              onChange={(e) => {
-                update('entry_type', e.target.value as EntryType);
-                update('value', '');
-              }}>
-              <FormControlLabel value="ip"   control={<Radio size="small" />} label="IP" />
-              <FormControlLabel value="cidr" control={<Radio size="small" />} label="CIDR range" />
             </RadioGroup>
           </FormControl>
 
@@ -354,11 +353,14 @@ export default function Firewall(): JSX.Element {
 
   const [listType, setListType]     = useState<ListType>('blacklist');
   const [rows, setRows]             = useState<IpEntry[]>([]);
+  const { openDialog } = useDialog();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selection, setSelection]   = useState<GridRowSelectionModel>({
     type: 'include',
     ids: new Set(),
   });
+
+  const [editingIp, setEditingIp] = useState<IpEntry | null>(null);
 
   const load = useCallback(async () => {
     const [black, white] = await Promise.all([
@@ -382,10 +384,24 @@ export default function Firewall(): JSX.Element {
   useEffect(() => { void load(); }, [load]);
 
   const handleAddEntries = async (form: AddEntryForm): Promise<LineResult[]> => {
+    if (editingIp) {
+      await IpAPI.updateEntry(editingIp.id, {
+        list_type:  form.list_type,
+        user_id:    form.user_id,
+        referrer:   form.referrer || null,
+        expires_at: form.expires_at || null,
+        // entry_type et entry_origin non modifiables depuis l'UI
+      });
+      await load();
+      setDialogOpen(false);
+      setEditingIp(null);
+      return [];
+    }
+
     const lines = form.value.split('\n').map((l) => l.trim()).filter(Boolean);
 
     const results = await Promise.allSettled(
-      lines.map((val) => IpAPI.addEntry(val, form.list_type, form.user_id, form.referrer || null))
+      lines.map((val) => IpAPI.addEntry(val, form.list_type, form.user_id, form.referrer || null, form.expires_at || null))
     );
 
     const errors: LineResult[] = results
@@ -413,6 +429,25 @@ export default function Firewall(): JSX.Element {
     setSelection({ type: 'include', ids: new Set() });
     await load();
   }, [load]);
+
+  const handleEditIp = useCallback((ip: IpEntry) => {
+    setEditingIp(ip);
+    setDialogOpen(true);
+  }, []);
+
+  const handleDeleteIp = useCallback((id: GridRowId) => {
+    const entry = rows.find((r) => r.id === id);
+    openDialog({
+      type: DIALOG_TYPES.CONFIRM,
+      title: 'Remove entry?',
+      content: `Remove ${entry?.ip ?? id} from the ${entry?.list_type ?? 'list'}?`,
+      confirmLabel: 'Remove',
+      onConfirm: async () => {
+        await IpAPI.deleteEntries([Number(id)]);
+        await load();
+      },
+    });
+  }, [rows, openDialog, load]);
 
   const toolbarSlots = useMemo(() => ({ toolbar: CustomToolbar }), []);
 
@@ -471,6 +506,14 @@ export default function Firewall(): JSX.Element {
       valueFormatter: (value: string | null) => value ? new Date(value).toLocaleString() : 'Never',
     },
     { field: 'entry_type', headerName: 'Type', flex: 1 },
+    { field: 'entry_origin', headerName: 'Origin', width: 100 },
+    {
+      field: 'actions', type: 'actions', width: 80,
+      getActions: ({ row }) => [
+        <GridActionsCellItem icon={<EditIcon />}   label="Edit"   onClick={() => handleEditIp(row)} />,
+        <GridActionsCellItem icon={<DeleteIcon />} label="Remove" onClick={() => handleDeleteIp(row.id)} />,
+      ],
+    },
   ], [wpUsers]);
 
   return (
@@ -559,8 +602,12 @@ export default function Firewall(): JSX.Element {
       <AddEntryDialog
         open={dialogOpen}
         defaultListType={listType}
+        editingEntry={editingIp}          // ← ajout
         onSave={handleAddEntries}
-        onClose={() => setDialogOpen(false)}
+        onClose={() => {
+          setDialogOpen(false);
+          setEditingIp(null);             // ← reset
+        }}
         wpUsers={wpUsers}
         wpUsersLoading={wpUsersLoading}
       />

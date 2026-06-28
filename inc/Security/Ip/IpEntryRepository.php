@@ -28,11 +28,18 @@ class IpEntryRepository {
 				'allowed_values'    => array( 'whitelist', 'blacklist', 'global_blacklist' ),
 				'sortable'          => true,
 			),
-			'entry_type'   => array(
+			'entry_origin'   => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
 				'default'           => 'manual',
 				'allowed_values'    => array( 'manual', 'rate_limit' ),
+				'sortable'          => true,
+			),
+			'entry_type'   => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => 'manual',
+				'allowed_values'    => array( 'ip', 'cidr' ),
 				'sortable'          => true,
 			),
 			'agent'        => array(
@@ -86,6 +93,7 @@ class IpEntryRepository {
 			'ip'           => $row['ip'],
 			'list_type'    => $row['list_type'],
 			'entry_type'   => $row['entry_type'],
+			'entry_origin'   => $row['entry_origin'],
 			'agent'        => $row['agent'],
 			'user_id'      => $row['user_id'],
 			'referrer'     => $row['referrer'],
@@ -103,6 +111,7 @@ class IpEntryRepository {
 		$defaults = array(
 			'list_type'  => null,
 			'entry_type' => null,
+			'entry_origin' => null,
 			'search'     => null,
 			'page'       => 1,
 			'per_page'   => 25,
@@ -124,6 +133,11 @@ class IpEntryRepository {
 		if ( ! empty( $args['entry_type'] ) ) {
 			$where[]  = 'entry_type = %s';
 			$values[] = $args['entry_type'];
+		}
+
+		if ( ! empty( $args['entry_origin'] ) ) {
+			$where[]  = 'entry_origin = %s';
+			$values[] = $args['entry_origin'];
 		}
 
 		if ( ! isset( $args['include_expired'] ) || ! $args['include_expired'] ) {
@@ -180,6 +194,16 @@ class IpEntryRepository {
 			'per_page'    => $per_page,
 			'total_pages' => ceil( $total / $per_page ),
 		);
+	}
+
+	public static function find_by_id( int $id ): ?array {
+		global $wpdb;
+
+		$sql = 'SELECT * FROM ' . self::table() . ' WHERE id = %d LIMIT 1';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$row = $wpdb->get_row( $wpdb->prepare( $sql, $id ), ARRAY_A );
+
+		return $row ? self::normalize( $row ) : null;
 	}
 
 	public static function find_by_ip( string $ip, string $list_type = 'blacklist' ): array {

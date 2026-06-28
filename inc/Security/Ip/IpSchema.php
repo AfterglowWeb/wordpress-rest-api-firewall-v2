@@ -6,7 +6,7 @@ use wpdb;
 
 class IpSchema {
 
-	const SCHEMA_VERSION = '1.6.5';
+	const SCHEMA_VERSION = '1.6.6';
 	const OPTION_KEY     = 'bromate_rest_api_firewall_ip_schema_version';
 
 	public static function install(): void {
@@ -30,7 +30,8 @@ class IpSchema {
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			ip VARCHAR(45) NOT NULL,
 			list_type ENUM('whitelist','blacklist') NOT NULL DEFAULT 'blacklist',
-			entry_type ENUM('manual','rate_limit') NOT NULL DEFAULT 'manual',
+			entry_type ENUM('ip','cidr') NOT NULL DEFAULT 'ip',
+			entry_origin ENUM('manual','rate_limit') NOT NULL DEFAULT 'manual',
 			agent VARCHAR(255) NULL,
 			user_id BIGINT UNSIGNED NULL DEFAULT NULL,
 			referrer VARCHAR(255) NULL DEFAULT NULL,
@@ -43,6 +44,7 @@ class IpSchema {
 			UNIQUE KEY ip_list (ip, list_type),
 			KEY list_type (list_type),
 			KEY entry_type (entry_type),
+			KEY entry_origin (entry_origin),
 			KEY user_id (user_id),
 			KEY country_code (country_code),
 			KEY created_at (created_at)
