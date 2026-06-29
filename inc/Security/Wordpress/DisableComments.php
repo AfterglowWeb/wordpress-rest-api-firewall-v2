@@ -24,7 +24,7 @@ class DisableComments {
 				if ( 'options-discussion.php' !== $pagenow ) {
 					return;
 				}
-				if ( empty( SettingsRepository::read_option( 'theme_disable_comments' ) ) ) {
+				if ( empty( SettingsRepository::read_option( 'disable_comments' ) ) ) {
 					return;
 				}
 				$settings_url = admin_url( 'admin.php?page=bromate-rest-api-firewall#global_security' );
@@ -38,7 +38,7 @@ class DisableComments {
 			}
 		);
 
-		if ( true === SettingsRepository::read_option( 'theme_disable_comments' ) ) {
+		if ( true === SettingsRepository::read_option( 'disable_comments' ) ) {
 			add_filter( 'comments_open', '__return_false', 20, 2 );
 			add_filter( 'pings_open', '__return_false', 20, 2 );
 			add_filter( 'comments_array', '__return_empty_array', 10, 2 );
@@ -91,7 +91,7 @@ class DisableComments {
 			'admin_init',
 			function (): void {
 
-				if ( empty( SettingsRepository::read_option( 'theme_disable_comments' ) ) ) {
+				if ( empty( SettingsRepository::read_option( 'disable_comments' ) ) ) {
 					return;
 				}
 
@@ -142,7 +142,7 @@ class DisableComments {
 			'init',
 			function (): void {
 
-				if ( empty( SettingsRepository::read_option( 'theme_disable_comments' ) ) ) {
+				if ( empty( SettingsRepository::read_option( 'disable_comments' ) ) ) {
 					return;
 				}
 

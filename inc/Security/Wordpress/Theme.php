@@ -22,11 +22,11 @@ class Theme {
 		add_action( 'after_setup_theme', array( $this, 'theme_lang' ) );
 		add_filter( 'show_admin_bar', '__return_false' );
 
-		if ( true === SettingsRepository::read_option( 'theme_remove_emoji_scripts' ) ) {
+		if ( true === SettingsRepository::read_option( 'remove_emoji_scripts' ) ) {
 			add_action( 'init', array( $this, 'remove_emoji_scripts' ) );
 		}
 
-		if ( true === SettingsRepository::read_option( 'theme_json_acf_fields_enabled' )
+		if ( true === SettingsRepository::read_option( 'json_acf_fields_enabled' )
 			&& FileUtils::mkdir_p( get_stylesheet_directory() . '/config' ) ) {
 
 			add_filter(

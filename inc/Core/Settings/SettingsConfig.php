@@ -394,7 +394,7 @@ final class SettingsConfig {
 				'group'             => 'wordpress_mode',
 			),
 
-			'wordpress_redirect_templates_preset_url' => array(
+			'wordpress_redirect_front_preset_option' => array(
 				'default_value'     => '',
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_key',

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo } from '@wordpress/element';
 import Alert from '@mui/material/Alert';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -98,10 +98,6 @@ export default function GlobalRoutesPolicy({
 
 	return (
 		<Stack spacing={2}>
-			<Alert severity="info">
-				These settings can be overridden on a per-route basis in Route Policy Tree.
-			</Alert>
-
 			<Stack spacing={2}>
 				<FormControl>
 					<FormControlLabel
@@ -115,13 +111,10 @@ export default function GlobalRoutesPolicy({
 						label="Apply Security Defaults"
 					/>
 				</FormControl>
-				<Typography variant="caption" color="text.secondary">
-					Disables /wp/v2/users/*, oembed/1.0/*, batch/v1/*, /wp-site-health/v1/*, /wp-abilities/v1/* routes and DELETE, PUT, PATCH methods.
-				</Typography>
 			</Stack>
 
 			<Stack spacing={2}>
-				<Typography variant="subtitle1" fontWeight={600}>
+				<Typography variant="h6">
 					Disable HTTP Methods
 				</Typography>
 				<Stack
@@ -157,7 +150,7 @@ export default function GlobalRoutesPolicy({
 			</Stack>
 
 			<Stack spacing={2}>
-				<Typography variant="subtitle1" fontWeight={600}>
+				<Typography variant="h6">
 					Disable Post Types and Taxonomies
 				</Typography>
 
@@ -174,6 +167,11 @@ export default function GlobalRoutesPolicy({
 					}
 				/>
 			</Stack>
+
+			<Alert severity="info">
+				These settings can be overridden on a per-route basis in Route Policy Tree.
+			</Alert>
+
 		</Stack>
 	);
 }

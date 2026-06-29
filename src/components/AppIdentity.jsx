@@ -1,4 +1,3 @@
-import { useAdminData } from '../contexts/AdminDataContext';
 import { styled, useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
@@ -23,8 +22,6 @@ const AppLogo = styled( Box )( () => ( {
 } ) );
 
 export default function AppIdentity() {
-	const { __ } = wp.i18n || {};
-	const { adminData } = useAdminData();
 	const theme = useTheme();
 
 	return (

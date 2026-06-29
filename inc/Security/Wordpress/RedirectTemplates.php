@@ -50,21 +50,21 @@ class RedirectTemplates {
 			return;
 		}
 
-		$theme_redirect_templates_enabled = SettingsRepository::read_option( 'theme_redirect_templates_enabled' );
+		$theme_redirect_front_enabled = SettingsRepository::read_option( 'redirect_front_enabled' );
 
-		if ( empty( $theme_redirect_templates_enabled ) ) {
+		if ( empty( $theme_redirect_front_enabled ) ) {
 			return;
 		}
 
-		$theme_redirect_templates_preset_url       = SettingsRepository::read_option( 'theme_redirect_templates_preset_url' );
-		$theme_redirect_templates_free_url_enabled = SettingsRepository::read_option( 'theme_redirect_templates_free_url_enabled' );
-		$theme_redirect_templates_free_url         = SettingsRepository::read_option( 'theme_redirect_templates_free_url' );
+		$theme_redirect_front_preset_option       = SettingsRepository::read_option( 'redirect_front_preset_option' );
+		$theme_redirect_front_custom_url_enabled = SettingsRepository::read_option( 'redirect_front_custom_url_enabled' );
+		$theme_redirect_front_custom_url         = SettingsRepository::read_option( 'redirect_front_custom_url' );
 		$redirect_url                              = '';
 
-		if ( true === $theme_redirect_templates_free_url_enabled ) {
-			$redirect_url = sanitize_url( apply_filters( 'rest_firewall_redirect_url', $theme_redirect_templates_free_url ) );
+		if ( true === $theme_redirect_front_custom_url_enabled ) {
+			$redirect_url = sanitize_url( apply_filters( 'rest_firewall_redirect_url', $theme_redirect_front_custom_url ) );
 		} else {
-			switch ( $theme_redirect_templates_preset_url ) {
+			switch ( $theme_redirect_front_preset_option ) {
 				case 'wp_login':
 					$redirect_url = wp_login_url();
 					break;
