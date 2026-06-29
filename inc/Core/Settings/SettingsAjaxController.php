@@ -93,20 +93,6 @@ class SettingsAjaxController {
 		}
 	}
 
-	public function ajax_get_routes_policy_tree(): void {
-		if ( false === self::ajax_validate_has_firewall_admin_caps() ) {
-			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
-		}
-
-		$routes_tree = RoutesPolicyRepository::get_routes_policy_tree();
-		wp_send_json_success(
-			array(
-				'tree' => $routes_tree,
-			),
-			200
-		);
-	}
-
 	public function ajax_authorized_users_options(): void {
 		if ( false === self::ajax_validate_has_firewall_admin_caps() ) {
 			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-api-firewall' ) ), 403 );
@@ -121,6 +107,40 @@ class SettingsAjaxController {
 		}
 		$wordpress_objects = ModelsPropertiesRepository::list_rest_api_object_types();
 		wp_send_json_success( $wordpress_objects );
+	}
+
+	public static function ajax_validate_has_firewall_admin_caps(): bool {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified below via wp_verify_nonce
+		$nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
+
+		$valid = wp_verify_nonce( $nonce, 'bromate_rest_api_firewall_update_options_nonce' );
+
+		return (bool) $valid
+			&& is_user_logged_in()
+			&& current_user_can( 'bromate_rest_api_firewall_edit_options' );
+	}
+
+	public function ajax_flush_rewrite_rules(): void {
+		if ( false === self::ajax_validate_has_firewall_admin_caps() ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-api-firewall' ) ), 403 );
+		}
+
+		flush_rewrite_rules( false );
+		wp_send_json_success( array( 'message' => esc_html__( 'Rewrite rules flushed successfully.', 'bromate-rest-api-firewall' ) ) );
+	}
+
+		public function ajax_get_routes_policy_tree(): void {
+		if ( false === self::ajax_validate_has_firewall_admin_caps() ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
+		}
+
+		$routes_tree = RoutesPolicyRepository::get_routes_policy_tree();
+		wp_send_json_success(
+			array(
+				'tree' => $routes_tree,
+			),
+			200
+		);
 	}
 
 	public function ajax_save_routes_policy_tree(): void {
@@ -167,25 +187,5 @@ class SettingsAjaxController {
 			),
 			200
 		);
-	}
-
-	public static function ajax_validate_has_firewall_admin_caps(): bool {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified below via wp_verify_nonce
-		$nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
-
-		$valid = wp_verify_nonce( $nonce, 'bromate_rest_api_firewall_update_options_nonce' );
-
-		return (bool) $valid
-			&& is_user_logged_in()
-			&& current_user_can( 'bromate_rest_api_firewall_edit_options' );
-	}
-
-	public function ajax_flush_rewrite_rules(): void {
-		if ( false === self::ajax_validate_has_firewall_admin_caps() ) {
-			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-api-firewall' ) ), 403 );
-		}
-
-		flush_rewrite_rules( false );
-		wp_send_json_success( array( 'message' => esc_html__( 'Rewrite rules flushed successfully.', 'bromate-rest-api-firewall' ) ) );
 	}
 }

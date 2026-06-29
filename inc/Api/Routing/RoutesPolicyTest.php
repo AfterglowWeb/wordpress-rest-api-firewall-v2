@@ -11,10 +11,7 @@ use WP_REST_Request;
 class RoutesPolicyTest {
 
 	protected static $instance = null;
-
-	private string $current_test_application_id         = '';
 	public static ?int $internal_test_user_id           = null;
-	public static ?string $internal_test_application_id = null;
 
 	public static function get_instance() {
 		if ( null === static::$instance ) {
@@ -40,8 +37,6 @@ class RoutesPolicyTest {
 		$has_users       = isset( $_POST['has_users'] ) ? rest_sanitize_boolean( wp_unslash( $_POST['has_users'] ) ) : false;
 		$application_id  = isset( $_POST['application_id'] ) ? sanitize_text_field( wp_unslash( $_POST['application_id'] ) ) : '';
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
-
-		$this->current_test_application_id = $application_id;
 
 		$this->cleanup_test_app_passwords();
 
@@ -131,7 +126,7 @@ class RoutesPolicyTest {
 			$route  = $route_info['route'];
 			$method = $route_info['method'];
 
-			RoutesResolver::clear_cache();
+			RoutesPolicyRepository::flush_routes_cache();
 
 			$policy = $this->get_policy_for_route( $route, $method );
 
@@ -145,7 +140,6 @@ class RoutesPolicyTest {
 				'tests'        => array(
 					'disabled'   => $this->test_disabled( $route, $method, $policy ),
 					'auth'       => $this->test_auth( $route, $method, $policy ),
-					'rate_limit' => $this->test_rate_limit( $route, $method, $policy ),
 				),
 				'raw_data'     => $this->fetch_data( $route, $method ),
 				'result_data'  => $use_auth_for_result
@@ -173,27 +167,13 @@ class RoutesPolicyTest {
 	}
 
 	protected function get_model_for_route( string $route ): ?array {
-		if ( ! class_exists( 'cmk\\RestApiFirewallPro\\Models\\ModelRepository' ) ||
-			! class_exists( 'cmk\\RestApiFirewallPro\\Application\\ApplicationRepository' ) ) {
-			return null;
-		}
-
-		if ( ! empty( $this->current_test_application_id ) ) {
-			$app = \cmk\RestApiFirewallPro\Application\ApplicationRepository::find_by_id( $this->current_test_application_id );
-		} else {
-			$app = \cmk\RestApiFirewallPro\Application\ApplicationRepository::find_first_active();
-		}
-		if ( ! $app ) {
-			return null;
-		}
-
+		
 		$post_type = $this->post_type_from_route( $route );
 		if ( ! $post_type ) {
 			return null;
 		}
 
 		return \cmk\RestApiFirewallPro\Models\ModelRepository::find_enabled_by_object_type(
-			$app['id'],
 			$post_type
 		);
 	}
@@ -327,44 +307,8 @@ class RoutesPolicyTest {
 		);
 	}
 
-	protected function test_rate_limit( string $route, string $method, array $policy ): array {
-		$rate_limit      = $policy['rate_limit'] ?? false;
-		$rate_limit_time = $policy['rate_limit_time'] ?? false;
-
-		if ( false === $rate_limit || false === $rate_limit_time ) {
-			return array(
-				'skip'   => true,
-				'reason' => 'Rate limiting is not enabled for this route',
-				'pass'   => null,
-			);
-		}
-
-		$response    = $this->make_request( $route, $method );
-		$status_code = wp_remote_retrieve_response_code( $response );
-
-		return array(
-			'skip'            => false,
-			'pass'            => true,
-			'rate_limit'      => $rate_limit,
-			'rate_limit_time' => $rate_limit_time,
-			'status_code'     => $status_code,
-			'message'         => "Rate limit policy active: {$rate_limit} requests per {$rate_limit_time} seconds",
-		);
-	}
-
 	protected function make_request( string $route, string $method ) {
 		$test_token = wp_generate_password( 32, false );
-		$test_ctx   = array( 'app_id' => null );
-		if ( ! empty( $this->current_test_application_id ) ) {
-			$test_ctx['app_id'] = $this->current_test_application_id;
-		} elseif ( class_exists( 'cmk\\RestApiFirewallPro\\Application\\ApplicationRepository' ) ) {
-			$active_app = \cmk\RestApiFirewallPro\Application\ApplicationRepository::find_first_active();
-			if ( $active_app ) {
-				$test_ctx['app_id'] = $active_app['id'];
-			}
-		}
-		set_transient( 'rest_firewall_test_ctx_' . md5( $test_token ), $test_ctx, 60 );
-
 		$url = add_query_arg( '_firewall_test', $test_token, $this->build_rest_url( $route ) );
 
 		$args = array(
@@ -394,7 +338,7 @@ class RoutesPolicyTest {
 
 		$prev_user_id = get_current_user_id();
 		wp_set_current_user( $user_id );
-		self::begin_internal_test( $user_id, $this->current_test_application_id ? $this->current_test_application_id : null );
+		self::begin_internal_test( $user_id );
 
 		try {
 			$request  = new WP_REST_Request( $method, $route );
@@ -411,14 +355,12 @@ class RoutesPolicyTest {
 		}
 	}
 
-	public static function begin_internal_test( int $user_id, ?string $application_id = null ): void {
+	public static function begin_internal_test( int $user_id ): void {
 		self::$internal_test_user_id        = $user_id;
-		self::$internal_test_application_id = $application_id ? $application_id : null;
 	}
 
 	public static function end_internal_test(): void {
 		self::$internal_test_user_id        = null;
-		self::$internal_test_application_id = null;
 	}
 
 	public static function is_test_request(): bool {
@@ -439,26 +381,6 @@ class RoutesPolicyTest {
 		return ! empty( $ctx );
 	}
 
-	public static function get_test_application_id(): ?string {
-		if ( null !== self::$internal_test_application_id ) {
-			return self::$internal_test_application_id;
-		}
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- token validated via transient
-		$token = isset( $_GET['_firewall_test'] ) ? sanitize_text_field( wp_unslash( $_GET['_firewall_test'] ) ) : '';
-
-		if ( empty( $token ) ) {
-			return null;
-		}
-
-		$ctx = get_transient( 'rest_firewall_test_ctx_' . md5( $token ) );
-
-		if ( ! is_array( $ctx ) || empty( $ctx['app_id'] ) ) {
-			return null;
-		}
-
-		return (string) $ctx['app_id'];
-	}
 
 	public static function result( $result ) {
 		if ( is_wp_error( $result ) ) {
@@ -478,23 +400,6 @@ class RoutesPolicyTest {
 		}
 
 		return $result;
-	}
-
-	/**
-	 * Re-resolve the route policy with global enforce_auth disabled to determine
-	 * whether an explicit per-namespace or per-route config protects this plugin route.
-	 */
-	private function is_plugin_route_explicitly_protected( string $route, string $method ): bool {
-		$filter = static function ( array $opts ): array {
-			$opts['enforce_auth'] = false;
-			return $opts;
-		};
-		add_filter( 'bromate_rest_api_firewall_runtime_options', $filter );
-		RoutesResolver::clear_cache();
-		$policy = $this->get_policy_for_route( $route, $method );
-		remove_filter( 'bromate_rest_api_firewall_runtime_options', $filter );
-		RoutesResolver::clear_cache();
-		return (bool) ( $policy['protect'] ?? false );
 	}
 
 	private function cleanup_test_app_passwords(): void {
