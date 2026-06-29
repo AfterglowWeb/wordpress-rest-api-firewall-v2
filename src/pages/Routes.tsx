@@ -57,7 +57,7 @@ export default function Routes(): JSX.Element {
 				<GlobalRoutesPolicy settings={settings} onChange={update} />
 			</Paper>
 			<Paper sx={{p:2}} elevation={0}>
-				<RoutesPolicyTree tree={tree} onChange={setTree} />
+				<RoutesPolicyTree tree={tree} globals={settings} onChange={setTree} />
 			</Paper>
 			<Alert severity="info">
 				Route Policy Tree settings take priority over global settings.

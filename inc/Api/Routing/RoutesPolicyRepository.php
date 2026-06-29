@@ -43,21 +43,11 @@ class RoutesPolicyRepository {
 			'users'  => array(),
 		);
 
-		/**
-		 * Filter to provide policy data.
-		 * Pro plugin hooks here to provide its policy.
-		 *
-		 * @param array $default Default empty policy.
-		 * @return array Policy with 'nodes' and 'routes' keys.
-		 */
-		$policy = apply_filters( 'bromate_rest_api_firewall_get_policy', $default );
 
-		if ( $policy === $default ) {
 			$saved = SettingsRepository::read_option( 'policy' );
 			return is_array( $saved ) ? $saved : $default;
-		}
 
-		return $policy;
+
 	}
 
 	private static function apply_diff( array $tree, array $diff ): array {
@@ -174,24 +164,6 @@ class RoutesPolicyRepository {
 		}
 	}
 
-	private static function normalize_users( array $users ): array {
-		$out = array();
-		foreach ( $users as $user ) {
-			if ( empty( $user['id'] ) ) {
-				continue;
-			}
-			$out[] = array(
-				'id'                  => sanitize_text_field( $user['id'] ),
-				'wp_user_id'          => isset( $user['wp_user_id'] ) ? (int) $user['wp_user_id'] : 0,
-				'display_name'        => isset( $user['display_name'] ) ? sanitize_text_field( $user['display_name'] ) : '',
-				'related_routes_uuid' => isset( $user['related_routes_uuid'] ) && is_array( $user['related_routes_uuid'] )
-					? array_values( array_map( 'sanitize_text_field', $user['related_routes_uuid'] ) )
-					: array(),
-			);
-		}
-		return $out;
-	}
-
 	public static function build_policy_tree( array $flat_routes ): array {
 
 		$tree = array();
@@ -299,7 +271,6 @@ class RoutesPolicyRepository {
 		return md5( $path );
 	}
 
-	/** Route Model */
 	private static function route_to_segments( string $route ): array {
 
 		$route = trim( $route, '/' );
@@ -435,9 +406,6 @@ class RoutesPolicyRepository {
 	private static function route_uuid( array $route ): string {
 		return md5( $route['route'] . '|' . $route['method'] );
 	}
-
-
-
 
 	public static function list_all_rest_routes(): array {
 

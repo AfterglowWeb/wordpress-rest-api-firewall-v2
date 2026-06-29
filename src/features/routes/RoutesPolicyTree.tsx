@@ -1,6 +1,6 @@
-import { useState, useCallback, useMemo } from '@wordpress/element';
+import { useState, useCallback, useMemo, useEffect } from '@wordpress/element';
 import { RoutePolicyTreeContext, useRoutePolicyTreeContext } from '@contexts/RoutePolicyTreeContext';
-
+import { resolveInheritance } from '@app-utils/routeInheritance';
 import Stack from '@mui/material/Stack';
 import Chip from '@mui/material/Chip';
 import Button from '@mui/material/Button';
@@ -79,8 +79,15 @@ function normalizeTree(tree: RouteNode): TreeState {
 }
 
 
-export default function RoutesPolicyTree({ tree, onChange }: RoutesPolicyTreeProps): JSX.Element {
-  	const [state, setState] = useState(() => normalizeTree(wrapTree(tree)));
+export default function RoutesPolicyTree({ tree, globals, onChange }: RoutesPolicyTreeProps): JSX.Element {
+  	const [state, setState] = useState(() =>
+		normalizeTree(wrapTree(resolveInheritance(tree, globals)))
+	);
+
+	// Re-résoudre quand globals changent
+	useEffect(() => {
+		setState(normalizeTree(wrapTree(resolveInheritance(tree, globals))));
+	}, [globals]);
 
 	const [expandedItems, setExpandedItems] =
 		useState<string[]>([]);
