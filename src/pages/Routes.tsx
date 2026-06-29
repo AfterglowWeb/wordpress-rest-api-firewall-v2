@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from '@wordpress/element';
 
-import Alert from '@mui/material/Alert';
+import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
 
@@ -11,95 +11,53 @@ import RoutesPolicyTree from '@features/routes/RoutesPolicyTree';
 
 import { RoutesAPI } from '@services/routes';
 
+
 export default function Routes(): JSX.Element {
-	const [loading, setLoading] = useState(true);
+  	const [loading, setLoading] = useState(true);
+	const [tree, setTree] = useState<RouteNode[]>([]);
+	const [settings, setSettings] = useState<RoutesSettings>({
+		routes_policy_enabled:              false,
+		routes_policy_default_hidden_routes: false,
+		routes_policy_hidden_methods:       [],
+		routes_policy_hidden_wp_objects:    [],
+		routes_policy_hidden_response_code: '404',
+	});
 
-	const [settings, setSettings] =
-		useState<RoutesSettings>({
-			routes_policy_enabled: false,
-			routes_policy_rules: {
-				id:'',
-				label:'',
-				path:'',
-				settings:{
-					protect: {value:false},
-					disabled: {value:false},
-					rate_limit: {value:false},
-					custom: false,
-					locked: false,
-					tags:[],
-				},
-				route:'',
-				children: [],
-			},
-			routes_policy_hidden_routes: [],
-			routes_policy_hidden_methods: [],
-			routes_policy_hidden_post_types: [],
-			routes_policy_hidden_response_code: '404',
-		});
-
-	const [tree, setTree] = useState<RouteNode>(settings.routes_policy_rules);
-
-	const update = useCallback(
-		<K extends keyof RoutesSettings>(
-			key: K,
-			value: RoutesSettings[K]
-		) => {
-			setSettings((prev) => ({
-				...prev,
-				[key]: value,
-			}));
+  	const update = useCallback(
+		<K extends keyof RoutesSettings>(key: K, value: RoutesSettings[K]) => {
+		setSettings((prev) => ({ ...prev, [key]: value }));
 		},
 		[]
 	);
 
 	const loadSettings = useCallback(async () => {
 		try {
-			const data = await RoutesAPI.getRoutes();
-
-			setSettings(data.routes_settings);
+		const data = await RoutesAPI.getRoutes();
+		setTree(data.tree); 
+		// settings globaux à charger séparément si besoin
 		} finally {
-			setLoading(false);
+		setLoading(false);
 		}
 	}, []);
 
-	useEffect(() => {
-		void loadSettings();
-	}, [loadSettings]);
+	useEffect(() => { void loadSettings(); }, [loadSettings]);
 
 	if (loading) {
 		return (
-			<Stack
-				height="100%"
-				alignItems="center"
-				justifyContent="center"
-			>
-				<CircularProgress />
-			</Stack>
+		<Stack height="100%" alignItems="center" justifyContent="center">
+			<CircularProgress />
+		</Stack>
 		);
 	}
 
 	return (
-		<Stack py={4} flexGrow={1} spacing={3}>
-			<Stack px={4} spacing={3}>
-				<Alert severity="info" sx={{ maxWidth: 800 }}>
-					These settings apply globally to all routes.
-					They can be overridden on a per-route basis
-					inside the route policy tree.
-				</Alert>
-
-				<GlobalRoutesPolicy
-					settings={settings}
-					onChange={update}
-				/>
-			</Stack>
-
-			<Stack px={4} flexGrow={1}>
-				<RoutesPolicyTree
-					tree={tree}
-					onChange={setTree}
-				/>
-			</Stack>
+		<Stack flexGrow={1} spacing={3}>
+		<Paper sx={{p:2}} elevation={0}>
+			<GlobalRoutesPolicy settings={settings} onChange={update} />
+		</Paper>
+		<Paper sx={{p:2}} elevation={0}>
+			<RoutesPolicyTree tree={tree} onChange={setTree} />
+		</Paper>
 		</Stack>
 	);
 }

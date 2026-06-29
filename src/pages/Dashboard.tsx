@@ -123,7 +123,7 @@ export default function Dashboard(): JSX.Element {
 	return (
         <Stack display="flex" flexDirection="column" gap={3}>
 
-			<Card>
+			<Card elevation={0}>
 			<CardContent>
 				<Typography variant="h6" mb={2}>
 					Security Modules
@@ -180,7 +180,7 @@ export default function Dashboard(): JSX.Element {
 			</CardContent>
 			</Card>
 
-			<Card>
+			<Card elevation={0}>
 				<CardContent>
 					<Typography variant="h6" mb={2}>
 						Stats
