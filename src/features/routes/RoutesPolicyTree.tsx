@@ -1,16 +1,12 @@
 import { useState, useCallback, useMemo } from '@wordpress/element';
-import { RoutePolicyTreeContext } from '@contexts/RoutePolicyTreeContext';
+import { RoutePolicyTreeContext, useRoutePolicyTreeContext } from '@contexts/RoutePolicyTreeContext';
 
 import Stack from '@mui/material/Stack';
-import Toolbar from '@mui/material/Toolbar';
 import Chip from '@mui/material/Chip';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-
 import RefreshIcon from '@mui/icons-material/Refresh';
-
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
-
 import RouteTreeItem from '@features/routes/RouteTreeItem';
 
 import type {

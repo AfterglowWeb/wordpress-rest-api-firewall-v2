@@ -179,4 +179,5 @@ class SettingsRepository {
 			'expires_at'    => sanitize_text_field( $user['expires_at'] ?? '' ),
 		);
 	}
+
 }

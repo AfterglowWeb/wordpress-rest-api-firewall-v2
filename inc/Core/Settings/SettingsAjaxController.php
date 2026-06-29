@@ -18,7 +18,7 @@ class SettingsAjaxController {
 		add_action( 'wp_ajax_bromate_get_routes_policy_tree', array( $self, 'ajax_get_routes_policy_tree' ) );
 		add_action( 'wp_ajax_bromate_save_routes_policy_tree', array( $self, 'ajax_save_routes_policy_tree' ) );
 		add_action( 'wp_ajax_bromate_authorized_users_options', array( $self, 'ajax_authorized_users_options' ) );
-		add_action( 'wp_ajax_bromate_get_wordpress_objects', array( $self, 'ajax_get_wordpress_objects' ) );
+		add_action( 'wp_ajax_bromate_wordpress_objects_options', array( $self, 'ajax_wordpress_objects_options' ) );
 	}
 
 	public function ajax_read_options() {
@@ -115,7 +115,7 @@ class SettingsAjaxController {
 		wp_send_json_success( $wordpress_users );
 	}
 
-	public function ajax_get_wordpress_objects(): void {
+	public function ajax_wordpress_objects_options(): void {
 		if ( false === self::ajax_validate_has_firewall_admin_caps() ) {
 			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-api-firewall' ) ), 403 );
 		}

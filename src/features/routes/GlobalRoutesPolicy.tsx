@@ -1,177 +1,122 @@
 import { useState, useMemo } from '@wordpress/element';
-import Alert from '@mui/material/Alert';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Stack from '@mui/material/Stack';
 import Switch from '@mui/material/Switch';
 import Typography from '@mui/material/Typography';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import InputLabel from '@mui/material/InputLabel';
 
 import ObjectTypeSelect from '@components/ObjectTypeSelect';
-
 import type { RoutesSettings } from '@app-types/routes';
+import { usePortalContainer } from '@contexts/PortalContainerContext';
 
-const HTTP_METHODS = [
-	'GET',
-	'POST',
-	'PUT',
-	'DELETE',
-	'PATCH',
-] as const;
 
-type Props = {
-	settings: RoutesSettings;
-	onChange: <K extends keyof RoutesSettings>(
-		key: K,
-		value: RoutesSettings[K]
-	) => void;
+const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] as const;
+
+const SECURITY_DEFAULTS = {
+  routes_policy_default_hidden_routes:  true,
+  routes_policy_hidden_methods:         ['delete', 'put', 'patch'] as string[],
+  routes_policy_hidden_wp_objects:      [] as string[],
+  routes_policy_hidden_response_code:   '403' as const,
 };
 
-export default function GlobalRoutesPolicy({
-	settings,
-	onChange,
-}: Props): JSX.Element {
-	
-	// Check if security defaults are currently applied
-	const checkSecurityDefaultsApplied = useMemo(() => {
-		const hasDefaultHiddenRoutes = !! settings.routes_policy_default_hidden_routes;
-		const hasDelete = settings.routes_policy_hidden_methods?.includes('delete') ?? false;
-		const hasPut = settings.routes_policy_hidden_methods?.includes('put') ?? false;
-		const is403 = settings.routes_policy_hidden_response_code === '403';
-		
-		return hasDefaultHiddenRoutes && hasDelete && hasPut && is403;
-	}, [
-		settings.routes_policy_default_hidden_routes,
-		settings.routes_policy_hidden_methods,
-		settings.routes_policy_hidden_response_code
-	]);
-	
-	const [securityDefaultsApplied, setSecurityDefaultsApplied] = useState(
-		checkSecurityDefaultsApplied
-	);
+type Props = {
+  settings: RoutesSettings;
+  onChange: <K extends keyof RoutesSettings>(key: K, value: RoutesSettings[K]) => void;
+};
 
-	// Update the state whenever settings change
-	useMemo(() => {
-		setSecurityDefaultsApplied(checkSecurityDefaultsApplied);
-	}, [checkSecurityDefaultsApplied]);
-	
-	const applySecurityDefaults = () => {
-		const defaults = {
-			routes_policy_default_hidden_routes: true,
-			routes_policy_hidden_methods: ['delete', 'put', 'patch'],
-			routes_policy_hidden_wp_objects: [],
-			routes_policy_hidden_response_code: '403' as const,
-		};
-		
-		Object.entries(defaults).forEach(([key, value]) => {
-			onChange(key as keyof RoutesSettings, value);
-		});
-	};
+export default function GlobalRoutesPolicy({ settings, onChange }: Props): JSX.Element {
+  const portalContainer = usePortalContainer();
 
-	const removeSecurityDefaults = () => {
-		// Clear the security defaults
-		onChange('routes_policy_default_hidden_routes', false);
-		onChange('routes_policy_hidden_methods', []);
-		onChange('routes_policy_hidden_wp_objects', []);
-		onChange('routes_policy_hidden_response_code', '404' as const);
-	};
+  const securityDefaultsApplied = useMemo(() => (
+    !!settings.routes_policy_default_hidden_routes &&
+    ['delete', 'put', 'patch'].every((m) => settings.routes_policy_hidden_methods?.includes(m)) &&
+    settings.routes_policy_hidden_response_code === '403'
+  ), [settings]);
 
-	const toggleSecurityDefaults = () => {
-		if (securityDefaultsApplied) {
-			removeSecurityDefaults();
-		} else {
-			applySecurityDefaults();
-		}
-	};
+  const toggleSecurityDefaults = () => {
+    if (securityDefaultsApplied) {
+      onChange('routes_policy_default_hidden_routes', false);
+      onChange('routes_policy_hidden_methods', []);
+      onChange('routes_policy_hidden_response_code', '404' as const);
+    } else {
+      (Object.entries(SECURITY_DEFAULTS) as [keyof RoutesSettings, RoutesSettings[keyof RoutesSettings]][])
+        .forEach(([key, value]) => onChange(key, value));
+    }
+  };
 
-	const toggleMethod = (method: string) => {
-		const key = method.toLowerCase();
+  const toggleMethod = (method: string) => {
+    const key = method.toLowerCase();
+    const current = settings.routes_policy_hidden_methods ?? [];
+    onChange(
+      'routes_policy_hidden_methods',
+      current.includes(key) ? current.filter((m) => m !== key) : [...current, key]
+    );
+  };
 
-		const current =
-			settings.routes_policy_hidden_methods ?? [];
+  return (
+    <Stack spacing={3}>
+      <FormControlLabel
+        control={
+          <Switch
+            size="small"
+            checked={securityDefaultsApplied}
+            onChange={toggleSecurityDefaults}
+          />
+        }
+        label="Apply security defaults"
+      />
 
-		const next = current.includes(key)
-			? current.filter((m) => m !== key)
-			: [...current, key];
 
-		onChange('routes_policy_hidden_methods', next);
-	};
+      <Stack spacing={2} maxWidth={350}>
+        <Typography variant="h6">Block Types</Typography>
+        <ObjectTypeSelect
+          label="Select types"
+          value={settings.routes_policy_hidden_wp_objects ?? []}
+          onChange={(value: string[]) => onChange('routes_policy_hidden_wp_objects', value)}
+        />
+      </Stack>
 
-	return (
-		<Stack spacing={2}>
-			<Stack spacing={2}>
-				<FormControl>
-					<FormControlLabel
-						control={
-							<Switch
-								size="small"
-								checked={securityDefaultsApplied}
-								onChange={toggleSecurityDefaults}
-							/>
-						}
-						label="Apply Security Defaults"
-					/>
-				</FormControl>
-			</Stack>
+      <Stack spacing={2}>
+        <Typography variant="h6">Block Methods</Typography>
+        <Stack direction="row" gap={1} flexWrap="wrap">
+          {HTTP_METHODS.map((method) => (
+            <FormControlLabel
+              key={method}
+              label={method}
+              control={
+                <Switch
+                  size="small"
+                  checked={settings.routes_policy_hidden_methods?.includes(method.toLowerCase()) ?? false}
+                  onChange={() => toggleMethod(method)}
+                />
+              }
+            />
+          ))}
+        </Stack>
+      </Stack>
 
-			<Stack spacing={2}>
-				<Typography variant="h6">
-					Disable HTTP Methods
-				</Typography>
-				<Stack
-					direction="row"
-					gap={1}
-					flexWrap="wrap"
-				>
-					{HTTP_METHODS.map((method) => (
-						<FormControlLabel
-							key={method}
-							label={method}
-							sx={{
-								m: 0,
-								px: 1.5,
-								py: 0.5,
-							}}
-							control={
-								<Switch
-									size="small"
-									checked={settings.routes_policy_hidden_methods.includes(
-										method.toLowerCase()
-									)}
-									onChange={() =>
-										toggleMethod(
-											method
-										)
-									}
-								/>
-							}
-						/>
-					))}
-				</Stack>
-			</Stack>
+      <Stack spacing={2}>
+        <Typography variant="h6">Blocked Response</Typography>
+        <FormControl size="small" sx={{ maxWidth: 200 }}>
+          <InputLabel>Code</InputLabel>
+          <Select
+            MenuProps={ {
+						container:portalContainer
+					} }
+            value={settings.routes_policy_hidden_response_code ?? '404'}
+            label="Code"
+            onChange={(e) => onChange('routes_policy_hidden_response_code', e.target.value as '401' | '403' | '404')}
+          >
+            <MenuItem value="401">401 Unauthorized</MenuItem>
+            <MenuItem value="403">403 Forbidden</MenuItem>
+            <MenuItem value="404">404 Not Found</MenuItem>
+          </Select>
+        </FormControl>
+      </Stack>
 
-			<Stack spacing={2}>
-				<Typography variant="h6">
-					Disable Post Types and Taxonomies
-				</Typography>
-
-				<ObjectTypeSelect
-					label="Disable Object Types"
-					value={
-						settings.routes_policy_hidden_wp_objects
-					}
-					onChange={(value: string[]) =>
-						onChange(
-							'routes_policy_hidden_wp_objects',
-							value
-						)
-					}
-				/>
-			</Stack>
-
-			<Alert severity="info">
-				These settings can be overridden on a per-route basis in Route Policy Tree.
-			</Alert>
-
-		</Stack>
-	);
+    </Stack>
+  );
 }

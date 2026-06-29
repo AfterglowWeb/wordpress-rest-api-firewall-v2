@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from '@wordpress/element';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
 
 import type { RoutesSettings, RouteNode } from '@app-types/routes';
 
@@ -52,12 +53,15 @@ export default function Routes(): JSX.Element {
 
 	return (
 		<Stack flexGrow={1} spacing={3}>
-		<Paper sx={{p:2}} elevation={0}>
-			<GlobalRoutesPolicy settings={settings} onChange={update} />
-		</Paper>
-		<Paper sx={{p:2}} elevation={0}>
-			<RoutesPolicyTree tree={tree} onChange={setTree} />
-		</Paper>
+			<Paper sx={{p:2}} elevation={0}>
+				<GlobalRoutesPolicy settings={settings} onChange={update} />
+			</Paper>
+			<Paper sx={{p:2}} elevation={0}>
+				<RoutesPolicyTree tree={tree} onChange={setTree} />
+			</Paper>
+			<Alert severity="info">
+				Route Policy Tree settings take priority over global settings.
+			</Alert>
 		</Stack>
 	);
 }
