@@ -223,17 +223,12 @@ final class SettingsConfig {
 				'group'             => 'routes',
 			),
 
-			'routes_policy_hidden_routes'             => array(
+			'routes_policy_default_hidden_routes'             => array(
 				'label'             => esc_html__( 'Hidden routes', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Routes removed from discovery and unavailable to public clients.', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
-				'type'              => 'array',
-				'options'           => array(
-					'users',
-					'oembed',
-					'batch',
-				),
-				'sanitize_callback' => '',
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
 				'group'             => 'routes',
 			),
 

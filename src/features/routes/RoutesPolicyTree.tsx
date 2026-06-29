@@ -5,6 +5,7 @@ import Stack from '@mui/material/Stack';
 import Toolbar from '@mui/material/Toolbar';
 import Chip from '@mui/material/Chip';
 import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 
 import RefreshIcon from '@mui/icons-material/Refresh';
 
@@ -15,7 +16,8 @@ import RouteTreeItem from '@features/routes/RouteTreeItem';
 import type {
 	RouteNode,
 	RoutesPolicyTreeProps,
-	ToggleableSettingKey
+	ToggleableSettingKey,
+	InheritableSetting
 } from '@app-types/routes';
 
 type TreeState = {
@@ -52,42 +54,53 @@ function countCustomRules(
 	return count;
 }
 
-function normalizeTree(tree: RouteNode):TreeState {
-	const nodes: Record<string, RouteNode> = {};
+const defaultSetting: InheritableSetting = {
+  value: false,
+};
 
-	function walk(node: RouteNode) {
-		nodes[node.id] = node;
-		node.children?.forEach(walk);
-	}
+function wrapTree(nodes: RouteNode[]): RouteNode {
+  return {
+    id: '__root__',
+    label: 'root',
+    path: '/',
+    settings: {
+      protect: { ...defaultSetting },
+      disabled: { ...defaultSetting },
+      tags: [],
+    },
+    children: nodes,
+  };
+}
 
-	walk(tree);
-
-	return {
-		rootId: tree.id,
-		nodes,
-	};
+function normalizeTree(tree: RouteNode): TreeState {
+  const nodes: Record<string, RouteNode> = {};
+  function walk(node: RouteNode) {
+    nodes[node.id] = node;
+    node.children?.forEach(walk);
+  }
+  walk(tree);
+  return { rootId: tree.id, nodes };
 }
 
 
-export default function RoutesPolicyTree({
-	tree,
-	onChange,
-}: RoutesPolicyTreeProps): JSX.Element {
-
-	const [state, setState] = useState(() => normalizeTree(tree));
+export default function RoutesPolicyTree({ tree, onChange }: RoutesPolicyTreeProps): JSX.Element {
+  	const [state, setState] = useState(() => normalizeTree(wrapTree(tree)));
 
 	const [expandedItems, setExpandedItems] =
 		useState<string[]>([]);
 
-	const customCount = countCustomRules(tree);
-	
+	const customCount = useMemo(
+	() => tree.reduce((acc, node) => acc + countCustomRules(node), 0),
+	[tree]
+	);	
+
 	const getNode = useCallback(
 		(id: string) => state.nodes[id],
 		[state.nodes]
 	);
 
 
-		const memoTree = useMemo(() => {
+	const memoTree = useMemo(() => {
 		const nodes = state.nodes;
 
 		function build(id: string): RouteNode {
@@ -102,11 +115,15 @@ export default function RoutesPolicyTree({
 		return build(state.rootId);
 	}, [state]);
 
+	
+
 	const toggleSetting = useCallback(
 		(id: string, key: ToggleableSettingKey) => {
+			
 			setState((prev) => {
 				const node = prev.nodes[id];
 				if (!node) return prev;
+
 
 				const updatedNode: RouteNode = {
 					...node,
@@ -134,10 +151,13 @@ export default function RoutesPolicyTree({
 
 	return (
 		<Stack spacing={2}>
-			<Toolbar
-				disableGutters
-				sx={{ gap: 2 }}
+			<Typography
+				variant="subtitle1"
+				fontWeight={600}
 			>
+				Route Policy Tree
+			</Typography>
+			<Stack flexDirection={"row"} gap={2}>
 				<Chip
 					size="small"
 					label={`${customCount} custom rules`}
@@ -150,14 +170,14 @@ export default function RoutesPolicyTree({
 				>
 					Refresh
 				</Button>
-			</Toolbar>
+			</Stack>
 			<RoutePolicyTreeContext.Provider
 				value={{
 					toggleSetting,
 					getNode
 				}}>
 				<RichTreeView<RouteNode>
-					items={[memoTree]}
+					items={memoTree.children ?? []}
 					getItemId={(item) => item.id}
 					getItemLabel={(item) => item.label}
 					expandedItems={expandedItems}

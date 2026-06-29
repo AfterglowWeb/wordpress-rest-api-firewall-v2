@@ -1,4 +1,5 @@
-import Divider from '@mui/material/Divider';
+import { useState, useMemo } from 'react';
+import Alert from '@mui/material/Alert';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Stack from '@mui/material/Stack';
@@ -29,17 +30,57 @@ export default function GlobalRoutesPolicy({
 	settings,
 	onChange,
 }: Props): JSX.Element {
-	const toggleHiddenRoute = (
-		route: 'users' | 'oembed' | 'batch'
-	) => {
-		const current =
-			settings.routes_policy_hidden_routes ?? [];
+	
+	// Check if security defaults are currently applied
+	const checkSecurityDefaultsApplied = useMemo(() => {
+		const hasDefaultHiddenRoutes = !! settings.routes_policy_default_hidden_routes;
+		const hasDelete = settings.routes_policy_hidden_methods?.includes('delete') ?? false;
+		const hasPut = settings.routes_policy_hidden_methods?.includes('put') ?? false;
+		const is403 = settings.routes_policy_hidden_response_code === '403';
+		
+		return hasDefaultHiddenRoutes && hasDelete && hasPut && is403;
+	}, [
+		settings.routes_policy_default_hidden_routes,
+		settings.routes_policy_hidden_methods,
+		settings.routes_policy_hidden_response_code
+	]);
+	
+	const [securityDefaultsApplied, setSecurityDefaultsApplied] = useState(
+		checkSecurityDefaultsApplied
+	);
 
-		const next = current.includes(route)
-			? current.filter((r) => r !== route)
-			: [...current, route];
+	// Update the state whenever settings change
+	useMemo(() => {
+		setSecurityDefaultsApplied(checkSecurityDefaultsApplied);
+	}, [checkSecurityDefaultsApplied]);
+	
+	const applySecurityDefaults = () => {
+		const defaults = {
+			routes_policy_default_hidden_routes: true,
+			routes_policy_hidden_methods: ['delete', 'put', 'patch'],
+			routes_policy_hidden_wp_objects: [],
+			routes_policy_hidden_response_code: '403' as const,
+		};
+		
+		Object.entries(defaults).forEach(([key, value]) => {
+			onChange(key as keyof RoutesSettings, value);
+		});
+	};
 
-		onChange('routes_policy_hidden_routes', next);
+	const removeSecurityDefaults = () => {
+		// Clear the security defaults
+		onChange('routes_policy_default_hidden_routes', false);
+		onChange('routes_policy_hidden_methods', []);
+		onChange('routes_policy_hidden_wp_objects', []);
+		onChange('routes_policy_hidden_response_code', '404' as const);
+	};
+
+	const toggleSecurityDefaults = () => {
+		if (securityDefaultsApplied) {
+			removeSecurityDefaults();
+		} else {
+			applySecurityDefaults();
+		}
 	};
 
 	const toggleMethod = (method: string) => {
@@ -56,110 +97,33 @@ export default function GlobalRoutesPolicy({
 	};
 
 	return (
-		<Stack spacing={2} maxWidth={640}>
-			{/* ROUTES */}
+		<Stack spacing={2}>
+			<Alert severity="info">
+				These settings can be overridden on a per-route basis in Route Policy Tree.
+			</Alert>
 
 			<Stack spacing={2}>
-				<Stack spacing={0}>
-					<Typography
-						variant="subtitle1"
-						fontWeight={600}
-					>
-						Disable Routes
-					</Typography>
-
-					<Typography
-						variant="body2"
-						color="text.secondary"
-					>
-						WordPress Core routes require
-						specific handling to be properly
-						disabled.
-					</Typography>
-				</Stack>
-
 				<FormControl>
 					<FormControlLabel
 						control={
 							<Switch
 								size="small"
-								checked={settings.routes_policy_hidden_routes.includes(
-									'users'
-								)}
-								onChange={() =>
-									toggleHiddenRoute(
-										'users'
-									)
-								}
+								checked={securityDefaultsApplied}
+								onChange={toggleSecurityDefaults}
 							/>
 						}
-						label="Disable /wp/v2/users/* Routes"
+						label="Apply Security Defaults"
 					/>
 				</FormControl>
-
-				<FormControl>
-					<FormControlLabel
-						control={
-							<Switch
-								size="small"
-								checked={settings.routes_policy_hidden_routes.includes(
-									'oembed'
-								)}
-								onChange={() =>
-									toggleHiddenRoute(
-										'oembed'
-									)
-								}
-							/>
-						}
-						label="Disable oembed/1.0/* Routes"
-					/>
-				</FormControl>
-
-				<FormControl>
-					<FormControlLabel
-						control={
-							<Switch
-								size="small"
-								checked={settings.routes_policy_hidden_routes.includes(
-									'batch'
-								)}
-								onChange={() =>
-									toggleHiddenRoute(
-										'batch'
-									)
-								}
-							/>
-						}
-						label="Disable batch/v1 Routes"
-					/>
-				</FormControl>
+				<Typography variant="caption" color="text.secondary">
+					Disables /wp/v2/users/*, oembed/1.0/*, batch/v1/*, /wp-site-health/v1/*, /wp-abilities/v1/* routes and DELETE, PUT, PATCH methods.
+				</Typography>
 			</Stack>
 
-			<Divider />
-
-			{/* METHODS */}
-
 			<Stack spacing={2}>
-				<Stack spacing={0}>
-					<Typography
-						variant="subtitle1"
-						fontWeight={600}
-					>
-						Disable HTTP Methods
-					</Typography>
-
-					<Typography
-						variant="body2"
-						color="text.secondary"
-					>
-						Blocks an HTTP method for all
-						traffic to this application —
-						anonymous and authenticated
-						alike.
-					</Typography>
-				</Stack>
-
+				<Typography variant="subtitle1" fontWeight={600}>
+					Disable HTTP Methods
+				</Typography>
 				<Stack
 					direction="row"
 					gap={1}
@@ -192,38 +156,19 @@ export default function GlobalRoutesPolicy({
 				</Stack>
 			</Stack>
 
-			<Divider />
-
-			{/* POST TYPES */}
-
 			<Stack spacing={2}>
-				<Stack spacing={0}>
-					<Typography
-						variant="subtitle1"
-						fontWeight={600}
-					>
-						Disable Post Types and
-						Taxonomies
-					</Typography>
-
-					<Typography
-						variant="body2"
-						color="text.secondary"
-					>
-						Disables post types and
-						taxonomies globally across all
-						routes.
-					</Typography>
-				</Stack>
+				<Typography variant="subtitle1" fontWeight={600}>
+					Disable Post Types and Taxonomies
+				</Typography>
 
 				<ObjectTypeSelect
 					label="Disable Object Types"
 					value={
-						settings.routes_policy_hidden_post_types
+						settings.routes_policy_hidden_wp_objects
 					}
 					onChange={(value: string[]) =>
 						onChange(
-							'routes_policy_hidden_post_types',
+							'routes_policy_hidden_wp_objects',
 							value
 						)
 					}

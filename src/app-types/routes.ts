@@ -1,48 +1,37 @@
 export type InheritableSetting = {
-	value: boolean;
-	inherited?: boolean;
-	overridden?: boolean;
+  value: boolean;
+  inherited?: boolean;
+  overridden?: boolean;
 };
 
 export type RouteSettings = {
-	protect: InheritableSetting;
-	disabled: InheritableSetting;
-	rate_limit: InheritableSetting;
-
-	custom: boolean;
-	locked: boolean;
-
-	tags: string[];
+  disabled:  InheritableSetting;  // bloquer la route
+  protect:   InheritableSetting;  // restreindre aux users autorisés
+  tags:      string[];
+  custom?:   boolean;
 };
 
 export type RouteNode = {
-	id: string;
-	label: string;
-	path: string;
-
-	method?: string;
-	route?: string;
-
-	settings: RouteSettings;
-
-	children?: RouteNode[];
+  id:          string;
+  label:       string;
+  path:        string;
+  method?:     string;
+  route?:      string;
+  params?:     { name: string; regex: string }[];
+  isMethod?:   boolean;
+  callback?:   string;
+  permission?: { type: string; callback: string | null };
+  settings:    RouteSettings;
+  children?:   RouteNode[];
 };
 
+// RoutesSettings reste pour les options globales du plugin
 export type RoutesSettings = {
-	routes_policy_enabled: boolean;
-
-	routes_policy_rules: RouteNode;
-
-	routes_policy_hidden_routes: string[];
-
-	routes_policy_hidden_methods: string[];
-
-	routes_policy_hidden_post_types: string[];
-
-	routes_policy_hidden_response_code:
-		| '401'
-		| '403'
-		| '404';
+  routes_policy_enabled:           boolean;
+  routes_policy_default_hidden_routes:     boolean;
+  routes_policy_hidden_methods:    string[];
+  routes_policy_hidden_wp_objects: string[];
+  routes_policy_hidden_response_code: '401' | '403' | '404';
 };
 
 export type Props = {
@@ -51,17 +40,13 @@ export type Props = {
 };
 
 export type RoutesPolicyTreeProps = {
-	tree: RouteNode;
-	onChange: (tree: RouteNode) => void;
+  tree:     RouteNode[];
+  onChange: (tree: RouteNode[]) => void;
 };
 
 export type ToggleableSettingKey = {
-	[K in keyof RouteSettings]:
-		RouteSettings[K] extends
-			| InheritableSetting
-			| undefined
-			? K
-			: never;
+  [K in keyof RouteSettings]-?:
+    RouteSettings[K] extends InheritableSetting ? K : never;
 }[keyof RouteSettings];
 
 export type RoutePolicyTreeContextType = {
