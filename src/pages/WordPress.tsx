@@ -350,7 +350,7 @@ export default function WordPress() {
 
 	return (
 		<Stack>
-			<Stack maxWidth={600} flexDirection={"column"} gap={2}>
+			<Stack maxWidth={650} spacing={3}>
 				
 				<Paper sx={{p:2}} elevation={0}>
 					<Stack flexDirection={"column"} gap={2}>

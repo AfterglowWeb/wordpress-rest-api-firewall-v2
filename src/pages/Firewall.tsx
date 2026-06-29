@@ -518,8 +518,8 @@ export default function Firewall(): JSX.Element {
   ], [wpUsers]);
 
   return (
-    <Box>
-      <Paper sx={{ p: 2, mb: 2 }} elevation={0}>        
+    <Stack spacing={3}>
+      <Paper sx={{ p: 2 }} elevation={0}>        
         <Stack flexDirection="column" gap={2}>
          
           <FormControlLabel
@@ -566,7 +566,7 @@ export default function Firewall(): JSX.Element {
 
       </Paper>
 
-      <Paper sx={{ p: 2, mb: 2 }} elevation={0}>
+      <Paper sx={{ p: 2 }} elevation={0}>
         <Typography variant="h6" mb={2}>IPs Management</Typography>
         <DataGrid
           rows={rows}
@@ -589,7 +589,7 @@ export default function Firewall(): JSX.Element {
         />
       </Paper>
 
-      <Paper sx={{ p: 2, mb: 2 }} elevation={0}>
+      <Paper sx={{ p: 2 }} elevation={0}>
         <Typography variant="h6" mb={2}>Emergency Access</Typography>
         <TextField
           label="Emergency bypass token hash"
@@ -612,6 +612,6 @@ export default function Firewall(): JSX.Element {
         wpUsers={wpUsers}
         wpUsersLoading={wpUsersLoading}
       />
-    </Box>
+    </Stack>
   );
 }

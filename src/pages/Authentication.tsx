@@ -339,10 +339,9 @@ export default function Authentication(): JSX.Element {
   ];
 
   return (
-    <Stack flexDirection="column" gap={2}>
-      <Paper sx={{ p: 2, mb: 2 }} elevation={0}>
+    <Stack spacing={3}>
+      <Paper sx={{ p: 2 }} elevation={0}>
         <Stack flexDirection="column" gap={2}>
-
           <FormControlLabel
             label="Enforce Authentication"
             control={
@@ -384,8 +383,6 @@ export default function Authentication(): JSX.Element {
 
         </Stack>
       </Paper>
-
-     
 
       <Paper sx={{ p: 2 }} elevation={0}>
         <Typography variant="h6" mb={2}>Authorized users</Typography>
