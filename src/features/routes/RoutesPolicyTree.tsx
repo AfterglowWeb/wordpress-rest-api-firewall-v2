@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from '@wordpress/element';
 import { RoutePolicyTreeContext } from '@contexts/RoutePolicyTreeContext';
 
 import Stack from '@mui/material/Stack';
@@ -151,10 +151,7 @@ export default function RoutesPolicyTree({ tree, onChange }: RoutesPolicyTreePro
 
 	return (
 		<Stack spacing={2}>
-			<Typography
-				variant="subtitle1"
-				fontWeight={600}
-			>
+			<Typography variant="h6">
 				Route Policy Tree
 			</Typography>
 			<Stack flexDirection={"row"} gap={2}>

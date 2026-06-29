@@ -17,16 +17,16 @@ class DisableBase {
 
 	private function __construct() {
 
-		if ( true === SettingsRepository::read_option( 'theme_disable_xmlrpc' ) ) {
+		if ( true === SettingsRepository::read_option( 'disable_xmlrpc' ) ) {
 			add_filter( 'xmlrpc_enabled', '__return_false' );
 		}
 
-		if ( true === SettingsRepository::read_option( 'theme_disable_sitemap' ) ) {
+		if ( true === SettingsRepository::read_option( 'disable_sitemap' ) ) {
 			add_filter( 'wp_sitemaps_enabled', '__return_false' );
 			remove_action( 'init', 'wp_sitemaps_get_server' );
 		}
 
-		if ( true === SettingsRepository::read_option( 'theme_disable_pingbacks' ) ) {
+		if ( true === SettingsRepository::read_option( 'disable_pingbacks' ) ) {
 			add_filter(
 				'wp_headers',
 				function ( $headers ) {

@@ -8,7 +8,7 @@ import Dashboard from '@pages/Dashboard';
 import Authentication from '@pages/Authentication';
 import Firewall from '@pages/Firewall';
 import Routes from '@pages/Routes';
-//import WordPress from '@pages/WordPress';
+import WordPress from '@pages/WordPress';
 import Logs from '@pages/Logs';
 
 export default function AdminLayout() {
@@ -26,7 +26,7 @@ export default function AdminLayout() {
 
 					{panel === 'routes' && <Routes />}
 
-					{/*panel === 'wordpress' && <WordPress />*/}
+					{panel === 'wordpress' && <WordPress />}
 
 					{panel === 'logs' && <Logs />}
 				</Stack>
