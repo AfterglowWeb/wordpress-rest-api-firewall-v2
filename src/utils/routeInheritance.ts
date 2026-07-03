@@ -1,12 +1,12 @@
-// @utils/routeInheritance.ts
-
 import type { RouteNode, RouteSettings, RoutesSettings, InheritableSetting } from '@app-types/routes';
 
-const DEFAULT_HIDDEN_NAMESPACES = ['wp/v2/users', 'oembed/1.0', 'batch/v1'];
-
-function isGloballyDisabled(node: RouteNode, globals: RoutesSettings): boolean {
+function isGloballyDisabled(
+  node: RouteNode,
+  globals: RoutesSettings,
+  defaultHiddenNamespaces: string[],
+): boolean {
   if (globals.routes_policy_default_hidden_routes) {
-    if (DEFAULT_HIDDEN_NAMESPACES.some((ns) => node.path.startsWith(`/${ns}`))) {
+    if (defaultHiddenNamespaces.some((ns) => node.path.startsWith(`/${ns}`))) {
       return true;
     }
   }
@@ -31,13 +31,14 @@ function resolveNode(
   parentDisabled: InheritableSetting,
   parentProtect: InheritableSetting,
   globals: RoutesSettings,
+  defaultHiddenNamespaces: string[],
 ): RouteNode {
   const rawDisabled = (node.settings?.disabled as any) === true || (node.settings?.disabled as any)?.value === true;
   const rawProtect  = (node.settings?.protect  as any) === true || (node.settings?.protect  as any)?.value  === true;
   const isOverriddenDisabled = (node.settings?.disabled as any)?.overridden === true;
   const isOverriddenProtect  = (node.settings?.protect  as any)?.overridden === true;
 
-  const globallyDisabled = isGloballyDisabled(node, globals);
+  const globallyDisabled = isGloballyDisabled(node, globals, defaultHiddenNamespaces);
 
   let disabled: InheritableSetting;
   if (globallyDisabled) {
@@ -66,7 +67,7 @@ function resolveNode(
   };
 
   const resolvedChildren = node.children?.map((child) =>
-    resolveNode(child, disabled, protect, globals)
+    resolveNode(child, disabled, protect, globals, defaultHiddenNamespaces)
   );
 
   return {
@@ -79,7 +80,10 @@ function resolveNode(
 export function resolveInheritance(
   tree: RouteNode[],
   globals: RoutesSettings,
+  defaultHiddenNamespaces: string[] = [],
 ): RouteNode[] {
   const noInheritance: InheritableSetting = { value: false, inherited: false };
-  return tree.map((node) => resolveNode(node, noInheritance, noInheritance, globals));
+  return tree.map((node) =>
+    resolveNode(node, noInheritance, noInheritance, globals, defaultHiddenNamespaces)
+  );
 }

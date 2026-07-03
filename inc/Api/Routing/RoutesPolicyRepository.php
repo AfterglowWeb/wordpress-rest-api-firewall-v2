@@ -7,6 +7,14 @@ use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
 class RoutesPolicyRepository {
 
 	protected static $instance = null;
+	const DEFAULT_HIDDEN_ROUTES = ['wp/v2/users', 'oembed/1.0', 'batch/v1', 'wp-site-health/v1', 'wp-abilities/v1'];
+	const GLOBAL_SETTINGS_DEFAULTS = array(
+		'routes_policy_enabled'               => false,
+		'routes_policy_default_hidden_routes' => false,
+		'routes_policy_hidden_methods'        => array(),
+		'routes_policy_hidden_wp_objects'     => array(),
+		'routes_policy_hidden_response_code'  => '404',
+	);
 
 	public static function get_instance() {
 		if ( null === static::$instance ) {
@@ -15,12 +23,58 @@ class RoutesPolicyRepository {
 		return static::$instance;
 	}
 
+	public static function get_global_settings(): array {
+		$saved = SettingsRepository::read_option( 'general' );
+
+		if ( ! is_array( $saved ) ) {
+			return self::GLOBAL_SETTINGS_DEFAULTS;
+		}
+
+		return array_merge( self::GLOBAL_SETTINGS_DEFAULTS, $saved );
+	}
+
+	public static function save_global_settings( array $settings ): bool {
+		$sanitized = array_intersect_key( $settings, self::GLOBAL_SETTINGS_DEFAULTS );
+		return SettingsRepository::update_option( 'general', $sanitized );
+	}
+
+	public static function save_all_settings( array $settings ): bool {
+
+		$global_settings = isset($settings['settings']) ? $settings['settings'] : array();
+		$tree            = isset($settings['tree']) ? $settings['tree'] : array();
+
+		$global_saved = self::save_global_settings( $global_settings );
+		$tree_saved   = self::save_routes_policy_tree( $tree );
+
+		return $global_saved && $tree_saved;
+	}
+
+	public static function get_settings_payload(): array {
+		return array(
+			'tree'                   => self::get_routes_policy_tree(),
+			'settings'               => self::get_global_settings(),
+			'default_hidden_routes'  => self::get_default_hidden_routes(),
+		);
+	}
+
 	public static function get_routes_policy_tree(): array {
 		$flat   = self::list_all_rest_routes();
 		$tree   = self::build_policy_tree( $flat );
 		$diff   = self::get_diff();
 		$result = self::apply_diff( $tree, $diff );
 		return $result;
+	}
+
+	public static function get_default_hidden_routes(): array {
+		$default_hidden_routes = apply_filters('bromate_rest_api_firewall_default_hidden_routes', self::DEFAULT_HIDDEN_ROUTES);
+		if( !is_array( $default_hidden_routes ) || empty( $default_hidden_routes) ) {
+			return  [];
+		}
+		return array_map( 'sanitize_text_field', $default_hidden_routes );
+	}
+
+	public static function sanitize_routes_policy_tree( array $tree ): array {
+		return $tree;
 	}
 
 	public static function save_routes_policy_tree( array $tree ): bool {
@@ -33,18 +87,19 @@ class RoutesPolicyRepository {
 			'updated_at' => $now,
 		);
 
-		return SettingsRepository::update_option( 'policy', $data );
+		$result = SettingsRepository::update_option( 'routes_policy_tree', $data );
+
+		return $result !== false;
 	}
 
 	public static function get_diff(): array {
 		$default = array(
 			'nodes'  => array(),
 			'routes' => array(),
-			'users'  => array(),
 		);
 
 
-			$saved = SettingsRepository::read_option( 'policy' );
+			$saved = SettingsRepository::read_option( 'routes_policy_tree' );
 			return is_array( $saved ) ? $saved : $default;
 
 
@@ -126,27 +181,8 @@ class RoutesPolicyRepository {
 				}
 			}
 
-			if ( isset( $node['settings']['rate_limit'] ) ) {
-				$rate_limit = $node['settings']['rate_limit'];
-				if ( is_array( $rate_limit ) && isset( $rate_limit['value'] ) ) {
-					if ( ! ( $rate_limit['inherited'] ?? false ) ) {
-						$settings['rate_limit'] = (bool) $rate_limit['value'];
-						if ( $rate_limit['overridden'] ?? false ) {
-							$settings['rate_limit_overridden'] = true;
-						}
-					}
-				}
-			}
-
 			$is_method = isset( $node['isMethod'] ) && $node['isMethod'];
 
-			if ( ! empty( $node['settings']['custom'] ) ) {
-				$settings['custom'] = true;
-			}
-
-			if ( ! empty( $node['settings']['locked'] ) ) {
-				$settings['locked'] = true;
-			}
 
 			if ( ! empty( $settings ) ) {
 				if ( $is_method ) {
@@ -366,8 +402,6 @@ class RoutesPolicyRepository {
 						$current_node['routes'][ $existing_index ]['settings'] ?? array(),
 						array(
 							'protect'         => false,
-							'rate_limit'      => false,
-							'rate_limit_time' => false,
 							'disabled'        => false,
 							'tags'            => array(),
 						)
@@ -390,8 +424,6 @@ class RoutesPolicyRepository {
 			'params'     => $route['params'],
 			'settings'   => array(
 				'protect'         => false,
-				'rate_limit'      => false,
-				'rate_limit_time' => false,
 				'disabled'        => false,
 				'tags'            => array(),
 			),

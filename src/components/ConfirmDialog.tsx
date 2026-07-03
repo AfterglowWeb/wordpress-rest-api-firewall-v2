@@ -1,5 +1,5 @@
 import { useEffect } from '@wordpress/element';
-
+import { __ } from '@wordpress/i18n';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -16,12 +16,8 @@ import { useDialog, DIALOG_TYPES } from '../contexts/DialogContext';
 const TEXT_DOMAIN = 'bromate-rest-api-firewall';
 
 export default function ConfirmDialog(): JSX.Element {
-    const { __ } = wp.i18n;
     const { dialog, closeDialog, resetDialog } = useDialog();
-
     const { open, type, title, content, confirmLabel, cancelLabel, onConfirm, onCancel, autoClose } = dialog;
-
-    // ─── Auto-close ───────────────────────────────────────────────────────────
 
     useEffect(() => {
         if (!open || !autoClose || autoClose <= 0) return;
@@ -29,8 +25,6 @@ export default function ConfirmDialog(): JSX.Element {
         const timer = setTimeout(closeDialog, autoClose);
         return () => clearTimeout(timer);
     }, [open, autoClose, closeDialog]);
-
-    // ─── Handlers ─────────────────────────────────────────────────────────────
 
     const handleClose = (_: unknown, reason?: string) => {
         if (reason === 'backdropClick' && type === DIALOG_TYPES.LOADING) return;
@@ -43,8 +37,6 @@ export default function ConfirmDialog(): JSX.Element {
         closeDialog();
         onConfirm?.();
     };
-
-    // ─── Rendering helpers ────────────────────────────────────────────────────
 
     const getIcon = (): JSX.Element | null => {
         switch (type) {
@@ -123,8 +115,6 @@ export default function ConfirmDialog(): JSX.Element {
             </DialogActions>
         );
     };
-
-    // ─── Render ───────────────────────────────────────────────────────────────
 
     return (
         <Dialog

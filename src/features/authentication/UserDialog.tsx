@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from '@wordpress/element';
+import { __, sprintf } from '@wordpress/i18n';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, TextField, Stack, Autocomplete, CircularProgress,
@@ -188,13 +189,13 @@ setNewReferrer(sharedReferrer);
   return (
     <Dialog container={portalContainer} open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>
-        {isEditing ? `Edit — ${user?.display_name}` : 'Add authorized user'}
+        {isEditing ? sprintf(__('Edit — %s', 'bromate-rest-api-firewall' ), user?.display_name) 
+        : __('Add authorized user', 'bromate-rest-api-firewall')}
       </DialogTitle>
 
       <DialogContent dividers>
         <Stack direction="column" gap={2.5}>
 
-          {/* ── WP user picker ── */}
           {!isEditing && (
             <Autocomplete<AuthorizedUser>
               options={wpUsers}
@@ -241,10 +242,9 @@ setNewReferrer(sharedReferrer);
             />
           )}
 
-          {/* ── Status + profile link ── */}
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             <FormControlLabel
-              label="User Active"
+              label={__('User Active', 'bromate-rest-api-firewall')}
               control={
                 <Switch
                   checked={form.status === 'active'}
@@ -258,36 +258,36 @@ setNewReferrer(sharedReferrer);
               endIcon={<OpenInNewIcon />}
               href={selectedWpUser?.admin_url ?? form.admin_url}
               target="_blank"
-            >Profile</Button>
+            >{__('Profile', 'bromate-rest-api-firewall')}</Button>
           </Stack>
 
           
           {/* ── Readonly user info ── */}
           <Stack direction="row" gap={3}>
-            <ReadonlyField label="ID"  value={selectedWpUser?.id.toString() ?? '' } />
+            <ReadonlyField label={__('ID', 'bromate-rest-api-firewall')}  value={selectedWpUser?.id.toString() ?? '' } />
             <Stack >
-              <ReadonlyField label="Name"  value={selectedWpUser?.display_name ?? form.display_name} />
+              <ReadonlyField label={__('Name', 'bromate-rest-api-firewall')}  value={selectedWpUser?.display_name ?? form.display_name} />
               {selectedWpUser?.current_user && (
-                  <Box mt={0.5}><Chip label="Me" size="small" color="primary" sx={{ height: 18, fontSize: 11 }} /></Box>
+                  <Box mt={0.5}><Chip label={__('Me', 'bromate-rest-api-firewall')} size="small" color="primary" sx={{ height: 18, fontSize: 11 }} /></Box>
                 )}
             </Stack>
-            <ReadonlyField label="Email" value={selectedWpUser?.email ?? form.email} />
-            <ReadonlyField label="Roles" value={(selectedWpUser?.roles ?? form.roles).join(', ')} />
+            <ReadonlyField label={__('Email', 'bromate-rest-api-firewall')} value={selectedWpUser?.email ?? form.email} />
+            <ReadonlyField label={__('Roles', 'bromate-rest-api-firewall')} value={(selectedWpUser?.roles ?? form.roles).join(', ')} />
           </Stack>
 
           <Divider />
 
           {/* ── JWT + expiry ── */}
           <TextField
-            label="JWT sub claim" value={form.jwt_claim_sub} disabled={noUser} size="small"
+            label={__('JWT sub claim', 'bromate-rest-api-firewall')} value={form.jwt_claim_sub} disabled={noUser} size="small"
             onChange={(e) => updateField('jwt_claim_sub', e.target.value)}
-            helperText="Expected value in the incoming token's `sub` claim"
+            helperText={__('Expected value in the incoming token\'s `sub` claim', 'bromate-rest-api-firewall')}
           />
           <TextField
-            label="Authorization expires" type="date" value={form.expires_at || ''}
+            label={__('Authorization expires', 'bromate-rest-api-firewall')} type="date" value={form.expires_at || ''}
             disabled={noUser} size="small"
             onChange={(e) => updateField('expires_at', e.target.value)}
-            helperText="Leave empty for no expiration"
+            helperText={__('Leave empty for no expiration', 'bromate-rest-api-firewall')}
             slotProps={{ inputLabel: { shrink: true } }}
           />
 
@@ -318,7 +318,7 @@ setNewReferrer(sharedReferrer);
             )}
             <Stack direction="column" gap={1.5}>
               <TextField
-                label="IPs to whitelist (one per line)"
+                label={__('IPs to whitelist (one per line)', 'bromate-rest-api-firewall')}
                 placeholder={'203.0.113.1\n203.0.113.0/24'}
                 value={newIpValue}
                 onChange={(e) => setNewIpValue(e.target.value)}
@@ -327,13 +327,13 @@ setNewReferrer(sharedReferrer);
                 disabled={noUser}
               />
               <TextField
-                label="Allowed origin (optional)"
+                label={__('Allowed origin (optional)', 'bromate-rest-api-firewall')}
                 placeholder="https://app.example.com"
                 value={newReferrer}
                 onChange={(e) => setNewReferrer(e.target.value)}
                 fullWidth size="small"
                 disabled={noUser}
-                helperText="If set, all IPs above are restricted to this origin"
+                helperText={__('If set, all IPs above are restricted to this origin', 'bromate-rest-api-firewall')}
               />
               {ipError && (
                 <Alert severity="error" variant="outlined">
@@ -347,9 +347,16 @@ setNewReferrer(sharedReferrer);
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} color="inherit" disabled={saving}>Cancel</Button>
+        <Button
+        onClick={onClose} 
+        disableElevation 
+        color="inherit" 
+        disabled={saving}>
+          {__('Cancel', 'bromate-rest-api-firewall')}
+        </Button>
         <Button
           onClick={handleSave}
+          disableElevation
           variant="contained"
           disabled={!isValid || saving}
           startIcon={saving ? <CircularProgress size={14} color="inherit" /> : undefined}

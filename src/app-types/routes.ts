@@ -39,6 +39,7 @@ export type RoutesPolicyTreeProps = {
   tree:     RouteNode[];
   globals:  RoutesSettings;   // ← ajout
   onChange: (tree: RouteNode[]) => void;
+  defaultHiddenRoutes: string[];
 };
 
 export type ToggleableSettingKey = {

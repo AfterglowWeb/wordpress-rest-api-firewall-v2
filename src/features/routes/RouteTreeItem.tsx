@@ -20,6 +20,7 @@ import {
   type TreeItemProps,
 } from '@mui/x-tree-view/TreeItem';
 import { TreeItemIcon } from '@mui/x-tree-view/TreeItemIcon';
+import { usePortalContainer } from '@contexts/PortalContainerContext';
 
 function PermissionBadge({ type }: { type?: string }) {
   if (!type) return null;
@@ -30,6 +31,7 @@ function PermissionBadge({ type }: { type?: string }) {
 
 export default function RouteTreeItem(props: TreeItemProps) {
   const { id, itemId, label, disabled, children } = props;
+  const portalContainer = usePortalContainer();
 
   const { toggleSetting, getNode } = useRoutePolicyTreeContext();
   const node = getNode(itemId);
@@ -79,7 +81,7 @@ export default function RouteTreeItem(props: TreeItemProps) {
           direction="row" alignItems="center" spacing={0.5} sx={{ ml: 1 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <Tooltip title={isInheritedDisabled ? 'Disabled (inherited)' : 'Disable route'}>
+          <Tooltip slotProps={{popper:{container: portalContainer}}} title={isInheritedDisabled ? 'Disabled (inherited)' : 'Disable route'}>
             <Stack direction="row" alignItems="center" spacing={0.25}>
               <BlockIcon fontSize="inherit"
                 sx={{ color: isDisabled ? 'error.main' : 'text.disabled' }} />
@@ -93,7 +95,7 @@ export default function RouteTreeItem(props: TreeItemProps) {
             </Stack>
           </Tooltip>
 
-          <Tooltip title={isInheritedProtect ? 'Protected (inherited)' : 'Restrict to authorized users'}>
+          <Tooltip slotProps={{popper:{container: portalContainer}}} title={isDisabled ? 'Route is disabled' : (isInheritedProtect ? 'Protected (inherited)' : 'Restrict to authorized users')}>
             <Stack direction="row" alignItems="center" spacing={0.25}>
               <LockIcon fontSize="inherit"
                 sx={{ color: isProtect ? 'warning.main' : 'text.disabled' }} />
@@ -102,7 +104,7 @@ export default function RouteTreeItem(props: TreeItemProps) {
                 checked={isProtect}
                 onChange={() => toggleSetting(itemId, 'protect')}
                 onClick={(e) => e.stopPropagation()}
-                disabled={isInheritedProtect}
+                disabled={isInheritedProtect || isDisabled}
               />
             </Stack>
           </Tooltip>

@@ -2,6 +2,7 @@
 
 use Bromate\RestApiFirewall\Security\Ip\CidrMatcher;
 use Bromate\RestApiFirewall\Security\Ip\GeoIpApi;
+use Bromate\RestApiFirewall\Api\Routing\RoutesPolicyRepository;
 
 final class SettingsConfig {
 
@@ -211,7 +212,7 @@ final class SettingsConfig {
 				'group'             => 'routes',
 			),
 
-			'routes_policy_rules'                     => array(
+			'routes_policy_tree'                     => array(
 				'label'             => esc_html__( 'Per-route policies', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Custom visibility and authentication rules applied to individual routes.', 'bromate-rest-api-firewall' ),
 				'default_value'     => array(
@@ -219,7 +220,7 @@ final class SettingsConfig {
 					'routes' => array(),
 				),
 				'type'              => 'array',
-				'sanitize_callback' => '',
+				'sanitize_callback' => array( RoutesPolicyRepository::class, 'sanitize_routes_policy_tree' ),
 				'group'             => 'routes',
 			),
 

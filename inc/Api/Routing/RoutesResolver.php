@@ -27,6 +27,8 @@ class RoutesResolver {
 		return $policy;
 	}
 
+	
+
 	protected static function resolve_for_route( string $route, string $method ): array {
 
 		$tree = RoutesPolicyRepository::get_routes_policy_tree();
@@ -53,36 +55,35 @@ class RoutesResolver {
 			self::is_wordpress_core_route( $route )
 		);
 
-		if ( $effective['disabled'] ) {
-			$is_custom = false;
-			foreach ( $node_settings as $ns ) {
-				if ( ! empty( $ns['custom'] ) ) {
-					$is_custom = true;
-					break;
+		if ( isset( $effective['disabled'] ) ) {
+	
+			$opts        = SettingsRepository::read_options();
+			$dis_methods = isset( $opts['disabled_methods'] ) ? (array) $opts['disabled_methods'] : array();
+
+			if ( ! empty( $opts['routes_policy_default_hidden_routes'] ) ) {
+
+				$default_hidden_routes = RoutesPolicyRepository::get_default_hidden_routes();
+				if( empty( $default_hidden_routes) ) {
+					return  $effective;
+				}
+
+				$match_count = 0;
+
+				foreach ($default_hidden_routes as $hidden_route ) {
+					if ( 0 === strpos( $route, $hidden_route ) ) {
+						$match_count++;
+					}
+				}
+				
+				if ( 1 === $match_count ) {
+					$effective['disabled'] = true;
 				}
 			}
 
-			if ( ! $is_custom && ! empty( $route_settings['custom'] ) ) {
-				$is_custom = true;
+			if ( ! empty( $dis_methods ) && in_array( strtolower( $method ), $dis_methods, true ) ) {
+				$effective['disabled'] = true;
 			}
-
-			if ( ! $is_custom ) {
-				$opts        = SettingsRepository::read_options();
-				$dis_methods = isset( $opts['disabled_methods'] ) ? (array) $opts['disabled_methods'] : array();
-
-				if (
-					! empty( $opts['routes_policy_default_hidden_routes'] ) && 
-					( 
-					0 === strpos( $route, '/oembed' )
-					|| 0 === strpos( $route, '/wp/v2/users' )
-					|| 0 === strpos( $route, '/wp/v2/batch' ) 
-					|| 0 === strpos( $route, '/batch/v1' ) 
-					) 
-					|| ( ! empty( $dis_methods ) && in_array( strtolower( $method ), $dis_methods, true ) )
-				) {
-					$effective['disabled'] = false;
-				}
-			}
+			
 		}
 
 		return $effective;
