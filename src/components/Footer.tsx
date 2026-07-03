@@ -1,5 +1,6 @@
+import { __ } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
-import { useAdminData } from './contexts/AdminDataContext';
+import { useAdminData } from '@contexts/AdminDataContext';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Link from '@mui/material/Link';
@@ -7,7 +8,6 @@ import Typography from '@mui/material/Typography';
 
 export default function Footer() {
 	const { adminData } = useAdminData();
-	const { __ } = wp.i18n || {};
 
 	useEffect( () => {
 		if ( ! adminData ) {

@@ -4,6 +4,7 @@ export type PanelKey =
 	| 'firewall'
 	| 'login-hardening'
 	| 'routes'
+	| 'models'
 	| 'wordpress'
 	| 'logs';
 

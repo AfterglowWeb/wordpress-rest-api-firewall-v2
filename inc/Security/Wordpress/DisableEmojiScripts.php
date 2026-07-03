@@ -8,7 +8,7 @@ class DisableEmojiScripts {
 
 	protected static $instance = null;
 
-	public static function get_instance() {
+	public static function register() {
 		if ( null === static::$instance ) {
 			static::$instance = new static();
 		}

@@ -3,6 +3,7 @@ export type SecurityModuleKey =
 	| 'firewall'
 	| 'routes'
 	| 'wordpress'
+	| 'models'
 	| 'logs';
 
 export type SecurityModule = {

@@ -8,6 +8,7 @@ import Dashboard from '@pages/Dashboard';
 import Authentication from '@pages/Authentication';
 import Firewall from '@pages/Firewall';
 import Routes from '@pages/Routes';
+import Models from '@pages/Models';
 import WordPress from '@pages/WordPress';
 import Logs from '@pages/Logs';
 
@@ -25,6 +26,8 @@ export default function AdminLayout() {
 					{panel === 'firewall' && <Firewall />}
 
 					{panel === 'routes' && <Routes />}
+
+					{panel === 'models' && <Models />}
 
 					{panel === 'wordpress' && <WordPress />}
 

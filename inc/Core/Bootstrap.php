@@ -2,14 +2,15 @@
 
 defined( 'ABSPATH' ) || exit;
 
-use Bromate\RestApiFirewall\Api\Routing\RestRequestBootstrap;
-use Bromate\RestApiFirewall\Api\Routing\PublicRequestBootstrap;
-use Bromate\RestApiFirewall\Api\Routing\AdminLoginBootstrap;
+use Bromate\RestApiFirewall\Api\RestRequestBootstrap;
+use Bromate\RestApiFirewall\Api\PublicRequestBootstrap;
+use Bromate\RestApiFirewall\Api\AdminLoginBootstrap;
+use Bromate\RestApiFirewall\Security\WordPress\WordPressSecurityBootstrap;
 use Bromate\RestApiFirewall\Security\Ip\IpEntryAjaxController;
-use Bromate\RestApiFirewall\Admin\AdminPage;
-use Bromate\RestApiFirewall\Admin\Documentation;
 use Bromate\RestApiFirewall\Core\Settings\SettingsAjaxController;
 use Bromate\RestApiFirewall\Core\Schema\SchemaManager;
+use Bromate\RestApiFirewall\Admin\AdminPage;
+use Bromate\RestApiFirewall\Admin\Documentation;
 
 final class Bootstrap {
 
@@ -21,10 +22,15 @@ final class Bootstrap {
 		RestRequestBootstrap::register();
 		PublicRequestBootstrap::register();
 		AdminLoginBootstrap::register();
-		AdminPage::register();
-		SettingsAjaxController::register();
-		IpEntryAjaxController::register();
-		Documentation::register();
+		WordPressSecurityBootstrap::register();
+
+		if( is_admin() ) {
+			AdminPage::register();
+			SettingsAjaxController::register();
+			IpEntryAjaxController::register();
+			Documentation::register();
+		}
+		
 	}
 
 	public static function activate(): void {

@@ -6,7 +6,7 @@ use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
 class DisableEmbeds {
 	private static $instance = null;
 
-	public static function get_instance() {
+	public static function register() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
