@@ -1,7 +1,7 @@
 <?php namespace Bromate\RestApiFirewall\Core\Settings;
 
 use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
-use Bromate\RestApiFirewall\Api\Routing\RoutesPolicyRepository;
+use Bromate\RestApiFirewall\Security\Routes\RoutesPolicyRepository;
 use Bromate\RestApiFirewall\Api\Response\ModelsPropertiesRepository;
 
 class SettingsAjaxController {

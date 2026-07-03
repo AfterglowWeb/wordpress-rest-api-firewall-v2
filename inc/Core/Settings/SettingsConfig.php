@@ -2,7 +2,7 @@
 
 use Bromate\RestApiFirewall\Security\Ip\CidrMatcher;
 use Bromate\RestApiFirewall\Security\Ip\GeoIpApi;
-use Bromate\RestApiFirewall\Api\Routing\RoutesPolicyRepository;
+use Bromate\RestApiFirewall\Security\Routes\RoutesPolicyRepository;
 
 final class SettingsConfig {
 
