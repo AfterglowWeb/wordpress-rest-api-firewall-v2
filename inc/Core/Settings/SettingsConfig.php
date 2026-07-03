@@ -215,10 +215,7 @@ final class SettingsConfig {
 			'routes_policy_tree'                     => array(
 				'label'             => esc_html__( 'Per-route policies', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Custom visibility and authentication rules applied to individual routes.', 'bromate-rest-api-firewall' ),
-				'default_value'     => array(
-					'nodes'  => array(),
-					'routes' => array(),
-				),
+				'default_value'     => array(),
 				'type'              => 'array',
 				'sanitize_callback' => array( RoutesPolicyRepository::class, 'sanitize_routes_policy_tree' ),
 				'group'             => 'routes',
@@ -233,6 +230,60 @@ final class SettingsConfig {
 				'group'             => 'routes',
 			),
 
+			'routes_policy_hidden_methods'             => array(
+				'label'             => esc_html__( 'Hidden methods', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'HTTP methods that should be hidden from discovery.', 'bromate-rest-api-firewall' ),
+				'default_value'     => array(),
+				'type'              => 'array',
+				'sanitize_callback' => static function ( $value ) {
+					if ( ! is_array( $value ) ) {
+						return array();
+					}
+
+					return array_values(
+						array_unique(
+							array_filter(
+								array_map(
+									static function ( $method ) {
+										$method = sanitize_key( (string) $method );
+										return '' !== $method ? $method : null;
+									},
+									$value
+								)
+							)
+						)
+					);
+				},
+				'group'             => 'routes',
+			),
+
+			'routes_policy_hidden_wp_objects'         => array(
+				'label'             => esc_html__( 'Hidden WordPress objects', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'WordPress object types hidden from the REST API surface.', 'bromate-rest-api-firewall' ),
+				'default_value'     => array(),
+				'type'              => 'array',
+				'sanitize_callback' => static function ( $value ) {
+					if ( ! is_array( $value ) ) {
+						return array();
+					}
+
+					return array_values(
+						array_unique(
+							array_filter(
+								array_map(
+									static function ( $object ) {
+										$object = sanitize_key( (string) $object );
+										return '' !== $object ? $object : null;
+									},
+									$value
+								)
+							)
+						)
+					);
+				},
+				'group'             => 'routes',
+			),
+
 			'routes_policy_hidden_response_code'      => array(
 				'label'             => esc_html__( 'Hidden ressources response code', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'HTTP response code on hidden ressources.', 'bromate-rest-api-firewall' ),
@@ -243,7 +294,10 @@ final class SettingsConfig {
 					'404',
 				),
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => static function ( $value ) {
+					$value = sanitize_text_field( (string) $value );
+					return in_array( $value, array( '401', '403', '404' ), true ) ? $value : '404';
+				},
 				'group'             => 'routes',
 			),
 
