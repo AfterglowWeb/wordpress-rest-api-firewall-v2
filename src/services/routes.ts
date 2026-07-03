@@ -1,10 +1,20 @@
 import { apiRequest } from './api';
-import type { RouteNode } from '@app-types/routes';
+import type { RouteNode, RoutesSettings } from '@app-types/routes';
 
 export const RoutesAPI = {
   getRoutes: () =>
     apiRequest<{ tree: RouteNode[] }>('bromate_get_routes_policy_tree'),
 
-  saveRoutes: (tree: RouteNode[]) =>
-    apiRequest<{ saved: boolean }>('bromate_save_routes_policy_tree', { tree: JSON.stringify(tree) }),
+  getDefaultHiddenRoutes: () =>
+    apiRequest<{ default_hidden_routes: string[] }>('bromate_get_default_hidden_routes'),
+
+  getAllSettings: () =>
+    apiRequest<{ tree: RouteNode[]; settings: RoutesSettings; default_hidden_routes: string[] }>(
+      'bromate_get_routes_settings'
+    ),
+
+  saveAllSettings: (payload: { settings: RoutesSettings; tree: RouteNode[] }) =>
+    apiRequest<{ message: string }>('bromate_save_all_routes_settings', {
+      settings: JSON.stringify(payload),
+    }),
 };

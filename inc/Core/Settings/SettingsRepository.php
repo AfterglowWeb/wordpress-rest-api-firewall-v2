@@ -36,15 +36,11 @@ class SettingsRepository {
 			return false;
 		}
 
-		$old_option = self::read_option( $option_key );
-
 		$sanitized_option       = self::sanitize_option( $option_key, $new_option );
 		$options                = self::read_options();
 		$options[ $option_key ] = $sanitized_option;
 
 		update_option( 'bromate_rest_api_firewall_options', $options );
-
-		do_action( 'rest_firewall_admin_option_updated', $option_key, $sanitized_option, $old_option );
 
 		return $sanitized_option;
 	}
@@ -89,9 +85,13 @@ class SettingsRepository {
 				return (int) call_user_func( $callback, $option_value );
 
 			case 'array':
-				return is_array( $option_value )
-					? array_map( $callback, $option_value )
-					: array();
+				if ( ! is_array( $option_value ) ) {
+					return array();
+				}
+
+				return is_callable( $callback )
+					? call_user_func( $callback, $option_value )
+					: $option_value;
 
 			case 'string':
 			default:

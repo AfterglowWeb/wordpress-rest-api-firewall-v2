@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { usePortalContainer } from '@contexts/PortalContainerContext';
 
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -211,7 +210,6 @@ function FileActionSwitch({
 
 export default function WordPress() {
 	const [loading, setLoading] = useState(true);
-	const portalContainer = usePortalContainer();
 	const [securitySettings, setSecuritySettings] = useState<SecuritySettings>({
 		disable_xmlrpc: false,
 		disable_comments: false,

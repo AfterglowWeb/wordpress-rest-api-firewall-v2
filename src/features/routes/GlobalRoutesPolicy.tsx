@@ -1,4 +1,5 @@
-import { useState, useMemo } from '@wordpress/element';
+import { useMemo } from '@wordpress/element';
+import { __, sprintf } from '@wordpress/i18n';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Stack from '@mui/material/Stack';
@@ -16,6 +17,7 @@ import { usePortalContainer } from '@contexts/PortalContainerContext';
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] as const;
 
 const SECURITY_DEFAULTS = {
+  routes_policy_enabled: true,
   routes_policy_default_hidden_routes:  true,
   routes_policy_hidden_methods:         ['delete', 'put', 'patch'] as string[],
   routes_policy_hidden_wp_objects:      [] as string[],
@@ -38,6 +40,7 @@ export default function GlobalRoutesPolicy({ settings, onChange }: Props): JSX.E
 
   const toggleSecurityDefaults = () => {
     if (securityDefaultsApplied) {
+      onChange('routes_policy_enabled', false);
       onChange('routes_policy_default_hidden_routes', false);
       onChange('routes_policy_hidden_methods', []);
       onChange('routes_policy_hidden_response_code', '404' as const);
@@ -62,25 +65,37 @@ export default function GlobalRoutesPolicy({ settings, onChange }: Props): JSX.E
         control={
           <Switch
             size="small"
+            checked={settings.routes_policy_enabled ?? false}
+            onChange={(e) => onChange('routes_policy_enabled', e.target.checked)}
+          />
+        }
+        label={__('Enable Routes Policy', 'bromate-rest-api-firewall')}
+      />
+
+
+      <FormControlLabel
+        control={
+          <Switch
+            size="small"
             checked={securityDefaultsApplied}
             onChange={toggleSecurityDefaults}
           />
         }
-        label="Apply security defaults"
+        label={__('Apply security defaults', 'bromate-rest-api-firewall')}
       />
 
 
       <Stack spacing={2} maxWidth={350}>
-        <Typography variant="h6">Block Types</Typography>
+        <Typography variant="h6">{__('Block WordPress Objects', 'bromate-rest-api-firewall')}</Typography>
         <ObjectTypeSelect
-          label="Select types"
+          label={__('Select types', 'bromate-rest-api-firewall')}
           value={settings.routes_policy_hidden_wp_objects ?? []}
           onChange={(value: string[]) => onChange('routes_policy_hidden_wp_objects', value)}
         />
       </Stack>
 
       <Stack spacing={2}>
-        <Typography variant="h6">Block Methods</Typography>
+        <Typography variant="h6">{__('Block Methods', 'bromate-rest-api-firewall')}</Typography>
         <Stack direction="row" gap={1} flexWrap="wrap">
           {HTTP_METHODS.map((method) => (
             <FormControlLabel
@@ -99,20 +114,20 @@ export default function GlobalRoutesPolicy({ settings, onChange }: Props): JSX.E
       </Stack>
 
       <Stack spacing={2}>
-        <Typography variant="h6">Blocked Response</Typography>
+        <Typography variant="h6">{__('Blocked Response', 'bromate-rest-api-firewall')}</Typography>
         <FormControl size="small" sx={{ maxWidth: 200 }}>
-          <InputLabel>Code</InputLabel>
+          <InputLabel>{__('Code', 'bromate-rest-api-firewall')}</InputLabel>
           <Select
             MenuProps={ {
 						container:portalContainer
 					} }
             value={settings.routes_policy_hidden_response_code ?? '404'}
-            label="Code"
+            label={__('Code', 'bromate-rest-api-firewall')}
             onChange={(e) => onChange('routes_policy_hidden_response_code', e.target.value as '401' | '403' | '404')}
           >
-            <MenuItem value="401">401 Unauthorized</MenuItem>
-            <MenuItem value="403">403 Forbidden</MenuItem>
-            <MenuItem value="404">404 Not Found</MenuItem>
+            <MenuItem value="401">{__('401 Unauthorized', 'bromate-rest-api-firewall')}</MenuItem>
+            <MenuItem value="403">{__('403 Forbidden', 'bromate-rest-api-firewall')}</MenuItem>
+            <MenuItem value="404">{__('404 Not Found', 'bromate-rest-api-firewall')}</MenuItem>
           </Select>
         </FormControl>
       </Stack>

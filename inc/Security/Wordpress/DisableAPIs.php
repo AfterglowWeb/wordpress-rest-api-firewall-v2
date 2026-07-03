@@ -4,7 +4,7 @@ defined( 'ABSPATH' ) || exit;
 
 use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
 
-class DisableBase {
+class DisableAPIs {
 
 	protected static $instance = null;
 
@@ -46,5 +46,21 @@ class DisableBase {
 				}
 			);
 		}
+
+		if ( true === SettingsRepository::read_option( 'wordpress_disable_atom_rss' ) ) {
+			add_action( 'do_feed', array( $this, 'disable_all_feeds_response' ), 10 );
+			add_action( 'do_feed_rdf', array( $this, 'disable_all_feeds_response' ), 10 );
+			add_action( 'do_feed_rss', array( $this, 'disable_all_feeds_response' ), 10 );
+			add_action( 'do_feed_rss2', array( $this, 'disable_all_feeds_response' ), 10 );
+			add_action( 'do_feed_atom', array( $this, 'disable_all_feeds_response' ), 10 );
+			add_action( 'do_feed_rss2_comments', array( $this, 'disable_all_feeds_response' ), 10 );
+			add_action( 'do_feed_atom_comments', array( $this, 'disable_all_feeds_response' ), 10 );
+			remove_action( 'wp_head', 'feed_links_extra', 10 );
+			remove_action( 'wp_head', 'feed_links', 10 );
+		}
+	}
+
+	public function disable_all_feeds_response() {
+		wp_die( esc_html__( 'No feed available.', 'bromate-rest-api-firewall' ), 404 );
 	}
 }

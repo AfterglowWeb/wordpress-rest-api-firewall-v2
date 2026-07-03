@@ -2,6 +2,7 @@
 
 use Bromate\RestApiFirewall\Security\Ip\CidrMatcher;
 use Bromate\RestApiFirewall\Security\Ip\GeoIpApi;
+use Bromate\RestApiFirewall\Security\Routes\RoutesPolicyRepository;
 
 final class SettingsConfig {
 
@@ -211,15 +212,12 @@ final class SettingsConfig {
 				'group'             => 'routes',
 			),
 
-			'routes_policy_rules'                     => array(
+			'routes_policy_tree'                     => array(
 				'label'             => esc_html__( 'Per-route policies', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Custom visibility and authentication rules applied to individual routes.', 'bromate-rest-api-firewall' ),
-				'default_value'     => array(
-					'nodes'  => array(),
-					'routes' => array(),
-				),
+				'default_value'     => array(),
 				'type'              => 'array',
-				'sanitize_callback' => '',
+				'sanitize_callback' => array( RoutesPolicyRepository::class, 'sanitize_routes_policy_tree' ),
 				'group'             => 'routes',
 			),
 
@@ -229,6 +227,24 @@ final class SettingsConfig {
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
+				'group'             => 'routes',
+			),
+
+			'routes_policy_hidden_methods'             => array(
+				'label'             => esc_html__( 'Hidden methods', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'HTTP methods that should be hidden from discovery.', 'bromate-rest-api-firewall' ),
+				'default_value'     => array(),
+				'type'              => 'array',
+				'sanitize_callback' => array( RoutesPolicyRepository::class, 'sanitize_hidden_methods' ),
+				'group'             => 'routes',
+			),
+
+			'routes_policy_hidden_wp_objects'         => array(
+				'label'             => esc_html__( 'Hidden WordPress objects', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'WordPress object types hidden from the REST API surface.', 'bromate-rest-api-firewall' ),
+				'default_value'     => array(),
+				'type'              => 'array',
+				'sanitize_callback' => array( RoutesPolicyRepository::class, 'sanitize_hidden_wp_objects' ),
 				'group'             => 'routes',
 			),
 
@@ -242,7 +258,7 @@ final class SettingsConfig {
 					'404',
 				),
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( RoutesPolicyRepository::class, 'sanitize_hidden_response_code' ),
 				'group'             => 'routes',
 			),
 
@@ -429,7 +445,7 @@ final class SettingsConfig {
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_disable_rss'                   => array(
+			'wordpress_disable_atom_rss'                   => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
