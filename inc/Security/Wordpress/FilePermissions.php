@@ -1,7 +1,7 @@
 <?php namespace Bromate\RestApiFirewall\Security\WordPress;
 
 use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
-use Bromate\RestApiFirewall\Core\FileUtils;
+use Bromate\RestApiFirewall\Utils\FileUtils;
 use Bromate\RestApiFirewall\Core\Settings\SettingsAjaxController;
 
 defined( 'ABSPATH' ) || exit;

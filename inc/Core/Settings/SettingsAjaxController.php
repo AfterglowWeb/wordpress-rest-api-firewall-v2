@@ -172,9 +172,7 @@ class SettingsAjaxController {
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in SettingsAjaxController::ajax_validate_has_firewall_admin_caps()
 		$settings_payload = isset( $_POST['settings'] ) ? wp_unslash( $_POST['settings'] ) : '';
-		error_log( '[bromate-rest-api-firewall] ajax_save_all_routes_settings payload=' . $settings_payload );
 		$settings = json_decode( sanitize_text_field( $settings_payload ), true );
-		error_log( '[bromate-rest-api-firewall] ajax_save_all_routes_settings decoded_type=' . gettype( $settings ) );
 
 		$result = RoutesPolicyRepository::save_all_settings( $settings );
 		if(false === $result) {
@@ -211,9 +209,7 @@ class SettingsAjaxController {
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in SettingsAjaxController::ajax_validate_has_firewall_admin_caps()
 		$tree_payload = isset( $_POST['tree'] ) ? wp_unslash( $_POST['tree'] ) : '';
-		error_log( '[bromate-rest-api-firewall] ajax_save_routes_policy_tree payload=' . $tree_payload );
 		$tree = json_decode( sanitize_text_field( $tree_payload ), true );
-		error_log( '[bromate-rest-api-firewall] ajax_save_routes_policy_tree decoded_type=' . gettype( $tree ) );
 
 		if ( ! is_array( $tree ) ) {
 			wp_send_json_error(

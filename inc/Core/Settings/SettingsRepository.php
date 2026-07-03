@@ -85,9 +85,13 @@ class SettingsRepository {
 				return (int) call_user_func( $callback, $option_value );
 
 			case 'array':
-				return is_array( $option_value )
-					? array_map( $callback, $option_value )
-					: array();
+				if ( ! is_array( $option_value ) ) {
+					return array();
+				}
+
+				return is_callable( $callback )
+					? call_user_func( $callback, $option_value )
+					: $option_value;
 
 			case 'string':
 			default:

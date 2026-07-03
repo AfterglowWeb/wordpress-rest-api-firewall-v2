@@ -235,25 +235,7 @@ final class SettingsConfig {
 				'info'              => esc_html__( 'HTTP methods that should be hidden from discovery.', 'bromate-rest-api-firewall' ),
 				'default_value'     => array(),
 				'type'              => 'array',
-				'sanitize_callback' => static function ( $value ) {
-					if ( ! is_array( $value ) ) {
-						return array();
-					}
-
-					return array_values(
-						array_unique(
-							array_filter(
-								array_map(
-									static function ( $method ) {
-										$method = sanitize_key( (string) $method );
-										return '' !== $method ? $method : null;
-									},
-									$value
-								)
-							)
-						)
-					);
-				},
+				'sanitize_callback' => array( RoutesPolicyRepository::class, 'sanitize_hidden_methods' ),
 				'group'             => 'routes',
 			),
 
@@ -262,25 +244,7 @@ final class SettingsConfig {
 				'info'              => esc_html__( 'WordPress object types hidden from the REST API surface.', 'bromate-rest-api-firewall' ),
 				'default_value'     => array(),
 				'type'              => 'array',
-				'sanitize_callback' => static function ( $value ) {
-					if ( ! is_array( $value ) ) {
-						return array();
-					}
-
-					return array_values(
-						array_unique(
-							array_filter(
-								array_map(
-									static function ( $object ) {
-										$object = sanitize_key( (string) $object );
-										return '' !== $object ? $object : null;
-									},
-									$value
-								)
-							)
-						)
-					);
-				},
+				'sanitize_callback' => array( RoutesPolicyRepository::class, 'sanitize_hidden_wp_objects' ),
 				'group'             => 'routes',
 			),
 
@@ -294,10 +258,7 @@ final class SettingsConfig {
 					'404',
 				),
 				'type'              => 'string',
-				'sanitize_callback' => static function ( $value ) {
-					$value = sanitize_text_field( (string) $value );
-					return in_array( $value, array( '401', '403', '404' ), true ) ? $value : '404';
-				},
+				'sanitize_callback' => array( RoutesPolicyRepository::class, 'sanitize_hidden_response_code' ),
 				'group'             => 'routes',
 			),
 
@@ -484,7 +445,7 @@ final class SettingsConfig {
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_disable_rss'                   => array(
+			'wordpress_disable_atom_rss'                   => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',

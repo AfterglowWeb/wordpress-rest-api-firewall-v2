@@ -45,9 +45,7 @@ class RoutesPolicyRepository {
 		}
 
 		foreach ( $sanitized as $key => $value ) {
-			error_log( '[bromate-rest-api-firewall] save_global_settings key=' . $key . ' value_type=' . gettype( $value ) );
 			$result = SettingsRepository::update_option( $key, $value );
-			error_log( '[bromate-rest-api-firewall] save_global_settings result key=' . $key . ' result=' . ( $result !== false ? '1' : '0' ) );
 			if ( false === $result ) {
 				return false;
 			}
@@ -57,23 +55,15 @@ class RoutesPolicyRepository {
 	}
 
 	public static function save_all_settings( array $settings ): bool {
-		error_log( '[bromate-rest-api-firewall] save_all_settings start' );
-		error_log( '[bromate-rest-api-firewall] save_all_settings payload_keys=' . wp_json_encode( array_keys( $settings ) ) );
-
 		$global_settings = isset( $settings['settings'] ) ? $settings['settings'] : array();
 		$tree            = isset( $settings['tree'] ) ? $settings['tree'] : array();
-
-		error_log( '[bromate-rest-api-firewall] save_all_settings tree_nodes=' . count( $tree ) );
 
 		try {
 			$global_saved = self::save_global_settings( $global_settings );
 			$tree_saved   = self::save_routes_policy_tree( $tree );
 
-			error_log( '[bromate-rest-api-firewall] save_all_settings results global=' . ( $global_saved ? '1' : '0' ) . ' tree=' . ( $tree_saved ? '1' : '0' ) );
-
 			return $global_saved && $tree_saved;
 		} catch ( \Throwable $e ) {
-			error_log( '[bromate-rest-api-firewall] save_all_settings exception: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() );
 			return false;
 		}
 	}
@@ -111,9 +101,52 @@ class RoutesPolicyRepository {
 		return self::sanitize_routes_policy_tree( $saved );
 	}
 
-	public static function sanitize_routes_policy_tree( $tree ): array {
-		error_log( '[bromate-rest-api-firewall] sanitize_routes_policy_tree received type=' . gettype( $tree ) );
+	public static function sanitize_hidden_methods( $value ): array {
+		if ( ! is_array( $value ) ) {
+			return array();
+		}
 
+		return array_values(
+			array_unique(
+				array_filter(
+					array_map(
+						static function ( $method ) {
+							$method = sanitize_key( (string) $method );
+							return '' !== $method ? $method : null;
+						},
+						$value
+					)
+				)
+			)
+		);
+	}
+
+	public static function sanitize_hidden_wp_objects( $value ): array {
+		if ( ! is_array( $value ) ) {
+			return array();
+		}
+
+		return array_values(
+			array_unique(
+				array_filter(
+					array_map(
+						static function ( $object ) {
+							$object = sanitize_key( (string) $object );
+							return '' !== $object ? $object : null;
+						},
+						$value
+					)
+				)
+			)
+		);
+	}
+
+	public static function sanitize_hidden_response_code( $value ): string {
+		$value = sanitize_text_field( (string) $value );
+		return in_array( $value, array( '401', '403', '404' ), true ) ? $value : '404';
+	}
+
+	public static function sanitize_routes_policy_tree( $tree ): array {
 		if ( ! is_array( $tree ) ) {
 			return array();
 		}
@@ -201,26 +234,113 @@ class RoutesPolicyRepository {
 	}
 
 	private static function merge_saved_tree_into_current_tree( array $tree, array $saved_tree ): array {
-		$saved_index = array();
-		foreach ( $saved_tree as $saved_node ) {
-			if ( ! is_array( $saved_node ) || empty( $saved_node['id'] ) ) {
-				continue;
-			}
-
-			$saved_index[ (string) $saved_node['id'] ] = $saved_node;
-		}
+		$saved_index = self::build_saved_tree_index( $saved_tree );
 
 		$result = array();
+		$seen   = array();
 		foreach ( $tree as $node ) {
 			if ( ! is_array( $node ) ) {
 				continue;
 			}
 
-			$node_id = isset( $node['id'] ) ? (string) $node['id'] : '';
-			$result[] = self::merge_node_with_saved( $node, $saved_index[ $node_id ] ?? null );
+			$identity = self::node_identity( $node );
+			if ( '' !== $identity ) {
+				$seen[ $identity ] = true;
+			}
+
+			$matching_saved = null;
+			foreach ( self::node_identity_candidates( $node ) as $candidate ) {
+				if ( isset( $saved_index[ $candidate ] ) ) {
+					$matching_saved = $saved_index[ $candidate ];
+					break;
+				}
+			}
+
+			$result[] = self::merge_node_with_saved( $node, $matching_saved );
+		}
+
+		foreach ( $saved_tree as $saved_node ) {
+			if ( ! is_array( $saved_node ) ) {
+				continue;
+			}
+
+			$identity = self::node_identity( $saved_node );
+			if ( '' === $identity || isset( $seen[ $identity ] ) ) {
+				continue;
+			}
+
+			$result[] = $saved_node;
 		}
 
 		return $result;
+	}
+
+	private static function build_saved_tree_index( array $saved_tree ): array {
+		$saved_index = array();
+		foreach ( $saved_tree as $saved_node ) {
+			if ( ! is_array( $saved_node ) ) {
+				continue;
+			}
+
+			$identity = self::node_identity( $saved_node );
+			if ( '' === $identity ) {
+				continue;
+			}
+
+			$saved_index[ $identity ] = $saved_node;
+		}
+
+		return $saved_index;
+	}
+
+	private static function node_identity( array $node ): string {
+		if ( ! empty( $node['id'] ) ) {
+			return 'id:' . (string) $node['id'];
+		}
+
+		if ( ! empty( $node['uuid'] ) ) {
+			return 'uuid:' . (string) $node['uuid'];
+		}
+
+		if ( ! empty( $node['route'] ) && ! empty( $node['method'] ) ) {
+			return 'route:' . (string) $node['route'] . '|' . (string) $node['method'];
+		}
+
+		if ( ! empty( $node['path'] ) ) {
+			return 'path:' . (string) $node['path'];
+		}
+
+		if ( ! empty( $node['label'] ) ) {
+			return 'label:' . (string) $node['label'];
+		}
+
+		return '';
+	}
+
+	private static function node_identity_candidates( array $node ): array {
+		$candidates = array();
+
+		if ( ! empty( $node['id'] ) ) {
+			$candidates[] = 'id:' . (string) $node['id'];
+		}
+
+		if ( ! empty( $node['uuid'] ) ) {
+			$candidates[] = 'uuid:' . (string) $node['uuid'];
+		}
+
+		if ( ! empty( $node['route'] ) && ! empty( $node['method'] ) ) {
+			$candidates[] = 'route:' . (string) $node['route'] . '|' . (string) $node['method'];
+		}
+
+		if ( ! empty( $node['path'] ) ) {
+			$candidates[] = 'path:' . (string) $node['path'];
+		}
+
+		if ( ! empty( $node['label'] ) ) {
+			$candidates[] = 'label:' . (string) $node['label'];
+		}
+
+		return array_values( array_unique( $candidates ) );
 	}
 
 	private static function merge_node_with_saved( array $node, ?array $saved_node ): array {
@@ -228,6 +348,18 @@ class RoutesPolicyRepository {
 
 		if ( ! is_array( $saved_node ) ) {
 			return $merged;
+		}
+
+		foreach ( $saved_node as $key => $value ) {
+			if ( in_array( $key, array( 'settings', 'children', 'permission' ), true ) ) {
+				continue;
+			}
+
+			$merged[ $key ] = $value;
+		}
+
+		if ( isset( $saved_node['permission'] ) && is_array( $saved_node['permission'] ) ) {
+			$merged['permission'] = self::merge_settings( $merged['permission'] ?? array(), $saved_node['permission'] );
 		}
 
 		if ( isset( $saved_node['settings'] ) && is_array( $saved_node['settings'] ) ) {
@@ -242,23 +374,42 @@ class RoutesPolicyRepository {
 	}
 
 	private static function merge_children_with_saved( array $current_children, array $saved_children ): array {
-		$saved_index = array();
-		foreach ( $saved_children as $saved_child ) {
-			if ( ! is_array( $saved_child ) || empty( $saved_child['id'] ) ) {
-				continue;
-			}
-
-			$saved_index[ (string) $saved_child['id'] ] = $saved_child;
-		}
+		$saved_index = self::build_saved_tree_index( $saved_children );
 
 		$result = array();
+		$seen   = array();
 		foreach ( $current_children as $child ) {
 			if ( ! is_array( $child ) ) {
 				continue;
 			}
 
-			$child_id = isset( $child['id'] ) ? (string) $child['id'] : '';
-			$result[] = self::merge_node_with_saved( $child, $saved_index[ $child_id ] ?? null );
+			$identity = self::node_identity( $child );
+			if ( '' !== $identity ) {
+				$seen[ $identity ] = true;
+			}
+
+			$matching_saved = null;
+			foreach ( self::node_identity_candidates( $child ) as $candidate ) {
+				if ( isset( $saved_index[ $candidate ] ) ) {
+					$matching_saved = $saved_index[ $candidate ];
+					break;
+				}
+			}
+
+			$result[] = self::merge_node_with_saved( $child, $matching_saved );
+		}
+
+		foreach ( $saved_children as $saved_child ) {
+			if ( ! is_array( $saved_child ) ) {
+				continue;
+			}
+
+			$identity = self::node_identity( $saved_child );
+			if ( '' === $identity || isset( $seen[ $identity ] ) ) {
+				continue;
+			}
+
+			$result[] = $saved_child;
 		}
 
 		return $result;
@@ -279,17 +430,12 @@ class RoutesPolicyRepository {
 	}
 
 	public static function save_routes_policy_tree( array $tree ): bool {
-		error_log( '[bromate-rest-api-firewall] save_routes_policy_tree start nodes=' . count( $tree ) );
-
 		try {
 			$sanitized_tree = self::sanitize_routes_policy_tree( $tree );
-			error_log( '[bromate-rest-api-firewall] save_routes_policy_tree sanitized_nodes=' . count( $sanitized_tree ) );
 			$result = SettingsRepository::update_option( 'routes_policy_tree', $sanitized_tree );
-			error_log( '[bromate-rest-api-firewall] save_routes_policy_tree update_result=' . ( $result !== false ? '1' : '0' ) );
 
 			return $result !== false;
 		} catch ( \Throwable $e ) {
-			error_log( '[bromate-rest-api-firewall] save_routes_policy_tree exception: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() );
 			return false;
 		}
 	}
