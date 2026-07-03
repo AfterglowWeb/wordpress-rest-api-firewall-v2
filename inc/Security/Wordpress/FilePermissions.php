@@ -9,7 +9,7 @@ defined( 'ABSPATH' ) || exit;
 class FilePermissions {
 	private static $instance = null;
 
-	public static function get_instance() {
+	public static function register() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}

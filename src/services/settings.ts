@@ -1,4 +1,4 @@
-import { apiRequest } from './api';
+import { apiRequest } from '@services/api';
 
 export const SettingsAPI = {
 	readOptions: () =>

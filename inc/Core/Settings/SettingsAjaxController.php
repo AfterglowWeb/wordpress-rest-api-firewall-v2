@@ -2,7 +2,7 @@
 
 use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
 use Bromate\RestApiFirewall\Security\Routes\RoutesPolicyRepository;
-use Bromate\RestApiFirewall\Api\Response\ModelsPropertiesRepository;
+use Bromate\RestApiFirewall\Models\ModelsPropertiesRepository;
 
 class SettingsAjaxController {
 

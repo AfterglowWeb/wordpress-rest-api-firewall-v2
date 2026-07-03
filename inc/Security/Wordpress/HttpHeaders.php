@@ -7,7 +7,7 @@ defined( 'ABSPATH' ) || exit;
 class HttpHeaders {
 	private static $instance = null;
 
-	public static function get_instance() {
+	public static function register() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}

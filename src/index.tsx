@@ -9,8 +9,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const adminData: AdminData = {
     ...raw,
-    plugin_name: raw.plugin?.name ?? raw.plugin_name,
-    plugin_version: raw.plugin?.version ?? raw.plugin_version,
+    plugin_name: raw.plugin_name,
+    plugin_version: raw.plugin_version,
   };
 
   createShadowRootMount(adminData);

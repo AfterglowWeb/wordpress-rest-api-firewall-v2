@@ -1,4 +1,4 @@
-import { apiRequest } from './api';
+import { apiRequest } from '@services/api';
 import type { RouteNode, RoutesSettings } from '@app-types/routes';
 
 export const RoutesAPI = {

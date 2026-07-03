@@ -612,6 +612,8 @@ export default function Firewall(): JSX.Element {
         wpUsers={wpUsers}
         wpUsersLoading={wpUsersLoading}
       />
+
+      <ConfirmDialog />
     </Stack>
   );
 }
