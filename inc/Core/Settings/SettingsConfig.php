@@ -11,8 +11,6 @@ final class SettingsConfig {
 	public static function register(): void {
 		$self = new self();
 		add_action( 'admin_init', array( $self, 'register_settings' ) );
-
-		
 	}
 
 	public function register_settings(): void {
@@ -29,7 +27,7 @@ final class SettingsConfig {
 	public static function options_config(): array {
 
 		$options = array(
-			'auth_enforce'                            => array(
+			'auth_enforce'                           => array(
 				'label'             => esc_html__( 'Require authentication for all API routes', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'When enabled, all REST API routes require authentication unless explicitly allowed by route policies.', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
@@ -38,7 +36,7 @@ final class SettingsConfig {
 				'group'             => 'authentication',
 			),
 
-			'auth_methods'                            => array(
+			'auth_methods'                           => array(
 				'label'             => esc_html__( 'Authentication method', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Choose how API clients authenticate with the REST API.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 'wp_auth',
@@ -52,7 +50,7 @@ final class SettingsConfig {
 				'group'             => 'authentication',
 			),
 
-			'auth_jwt_algorithm'                      => array(
+			'auth_jwt_algorithm'                     => array(
 				'label'             => esc_html__( 'JWT algorithm', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Cryptographic algorithm used to verify JWT tokens.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 'RS256',
@@ -71,7 +69,7 @@ final class SettingsConfig {
 				'group'             => 'authentication',
 			),
 
-			'auth_jwt_public_key'                     => array(
+			'auth_jwt_public_key'                    => array(
 				'label'             => esc_html__( 'JWT public key', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Public key used to validate signed JWT tokens.', 'bromate-rest-api-firewall' ),
 				'default_value'     => '',
@@ -80,7 +78,7 @@ final class SettingsConfig {
 				'group'             => 'authentication',
 			),
 
-			'auth_jwt_audience'                       => array(
+			'auth_jwt_audience'                      => array(
 				'label'             => esc_html__( 'JWT audience', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Expected audience claim for incoming JWT tokens.', 'bromate-rest-api-firewall' ),
 				'default_value'     => '',
@@ -89,7 +87,7 @@ final class SettingsConfig {
 				'group'             => 'authentication',
 			),
 
-			'auth_jwt_issuer'                         => array(
+			'auth_jwt_issuer'                        => array(
 				'label'             => esc_html__( 'JWT issuer', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Expected issuer claim for incoming JWT tokens.', 'bromate-rest-api-firewall' ),
 				'default_value'     => '',
@@ -98,7 +96,7 @@ final class SettingsConfig {
 				'group'             => 'authentication',
 			),
 
-			'auth_users'                              => array(
+			'auth_users'                             => array(
 				'label'             => esc_html__( 'Authorized API users', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Restrict API access to specific WordPress user accounts.', 'bromate-rest-api-firewall' ),
 				'default_value'     => array(),
@@ -107,7 +105,7 @@ final class SettingsConfig {
 				'group'             => 'authentication',
 			),
 
-			'auth_user_ids'                           => array(
+			'auth_user_ids'                          => array(
 				'label'             => esc_html__( 'Authorized API users', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Restrict API access to specific WordPress user accounts.', 'bromate-rest-api-firewall' ),
 				'default_value'     => array(),
@@ -116,7 +114,8 @@ final class SettingsConfig {
 				'group'             => 'authentication',
 			),
 
-			'rate_limit_enabled'                      => array(
+			// Firewall.
+			'rate_limit_enabled'                     => array(
 				'label'             => esc_html__( 'Enable API rate limiting', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Protect the API against excessive requests and abuse.', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
@@ -125,17 +124,7 @@ final class SettingsConfig {
 				'group'             => 'firewall',
 			),
 
-			'rate_limit_wordpress_enabled'            => array(
-				'label'             => esc_html__( 'Enable rate limiting everywhere', 'bromate-rest-api-firewall' ),
-				'info'              => esc_html__( 'Protect all WordPress against excessive requests and abuse.', 'bromate-rest-api-firewall' ),
-				'default_value'     => false,
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'group'             => 'firewall',
-			),
-
-			// Firewall.
-			'rate_limit_max'                          => array(
+			'rate_limit_max'                         => array(
 				'label'             => esc_html__( 'Maximum requests', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Number of requests allowed during the configured time window.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 30,
@@ -144,7 +133,7 @@ final class SettingsConfig {
 				'group'             => 'firewall',
 			),
 
-			'rate_limit_time'                         => array(
+			'rate_limit_time'                        => array(
 				'label'             => esc_html__( 'Time window (seconds)', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Period used to count requests before the limit resets.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 60,
@@ -153,7 +142,7 @@ final class SettingsConfig {
 				'group'             => 'firewall',
 			),
 
-			'rate_limit_block_duration'               => array(
+			'rate_limit_block_duration'              => array(
 				'label'             => esc_html__( 'Temporary block duration (seconds)', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'How long a client remains blocked after exceeding the rate limit.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 300,
@@ -162,7 +151,7 @@ final class SettingsConfig {
 				'group'             => 'firewall',
 			),
 
-			'rate_limit_blacklist_threshold'          => array(
+			'rate_limit_blacklist_threshold'         => array(
 				'label'             => esc_html__( 'Blacklist threshold', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Number of rate-limit violations before automatic blacklisting.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 5,
@@ -171,7 +160,7 @@ final class SettingsConfig {
 				'group'             => 'firewall',
 			),
 
-			'rate_limit_whitelist'                    => array(
+			'rate_limit_whitelist'                   => array(
 				'label'             => esc_html__( 'Rate limit whitelist', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'IP addresses or CIDR ranges exempt from rate limiting.', 'bromate-rest-api-firewall' ),
 				'default_value'     => array(),
@@ -180,7 +169,7 @@ final class SettingsConfig {
 				'group'             => 'firewall',
 			),
 
-			'rate_limit_countries'                    => array(
+			'rate_limit_countries'                   => array(
 				'label'             => esc_html__(
 					'Blocked countries',
 					'bromate-rest-api-firewall'
@@ -195,7 +184,7 @@ final class SettingsConfig {
 				'group'             => 'firewall',
 			),
 
-			'rate_limit_emergency_token_hash'         => array(
+			'rate_limit_emergency_token_hash'        => array(
 				'label'             => esc_html__( 'Emergency bypass token', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Hashed token allowing emergency access when clients are rate limited.', 'bromate-rest-api-firewall' ),
 				'default_value'     => '',
@@ -205,7 +194,7 @@ final class SettingsConfig {
 			),
 
 			// Routes Policies.
-			'routes_policy_enabled'                   => array(
+			'routes_policy_enabled'                  => array(
 				'label'             => esc_html__( 'Enable route policies', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Control route visibility and authentication requirements on a per-route basis.', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
@@ -223,7 +212,7 @@ final class SettingsConfig {
 				'group'             => 'routes',
 			),
 
-			'routes_policy_default_hidden_routes'             => array(
+			'routes_policy_default_hidden_routes'    => array(
 				'label'             => esc_html__( 'Hidden routes', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Routes removed from discovery and unavailable to public clients.', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
@@ -232,7 +221,7 @@ final class SettingsConfig {
 				'group'             => 'routes',
 			),
 
-			'routes_policy_hidden_methods'             => array(
+			'routes_policy_hidden_methods'           => array(
 				'label'             => esc_html__( 'Hidden methods', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'HTTP methods that should be hidden from discovery.', 'bromate-rest-api-firewall' ),
 				'default_value'     => array(),
@@ -241,7 +230,7 @@ final class SettingsConfig {
 				'group'             => 'routes',
 			),
 
-			'routes_policy_hidden_wp_objects'         => array(
+			'routes_policy_hidden_wp_objects'        => array(
 				'label'             => esc_html__( 'Hidden WordPress objects', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'WordPress object types hidden from the REST API surface.', 'bromate-rest-api-firewall' ),
 				'default_value'     => array(),
@@ -250,7 +239,7 @@ final class SettingsConfig {
 				'group'             => 'routes',
 			),
 
-			'routes_policy_hidden_response_code'      => array(
+			'routes_policy_hidden_response_code'     => array(
 				'label'             => esc_html__( 'Hidden ressources response code', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'HTTP response code on hidden ressources.', 'bromate-rest-api-firewall' ),
 				'default_value'     => '404',
@@ -265,7 +254,7 @@ final class SettingsConfig {
 			),
 
 			// Auth hardening.
-			'login_rate_limit_enabled'                => array(
+			'login_rate_limit_enabled'               => array(
 				'label'             => esc_html__( 'Protect login page', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Limit failed login attempts to reduce brute-force attacks.', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
@@ -274,7 +263,7 @@ final class SettingsConfig {
 				'group'             => 'login-hardening',
 			),
 
-			'login_rate_limit_attempts'               => array(
+			'login_rate_limit_attempts'              => array(
 				'label'             => esc_html__( 'Maximum login attempts', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Number of failed login attempts allowed before blocking the client.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 5,
@@ -283,7 +272,7 @@ final class SettingsConfig {
 				'group'             => 'login-hardening',
 			),
 
-			'login_rate_limit_window'                 => array(
+			'login_rate_limit_window'                => array(
 				'label'             => esc_html__( 'Login attempt window (seconds)', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Time period used to count failed login attempts.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 300,
@@ -292,7 +281,7 @@ final class SettingsConfig {
 				'group'             => 'login-hardening',
 			),
 
-			'login_rate_limit_blacklist_time'         => array(
+			'login_rate_limit_blacklist_time'        => array(
 				'label'             => esc_html__( 'Login block duration (seconds)', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'How long an IP remains blocked after exceeding login limits.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 3600,
@@ -301,7 +290,7 @@ final class SettingsConfig {
 				'group'             => 'login-hardening',
 			),
 
-			'login_rate_limit_promote_after'          => array(
+			'login_rate_limit_promote_after'         => array(
 				'label'             => esc_html__( 'Permanent blacklist threshold', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Number of temporary blocks before promoting an IP to the blacklist.', 'bromate-rest-api-firewall' ),
 				'default_value'     => 0,
@@ -310,7 +299,7 @@ final class SettingsConfig {
 				'group'             => 'login-hardening',
 			),
 
-			'wordpress_application_only_mode'         => array(
+			'wordpress_application_only_mode'        => array(
 				'label'             => esc_html__( 'Application-only mode', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Redirect front-end pages and use WordPress primarily as a REST API backend.', 'bromate-rest-api-firewall' ),
 				'default_value'     => false,
@@ -326,112 +315,112 @@ final class SettingsConfig {
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_redirect_templates_user_url'   => array(
+			'wordpress_redirect_templates_user_url'  => array(
 				'default_value'     => '',
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_url',
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_disable_xmlrpc'                => array(
+			'wordpress_disable_xmlrpc'               => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_disable_comments'              => array(
+			'wordpress_disable_comments'             => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_disable_pingbacks'             => array(
+			'wordpress_disable_pingbacks'            => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_disable_atom_rss'                   => array(
+			'wordpress_disable_atom_rss'             => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_disable_sitemap'               => array(
+			'wordpress_disable_sitemap'              => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_enforce_wpconfig_permissions'  => array(
+			'wordpress_enforce_wpconfig_permissions' => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_secure_uploads_dir'            => array(
+			'wordpress_secure_uploads_dir'           => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_secure_http_headers'           => array(
+			'wordpress_secure_http_headers'          => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_compression_http_headers'      => array(
+			'wordpress_compression_http_headers'     => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_wp_http_headers'               => array(
+			'wordpress_wp_http_headers'              => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_remove_emoji_scripts'          => array(
+			'wordpress_remove_emoji_scripts'         => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_svg_webp_support_enabled'      => array(
+			'wordpress_svg_webp_support_enabled'     => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_max_upload_weight'             => array(
+			'wordpress_max_upload_weight'            => array(
 				'default_value'     => 1024, // KB.
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_max_upload_weight_enabled'     => array(
+			'wordpress_max_upload_weight_enabled'    => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'group'             => 'wordpress',
 			),
 
-			'wordpress_json_acf_fields_enabled'       => array(
+			'wordpress_json_acf_fields_enabled'      => array(
 				'default_value'     => false,
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
@@ -480,14 +469,14 @@ final class SettingsConfig {
 				'label' => __( 'WordPress Hardening', 'bromate-rest-api-firewall' ),
 				'icon'  => 'wordpress',
 			),
-			'logs'       => array(
+			'logs'            => array(
 				'label' => __( 'Logs', 'bromate-rest-api-firewall' ),
 				'icon'  => 'logs',
 			),
 
 		);
 
-		return apply_filters('bromate_rest_api_firewall_panels', $groups_config);
+		return apply_filters( 'bromate_rest_api_firewall_panels', $groups_config );
 	}
 
 

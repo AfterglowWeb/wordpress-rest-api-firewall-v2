@@ -22,7 +22,6 @@ export const IpAPI = {
   getEntries: (list_type: ListType) =>
     apiRequest<{ entries: IpEntry[] }>('bromate_get_ip_entries', { list_type }),
 
-
   addEntry: (ip: string, list_type: ListType, user_id?: number | null, referrer?: string | null, expires_at?: string | null) =>
     apiRequest<{ entry: IpEntry }>('bromate_add_ip_entry', {
       ip,
@@ -31,7 +30,6 @@ export const IpAPI = {
       ...(referrer ? { referrer } : {}),
       ...(expires_at ? { expires_at } : {}),
     }),
-
 
   updateEntry: (id: number, data: {
     list_type: ListType;
@@ -58,10 +56,9 @@ export const IpAPI = {
   getUserEntries: (user_id: number) =>
     apiRequest<{ entries: IpEntry[] }>('bromate_get_user_ip_entries', { user_id }),
 
-  getCountryStats: (list_type: ListType) =>
+  getCountries: (list_type: ListType) =>
     apiRequest<{
-      countries: Record<string, string>;
+      countries: { country_code: string; country_name: string }[];
       stats: any;
-      blocked_countries: string[];
     }>('bromate_get_country_stats', { list_type }),
 };

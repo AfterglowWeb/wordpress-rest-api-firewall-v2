@@ -2,6 +2,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
+
 class IpEntryRepository {
 
 	protected static function table(): string {
@@ -39,7 +41,7 @@ class IpEntryRepository {
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
 				'default'           => 'manual',
-				'allowed_values'    => array( 'ip', 'cidr' ),
+				'allowed_values'    => array( 'ip', 'cidr', 'country' ),
 				'sortable'          => true,
 			),
 			'agent'        => array(
@@ -327,27 +329,6 @@ class IpEntryRepository {
 		return (int) $wpdb->query( 'DELETE FROM ' . self::table() . ' WHERE expires_at IS NOT NULL AND expires_at < NOW()' );
 	}
 
-	public static function country_in_list( string $country_code, string $list_type = 'blacklist' ): bool {
-
-		global $wpdb;
-
-		$sql = '
-			SELECT 1
-			FROM ' . self::table() . '
-			WHERE country_code = %s
-			AND list_type = %s
-			LIMIT 1
-		';
-
-		return (bool) $wpdb->get_var(
-			$wpdb->prepare(
-				$sql,
-				strtoupper( $country_code ),
-				$list_type
-			)
-		);
-	}
-
 	public static function get_country_stats( string $list_type = 'blacklist' ): array {
 		global $wpdb;
 
@@ -362,6 +343,43 @@ class IpEntryRepository {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$results = $wpdb->get_results( $wpdb->prepare( $sql, $list_type ), ARRAY_A );
 		return is_array( $results ) ? $results : array();
+	}
+
+	public static function country_in_list( string $country_code ): bool {
+		$blocked = SettingsRepository::read_option( 'rate_limit_countries' );
+		$blocked = is_array( $blocked ) ? $blocked : array();
+
+		return in_array( strtoupper( $country_code ), $blocked, true );
+	}
+
+	public static function block_country( string $country_code ): bool {
+		$country_code = strtoupper( $country_code );
+
+		$blocked = SettingsRepository::read_option( 'rate_limit_countries' );
+		$blocked = is_array( $blocked ) ? $blocked : array();
+
+		if ( in_array( $country_code, $blocked, true ) ) {
+			return true;
+		}
+
+		$blocked[] = $country_code;
+
+		$result = SettingsRepository::update_option( 'rate_limit_countries', $blocked );
+
+		return false !== $result;
+	}
+
+	public static function unblock_country( string $country_code ): bool {
+		$country_code = strtoupper( $country_code );
+
+		$blocked = SettingsRepository::read_option( 'rate_limit_countries' );
+		$blocked = is_array( $blocked ) ? $blocked : array();
+
+		$filtered = array_values( array_diff( $blocked, array( $country_code ) ) );
+
+		$result = SettingsRepository::update_option( 'rate_limit_countries', $filtered );
+
+		return false !== $result;
 	}
 
 	protected static function sanitize_entry( array $data, bool $require_ip = true ): ?array {

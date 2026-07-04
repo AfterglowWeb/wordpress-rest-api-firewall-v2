@@ -10,8 +10,8 @@ use WP_REST_Request;
 
 class RoutesPolicyTest {
 
-	protected static $instance = null;
-	public static ?int $internal_test_user_id           = null;
+	protected static $instance                = null;
+	public static ?int $internal_test_user_id = null;
 
 	public static function get_instance() {
 		if ( null === static::$instance ) {
@@ -138,8 +138,8 @@ class RoutesPolicyTest {
 				'policy'       => $policy,
 				'bypass_users' => $bypass_users,
 				'tests'        => array(
-					'disabled'   => $this->test_disabled( $route, $method, $policy ),
-					'auth'       => $this->test_auth( $route, $method, $policy ),
+					'disabled' => $this->test_disabled( $route, $method, $policy ),
+					'auth'     => $this->test_auth( $route, $method, $policy ),
 				),
 				'raw_data'     => $this->fetch_data( $route, $method ),
 				'result_data'  => $use_auth_for_result
@@ -167,7 +167,7 @@ class RoutesPolicyTest {
 	}
 
 	protected function get_model_for_route( string $route ): ?array {
-		
+
 		$post_type = $this->post_type_from_route( $route );
 		if ( ! $post_type ) {
 			return null;
@@ -309,7 +309,7 @@ class RoutesPolicyTest {
 
 	protected function make_request( string $route, string $method ) {
 		$test_token = wp_generate_password( 32, false );
-		$url = add_query_arg( '_firewall_test', $test_token, $this->build_rest_url( $route ) );
+		$url        = add_query_arg( '_firewall_test', $test_token, $this->build_rest_url( $route ) );
 
 		$args = array(
 			'method'      => $method,
@@ -356,11 +356,11 @@ class RoutesPolicyTest {
 	}
 
 	public static function begin_internal_test( int $user_id ): void {
-		self::$internal_test_user_id        = $user_id;
+		self::$internal_test_user_id = $user_id;
 	}
 
 	public static function end_internal_test(): void {
-		self::$internal_test_user_id        = null;
+		self::$internal_test_user_id = null;
 	}
 
 	public static function is_test_request(): bool {

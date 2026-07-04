@@ -94,18 +94,18 @@ class AdminPage {
 			'bromate-rest-api-firewall',
 			'bromateRestApiFirewall',
 			array(
-				'nonce'       => wp_create_nonce( 'bromate_rest_api_firewall_update_options_nonce' ),
-				'ajaxurl'     => admin_url( 'admin-ajax.php' ),
-				'options'     => SettingsRepository::read_options(),
-				'plugin'      => array(
+				'nonce'               => wp_create_nonce( 'bromate_rest_api_firewall_update_options_nonce' ),
+				'ajaxurl'             => admin_url( 'admin-ajax.php' ),
+				'options'             => SettingsRepository::read_options(),
+				'plugin'              => array(
 					'name'    => 'Bromate REST API Firewall',
 					'version' => BROMATE_REST_API_FIREWALL_VERSION,
 				),
-				'currentUser' => array(
+				'currentUser'         => array(
 					'id'    => $user->ID,
 					'login' => $user->user_login,
 				),
-				'panels'      => SettingsConfig::groups_config(),
+				'panels'              => SettingsConfig::groups_config(),
 				'has_rest_api_models' => defined( 'BROMATE_REST_API_MODELS_VERSION' ),
 			)
 		);

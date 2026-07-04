@@ -56,10 +56,10 @@ class RedirectTemplates {
 			return;
 		}
 
-		$theme_redirect_front_preset_option       = SettingsRepository::read_option( 'redirect_front_preset_option' );
+		$theme_redirect_front_preset_option      = SettingsRepository::read_option( 'redirect_front_preset_option' );
 		$theme_redirect_front_custom_url_enabled = SettingsRepository::read_option( 'redirect_front_custom_url_enabled' );
 		$theme_redirect_front_custom_url         = SettingsRepository::read_option( 'redirect_front_custom_url' );
-		$redirect_url                              = '';
+		$redirect_url                            = '';
 
 		if ( true === $theme_redirect_front_custom_url_enabled ) {
 			$redirect_url = sanitize_url( apply_filters( 'rest_firewall_redirect_url', $theme_redirect_front_custom_url ) );

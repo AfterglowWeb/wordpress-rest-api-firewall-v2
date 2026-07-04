@@ -23,13 +23,11 @@ class WordPressSecurityBootstrap {
 
 	private function __construct() {
 		DisableAPIs::register();
-        DisableComments::register();
-        DisableEmbeds::register();
-        DisableEmojiScripts::register();
-        FilePermissions::register();
-        HttpHeaders::register();
-        RedirectTemplates::register();
+		DisableComments::register();
+		DisableEmbeds::register();
+		DisableEmojiScripts::register();
+		FilePermissions::register();
+		HttpHeaders::register();
+		RedirectTemplates::register();
 	}
-
-	
 }
