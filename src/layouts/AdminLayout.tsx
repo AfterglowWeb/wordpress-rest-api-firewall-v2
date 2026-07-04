@@ -1,7 +1,5 @@
 import Stack from '@mui/material/Stack';
-
 import Navigation from '@components/Navigation';
-;
 import { useNavigation } from '@contexts/NavigationContext';
 
 import Dashboard from '@pages/Dashboard';
@@ -10,6 +8,7 @@ import Firewall from '@pages/Firewall';
 import Routes from '@pages/Routes';
 import Models from '@pages/Models';
 import WordPress from '@pages/WordPress';
+import LoginHardening from '@pages/LoginHardening';
 import Logs from '@pages/Logs';
 
 export default function AdminLayout() {
@@ -23,11 +22,13 @@ export default function AdminLayout() {
 
 					{panel === 'authentication' && <Authentication />}
 					
-					{panel === 'firewall' && <Firewall />}
-
 					{panel === 'routes' && <Routes />}
 
 					{panel === 'models' && <Models />}
+
+					{panel === 'firewall' && <Firewall />}
+
+					{panel === 'login-hardening' && <LoginHardening />}
 
 					{panel === 'wordpress' && <WordPress />}
 

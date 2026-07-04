@@ -1,10 +1,10 @@
 export type PanelKey =
 	| 'dashboard'
 	| 'authentication'
-	| 'firewall'
-	| 'login-hardening'
 	| 'routes'
 	| 'models'
+	| 'firewall'
+	| 'login-hardening'
 	| 'wordpress'
 	| 'logs';
 
