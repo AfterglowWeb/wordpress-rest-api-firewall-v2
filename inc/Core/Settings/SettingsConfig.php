@@ -11,6 +11,8 @@ final class SettingsConfig {
 	public static function register(): void {
 		$self = new self();
 		add_action( 'admin_init', array( $self, 'register_settings' ) );
+
+		
 	}
 
 	public function register_settings(): void {
@@ -535,7 +537,7 @@ final class SettingsConfig {
 	}
 
 	public static function groups_config(): array {
-		return array(
+		$groups_config = array(
 
 			'dashboard'       => array(
 				'label' => __( 'Dashboard', 'bromate-rest-api-firewall' ),
@@ -577,7 +579,10 @@ final class SettingsConfig {
 			),
 
 		);
+
+		return apply_filters('bromate_rest_api_firewall_panels', $groups_config);
 	}
+
 
 	public static function default_options(): array {
 		$defaults = array();

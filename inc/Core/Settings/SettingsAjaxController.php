@@ -2,7 +2,7 @@
 
 use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
 use Bromate\RestApiFirewall\Security\Routes\RoutesPolicyRepository;
-use Bromate\RestApiFirewall\Models\ModelsPropertiesRepository;
+use Bromate\RestApiFirewall\Core\Settings\WordPressObjects;
 
 class SettingsAjaxController {
 
@@ -107,7 +107,7 @@ class SettingsAjaxController {
 		if ( false === self::ajax_validate_has_firewall_admin_caps() ) {
 			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized', 'bromate-rest-api-firewall' ) ), 403 );
 		}
-		$wordpress_objects = ModelsPropertiesRepository::list_rest_api_object_types();
+		$wordpress_objects = WordPressObjects::list_rest_api_object_types();
 		wp_send_json_success( $wordpress_objects );
 	}
 

@@ -9,4 +9,5 @@ export interface AdminData {
 		id: number;
 		login: string;
 	};
+	has_rest_api_models?: boolean;
 }
