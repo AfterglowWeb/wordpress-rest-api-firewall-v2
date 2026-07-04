@@ -24,7 +24,7 @@ final class SchemaManager {
 	}
 
 	private static function create_ip_entries( \wpdb $wpdb ): void {
-		$table           = $wpdb->prefix . 'bromate_firewall_ip_entries';
+		$table           = $wpdb->prefix . 'bromate_rest_api_firewall_ip_entries';
 		$charset_collate = $wpdb->get_charset_collate();
 
 		dbDelta(
@@ -55,7 +55,7 @@ final class SchemaManager {
 	}
 
 	private static function create_logs( \wpdb $wpdb ): void {
-		$table           = $wpdb->prefix . 'bromate_firewall_logs';
+		$table           = $wpdb->prefix . 'bromate_rest_api_firewall_logs';
 		$charset_collate = $wpdb->get_charset_collate();
 
 		dbDelta(

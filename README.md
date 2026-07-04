@@ -32,7 +32,7 @@ git clone https://github.com/AfterglowWeb/wordpress-rest-api-firewall-v2.git bro
 
 ### 2. Activate the plugin through the WordPress admin
 
-Navigate to the **Bromate REST API Firewall** admin page.
+### 3. Navigate to the **Bromate REST API Firewall** admin page.
 
 ## Contributing
 
