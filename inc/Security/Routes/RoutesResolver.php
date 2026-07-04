@@ -27,7 +27,7 @@ class RoutesResolver {
 		return $policy;
 	}
 
-	
+
 
 	protected static function resolve_for_route( string $route, string $method ): array {
 
@@ -56,25 +56,25 @@ class RoutesResolver {
 		);
 
 		if ( isset( $effective['disabled'] ) ) {
-	
+
 			$opts        = SettingsRepository::read_options();
 			$dis_methods = isset( $opts['disabled_methods'] ) ? (array) $opts['disabled_methods'] : array();
 
 			if ( ! empty( $opts['routes_policy_default_hidden_routes'] ) ) {
 
 				$default_hidden_routes = RoutesPolicyRepository::get_default_hidden_routes();
-				if( empty( $default_hidden_routes) ) {
-					return  $effective;
+				if ( empty( $default_hidden_routes ) ) {
+					return $effective;
 				}
 
 				$match_count = 0;
 
-				foreach ($default_hidden_routes as $hidden_route ) {
+				foreach ( $default_hidden_routes as $hidden_route ) {
 					if ( 0 === strpos( $route, $hidden_route ) ) {
-						$match_count++;
+						++$match_count;
 					}
 				}
-				
+
 				if ( 1 === $match_count ) {
 					$effective['disabled'] = true;
 				}
@@ -83,7 +83,6 @@ class RoutesResolver {
 			if ( ! empty( $dis_methods ) && in_array( strtolower( $method ), $dis_methods, true ) ) {
 				$effective['disabled'] = true;
 			}
-			
 		}
 
 		return $effective;
@@ -151,13 +150,13 @@ class RoutesResolver {
 
 	protected static function resolve_settings( array $node_settings_chain, array $route_settings, bool $is_core_route = true ): array {
 
-		$firewall_options = SettingsRepository::read_options();
-		$global_enforce_auth    = (bool) ( $firewall_options['enforce_auth'] ?? false );
+		$firewall_options    = SettingsRepository::read_options();
+		$global_enforce_auth = (bool) ( $firewall_options['enforce_auth'] ?? false );
 
 		$resolved = array(
-			'disabled'        => false,
-			'protect'         => false,
-			'tags'            => array(),
+			'disabled' => false,
+			'protect'  => false,
+			'tags'     => array(),
 		);
 
 		foreach ( $node_settings_chain as $settings ) {
@@ -171,9 +170,9 @@ class RoutesResolver {
 		}
 
 		return array(
-			'disabled'           => ! $final['disabled'],
-			'protect'         => $final['protect'],
-			'tags'            => $final['tags'] ?? array(),
+			'disabled' => ! $final['disabled'],
+			'protect'  => $final['protect'],
+			'tags'     => $final['tags'] ?? array(),
 		);
 	}
 

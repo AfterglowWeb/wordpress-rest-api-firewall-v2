@@ -171,11 +171,11 @@ class SettingsAjaxController {
 			);
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in SettingsAjaxController::ajax_validate_has_firewall_admin_caps()
-		$settings_payload = isset( $_POST['settings'] ) ? wp_unslash( $_POST['settings'] ) : '';
-		$settings = json_decode( sanitize_text_field( $settings_payload ), true );
+		$settings_payload = isset( $_POST['settings'] ) ? sanitize_text_field( wp_unslash( $_POST['settings'] ) ) : '';
+		$settings         = json_decode( $settings_payload, true );
 
 		$result = RoutesPolicyRepository::save_all_settings( $settings );
-		if(false === $result) {
+		if ( false === $result ) {
 			wp_send_json_error(
 				array(
 					'message' => __( 'Failed to save settings', 'bromate-rest-api-firewall' ),
@@ -208,8 +208,8 @@ class SettingsAjaxController {
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in SettingsAjaxController::ajax_validate_has_firewall_admin_caps()
-		$tree_payload = isset( $_POST['tree'] ) ? wp_unslash( $_POST['tree'] ) : '';
-		$tree = json_decode( sanitize_text_field( $tree_payload ), true );
+		$tree_payload = isset( $_POST['tree'] ) ? sanitize_text_field( wp_unslash( $_POST['tree'] ) ) : '';
+		$tree         = json_decode( $tree_payload, true );
 
 		if ( ! is_array( $tree ) ) {
 			wp_send_json_error(

@@ -1,31 +1,39 @@
 import { useState, useCallback, useEffect, useMemo } from '@wordpress/element';
+
 import {
   Box, Paper, Typography, Switch,
   Stack, TextField, Button,
   Dialog, DialogTitle, DialogContent, DialogActions,
   Alert, CircularProgress, List, ListItem, ListItemText,
   FormControlLabel, Radio, RadioGroup, FormLabel, FormControl,
-  ToggleButton, ToggleButtonGroup
+  ToggleButton, ToggleButtonGroup, Autocomplete
 } from '@mui/material';
+
 import {
   DataGrid, GridColDef, GridRowId,
   GridRowSelectionModel, useGridApiContext,
   Toolbar, GridFilterModel, GridActionsCellItem
 } from '@mui/x-data-grid';
+
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+
 import * as Flags from 'country-flag-icons/react/3x2'
 
-
 import type { RateLimitSettings } from '@app-types/rate-limiting';
-import { IpAPI, type IpEntry, type ListType } from '@services/ip';
-import { usePortalContainer } from '@contexts/PortalContainerContext';
-import { Autocomplete } from '@mui/material';
 import type { AuthorizedUser } from '@app-types/auth';
-import { apiRequest } from '@services/api';
+
+import { IpAPI, type IpEntry, type ListType } from '@services/ip';
 import { useDialog, DIALOG_TYPES } from '@contexts/DialogContext';
+import { usePortalContainer } from '@contexts/PortalContainerContext';
+import { apiRequest } from '@services/api';
+import { SettingsAPI } from '@services/settings';
 import ConfirmDialog from '@components/ConfirmDialog';
+import CountryBlockPanel from '@features/firewall/CountryBlockPanel';
+import BlockedCountriesSummary from '@features/firewall/BlockedCountriesSummary';
 
 interface LineResult {
   value: string;
@@ -340,13 +348,30 @@ export default function Firewall(): JSX.Element {
 
   const [settings, setSettings] = useState<RateLimitSettings>({
     rate_limit_enabled: false,
-    rate_limit_wordpress_enabled: false,
     rate_limit_max: 30,
     rate_limit_time: 60,
     rate_limit_block_duration: 300,
     rate_limit_blacklist_threshold: 5,
     rate_limit_emergency_token_hash: '',
+    rate_limit_countries: [],
   });
+  const [settingsLoading, setSettingsLoading] = useState(true);
+
+  useEffect(() => {
+    SettingsAPI.readOptions()
+      .then((opts) => {
+        setSettings((prev) => ({ ...prev, ...opts }));
+      })
+      .finally(() => setSettingsLoading(false));
+  }, []);
+
+  const [countriesView, setCountriesView] = useState(false);
+
+  const handleSaveBlockedCountries = useCallback(async (codes: string[]) => {
+    await SettingsAPI.updateOption('rate_limit_countries', codes);
+    setSettings((prev) => ({ ...prev, rate_limit_countries: codes }));
+    setCountriesView(false);
+  }, []);
 
   const updateSetting = <K extends keyof RateLimitSettings>(key: K, value: RateLimitSettings[K]) =>
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -354,7 +379,7 @@ export default function Firewall(): JSX.Element {
   const [listType, setListType]     = useState<ListType>('blacklist');
   const [rows, setRows]             = useState<IpEntry[]>([]);
   const { openDialog } = useDialog();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [entryDialogOpen, setEntryDialogOpen] = useState(false);
   const [selection, setSelection]   = useState<GridRowSelectionModel>({
     type: 'include',
     ids: new Set(),
@@ -391,10 +416,9 @@ export default function Firewall(): JSX.Element {
         user_id:    form.user_id,
         referrer:   form.referrer || null,
         expires_at: form.expires_at || null,
-        // entry_type et entry_origin non modifiables depuis l'UI
       });
       await load();
-      setDialogOpen(false);
+      setEntryDialogOpen(false);
       setEditingIp(null);
       return [];
     }
@@ -419,7 +443,7 @@ export default function Firewall(): JSX.Element {
       else await load();
     }
 
-    if (errors.length === 0) setDialogOpen(false);
+    if (errors.length === 0) setEntryDialogOpen(false);
     return errors;
   };
 
@@ -433,7 +457,7 @@ export default function Firewall(): JSX.Element {
 
   const handleEditIp = useCallback((ip: IpEntry) => {
     setEditingIp(ip);
-    setDialogOpen(true);
+    setEntryDialogOpen(true);
   }, []);
 
   const handleDeleteIp = useCallback((id: GridRowId) => {
@@ -519,95 +543,135 @@ export default function Firewall(): JSX.Element {
 
   return (
     <Stack spacing={3}>
-      <Paper sx={{ p: 2 }} elevation={0}>        
-        <Stack flexDirection="column" gap={2}>
-         
-          <FormControlLabel
-            label="Enable Firewall"
-            control={
-              <Switch
-            checked={settings.rate_limit_enabled}
-                onChange={(e) => updateSetting('rate_limit_enabled', e.target.checked)}
-              />
-            }
-          />
+      {!countriesView && (
+        <Paper sx={{ p: 2 }} elevation={0}>
+          <Stack flexDirection="column" gap={2}>
+            <FormControlLabel
+              label="Enable Firewall"
+              control={
+                <Switch
+                  checked={settings.rate_limit_enabled}
+                  onChange={(e) => updateSetting('rate_limit_enabled', e.target.checked)}
+                />
+              }
+            />
 
-          <Stack>
-            <Typography variant="h6" mb={2}>Rate Limiting</Typography>
-            <Stack direction="row" flexWrap="wrap" gap={2} alignItems="flex-start">
-              <TextField
-                label="Maximum requests"
-                type="number"
-                value={settings.rate_limit_max}
-                onChange={(e) => updateSetting('rate_limit_max', Number(e.target.value))}
-              />
-              <TextField
-                label="Time window (seconds)"
-                type="number"
-                value={settings.rate_limit_time}
-                onChange={(e) => updateSetting('rate_limit_time', Number(e.target.value))}
-              />
-              <TextField
-                label="Block duration (seconds)"
-                type="number"
-                value={settings.rate_limit_block_duration}
-                onChange={(e) => updateSetting('rate_limit_block_duration', Number(e.target.value))}
-              />
-              <TextField
-                label="Blacklist threshold"
-                type="number"
-                value={settings.rate_limit_blacklist_threshold}
-                onChange={(e) => updateSetting('rate_limit_blacklist_threshold', Number(e.target.value))}
-                helperText="Violations before auto-ban"
-              />
+            <Stack>
+              <Typography variant="h6" mb={2}>Rate Limiting</Typography>
+              <Stack direction="row" flexWrap="wrap" gap={2} alignItems="flex-start">
+                <TextField
+                  label="Maximum requests"
+                  type="number"
+                  value={settings.rate_limit_max}
+                  onChange={(e) => updateSetting('rate_limit_max', Number(e.target.value))}
+                />
+                <TextField
+                  label="Time window (seconds)"
+                  type="number"
+                  value={settings.rate_limit_time}
+                  onChange={(e) => updateSetting('rate_limit_time', Number(e.target.value))}
+                />
+                <TextField
+                  label="Block duration (seconds)"
+                  type="number"
+                  value={settings.rate_limit_block_duration}
+                  onChange={(e) => updateSetting('rate_limit_block_duration', Number(e.target.value))}
+                />
+                <TextField
+                  label="Blacklist threshold"
+                  type="number"
+                  value={settings.rate_limit_blacklist_threshold}
+                  onChange={(e) => updateSetting('rate_limit_blacklist_threshold', Number(e.target.value))}
+                  helperText="Violations before auto-ban"
+                />
+              </Stack>
             </Stack>
           </Stack>
+        </Paper>
+      )}
+
+      <Paper sx={{ p: 2 }} elevation={0}>
+        <Stack flexDirection="column" gap={2}>
+          {!countriesView && (
+            <Typography variant="h6">Blocked Countries</Typography>
+          )}
+          <Box>
+          <Button
+            size="small"
+            disableElevation
+            variant="contained"
+            disabled={settingsLoading}
+            onClick={() => setCountriesView((v) => !v)}
+            startIcon={countriesView ? <KeyboardArrowLeftIcon fontSize="inherit" /> : null}
+            endIcon={countriesView ? null : <KeyboardArrowRightIcon fontSize="inherit" />}
+          >
+            {countriesView ? 'Back to IP management' : 'Manage countries'}
+          </Button>
+          </Box>
+          {!countriesView && (
+          <BlockedCountriesSummary codes={settings.rate_limit_countries || []} />
+          )}
         </Stack>
-
       </Paper>
 
-      <Paper sx={{ p: 2 }} elevation={0}>
-        <Typography variant="h6" mb={2}>IPs Management</Typography>
-        <DataGrid
-          rows={rows}
-          getRowId={(row) => row.id}
-          columns={ipColumns}
-          checkboxSelection
-          disableRowSelectionOnClick
-          rowSelectionModel={selection}
-          onRowSelectionModelChange={setSelection}
-          showToolbar
-          slots={toolbarSlots}
-          slotProps={{
-            toolbar: {
-              onAdd: () => setDialogOpen(true),
-              onDeleteSelectedIps: handleDeleteSelected,
-            } as any,
-          }}
-          filterModel={filterModel}
-          onFilterModelChange={setFilterModel}
-        />
-      </Paper>
+      {countriesView ? (
+        <Paper sx={{ p: 2 }} elevation={0}>
+          <CountryBlockPanel
+            initialBlocked={settings.rate_limit_countries || []}
+            onSave={handleSaveBlockedCountries}
+            onClose={() => setCountriesView(false)}
+          />
+        </Paper>
+      ) : (
+        <Paper sx={{ p: 2 }} elevation={0}>
+          <Stack flexDirection="column" gap={2}>
+            <Stack flexDirection="column" gap={0}>
+              <Typography variant="h6" mb={2}>IPs Management</Typography>
+            </Stack>
+            <DataGrid
+              rows={rows}
+              getRowId={(row) => row.id}
+              columns={ipColumns}
+              checkboxSelection
+              disableRowSelectionOnClick
+              rowSelectionModel={selection}
+              onRowSelectionModelChange={setSelection}
+              showToolbar
+              slots={toolbarSlots}
+              slotProps={{
+                toolbar: {
+                  onAdd: () => setEntryDialogOpen(true),
+                  onDeleteSelectedIps: handleDeleteSelected,
+                } as any,
+              }}
+              filterModel={filterModel}
+              onFilterModelChange={setFilterModel}
+            />
+          </Stack>
+        </Paper>
+      )}
 
-      <Paper sx={{ p: 2 }} elevation={0}>
-        <Typography variant="h6" mb={2}>Emergency Access</Typography>
-        <TextField
-          label="Emergency bypass token hash"
-          value={settings.rate_limit_emergency_token_hash}
-          onChange={(e) => updateSetting('rate_limit_emergency_token_hash', e.target.value)}
-          fullWidth
-          helperText="Stored as hash — never expose the raw token"
-        />
-      </Paper>
+      {!countriesView && (
+        <Paper sx={{ p: 2 }} elevation={0}>
+          <Typography variant="h6" mb={2}>Emergency Access</Typography>
+          <TextField
+            label="Emergency bypass token hash"
+            value={settings.rate_limit_emergency_token_hash}
+            onChange={(e) => updateSetting('rate_limit_emergency_token_hash', e.target.value)}
+            fullWidth
+            helperText="Stored as hash — never expose the raw token"
+          />
+        </Paper>
+      )}
 
       <AddEntryDialog
-        open={dialogOpen}
+        open={entryDialogOpen}
         defaultListType={listType}
-        editingEntry={editingIp}          // ← ajout
+        editingEntry={editingIp}
         onSave={handleAddEntries}
         onClose={() => {
-          setDialogOpen(false);
-          setEditingIp(null);             // ← reset
+          setEntryDialogOpen(false);
+          setEditingIp(null);
         }}
         wpUsers={wpUsers}
         wpUsersLoading={wpUsersLoading}

@@ -26,7 +26,7 @@ final class Bootstrap {
 		AdminLoginBootstrap::register();
 		WordPressSecurityBootstrap::register();
 
-		if( is_admin() ) {
+		if ( is_admin() ) {
 			AdminPage::register();
 			SettingsAjaxController::register();
 			IpEntryAjaxController::register();
@@ -34,7 +34,6 @@ final class Bootstrap {
 		}
 
 		LogEntryAjaxController::register();
-		
 	}
 
 	public static function activate(): void {

@@ -18,6 +18,7 @@ class IpEntryAjaxController {
 		add_action( 'wp_ajax_bromate_delete_ip_entry', array( $self, 'ajax_delete_ip_entry' ) );
 		add_action( 'wp_ajax_bromate_delete_ip_entries', array( $self, 'ajax_delete_ip_entries' ) );
 		add_action( 'wp_ajax_bromate_get_country_stats', array( $self, 'ajax_get_country_stats' ) );
+		add_action( 'wp_ajax_bromate_toggle_country_block', array( $self, 'ajax_toggle_country_block' ) );
 		add_action( 'wp_ajax_bromate_get_user_ip_entries', array( $self, 'ajax_get_user_ip_entries' ) );
 	}
 
@@ -212,9 +213,43 @@ class IpEntryAjaxController {
 
 		wp_send_json_success(
 			array(
-				'countries'         => GeoIpApi::get_all_countries(),
-				'stats'             => $stats,
-				'blocked_countries' => array(),
+				'countries' => GeoIpApi::get_all_countries(),
+				'stats'     => $stats,
+			),
+			200
+		);
+	}
+
+	public function ajax_toggle_country_block(): void {
+
+		if ( false === SettingsAjaxController::ajax_validate_has_firewall_admin_caps() ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
+		}
+
+		// phpcs:disable WordPress.Security.NonceVerification.Missing
+		$country_code = isset( $_POST['country_code'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_POST['country_code'] ) ) ) : '';
+		$list_type    = isset( $_POST['list_type'] ) ? sanitize_text_field( wp_unslash( $_POST['list_type'] ) ) : 'blacklist';
+		$blocked      = isset( $_POST['blocked'] ) ? filter_var( wp_unslash( $_POST['blocked'] ), FILTER_VALIDATE_BOOLEAN ) : false;
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+
+		if ( empty( $country_code ) || 2 !== strlen( $country_code ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid country code', 'bromate-rest-api-firewall' ) ), 400 );
+		}
+
+		$list_type = 'blacklist' === $list_type ? 'blacklist' : 'whitelist';
+
+		$result = $blocked
+			? IpEntryRepository::block_country( $country_code, $list_type )
+			: IpEntryRepository::unblock_country( $country_code, $list_type );
+
+		if ( false === $result ) {
+			wp_send_json_error( array( 'message' => __( 'Failed to update country block', 'bromate-rest-api-firewall' ) ), 500 );
+		}
+
+		wp_send_json_success(
+			array(
+				'country_code' => $country_code,
+				'blocked'      => $blocked,
 			),
 			200
 		);

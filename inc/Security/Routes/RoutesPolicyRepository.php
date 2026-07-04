@@ -6,8 +6,8 @@ use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
 
 class RoutesPolicyRepository {
 
-	protected static $instance = null;
-	const DEFAULT_HIDDEN_ROUTES = ['wp/v2/users', 'oembed/1.0', 'batch/v1', 'wp-site-health/v1', 'wp-abilities/v1'];
+	protected static $instance     = null;
+	const DEFAULT_HIDDEN_ROUTES    = array( 'wp/v2/users', 'oembed/1.0', 'batch/v1', 'wp-site-health/v1', 'wp-abilities/v1' );
 	const GLOBAL_SETTINGS_DEFAULTS = array(
 		'routes_policy_enabled'               => false,
 		'routes_policy_default_hidden_routes' => false,
@@ -70,24 +70,24 @@ class RoutesPolicyRepository {
 
 	public static function get_settings_payload(): array {
 		return array(
-			'tree'                   => self::get_routes_policy_tree(),
-			'settings'               => self::get_global_settings(),
-			'default_hidden_routes'  => self::get_default_hidden_routes(),
+			'tree'                  => self::get_routes_policy_tree(),
+			'settings'              => self::get_global_settings(),
+			'default_hidden_routes' => self::get_default_hidden_routes(),
 		);
 	}
 
 	public static function get_routes_policy_tree(): array {
-		$flat = self::list_all_rest_routes();
-		$tree = self::build_policy_tree( $flat );
+		$flat       = self::list_all_rest_routes();
+		$tree       = self::build_policy_tree( $flat );
 		$saved_tree = self::get_saved_routes_policy_tree();
 
 		return self::merge_saved_tree_into_current_tree( $tree, $saved_tree );
 	}
 
 	public static function get_default_hidden_routes(): array {
-		$default_hidden_routes = apply_filters('bromate_rest_api_firewall_default_hidden_routes', self::DEFAULT_HIDDEN_ROUTES);
-		if( !is_array( $default_hidden_routes ) || empty( $default_hidden_routes) ) {
-			return  [];
+		$default_hidden_routes = apply_filters( 'bromate_rest_api_firewall_default_hidden_routes', self::DEFAULT_HIDDEN_ROUTES );
+		if ( ! is_array( $default_hidden_routes ) || empty( $default_hidden_routes ) ) {
+			return array();
 		}
 		return array_map( 'sanitize_text_field', $default_hidden_routes );
 	}
@@ -130,9 +130,9 @@ class RoutesPolicyRepository {
 			array_unique(
 				array_filter(
 					array_map(
-						static function ( $object ) {
-							$object = sanitize_key( (string) $object );
-							return '' !== $object ? $object : null;
+						static function ( $wp_object ) {
+							$wp_object = sanitize_key( (string) $wp_object );
+							return '' !== $wp_object ? $wp_object : null;
 						},
 						$value
 					)
@@ -213,8 +213,8 @@ class RoutesPolicyRepository {
 		foreach ( $settings as $key => $value ) {
 			if ( in_array( $key, array( 'disabled', 'protect' ), true ) && is_array( $value ) ) {
 				$sanitized[ $key ] = array(
-					'value'     => (bool) ( $value['value'] ?? false ),
-					'inherited' => (bool) ( $value['inherited'] ?? false ),
+					'value'      => (bool) ( $value['value'] ?? false ),
+					'inherited'  => (bool) ( $value['inherited'] ?? false ),
 					'overridden' => (bool) ( $value['overridden'] ?? false ),
 				);
 			} elseif ( 'tags' === $key && is_array( $value ) ) {
@@ -432,9 +432,9 @@ class RoutesPolicyRepository {
 	public static function save_routes_policy_tree( array $tree ): bool {
 		try {
 			$sanitized_tree = self::sanitize_routes_policy_tree( $tree );
-			$result = SettingsRepository::update_option( 'routes_policy_tree', $sanitized_tree );
+			$result         = SettingsRepository::update_option( 'routes_policy_tree', $sanitized_tree );
 
-			return $result !== false;
+			return false !== $result;
 		} catch ( \Throwable $e ) {
 			return false;
 		}
@@ -641,9 +641,9 @@ class RoutesPolicyRepository {
 					$current_node['routes'][ $existing_index ]['settings'] = array_merge(
 						$current_node['routes'][ $existing_index ]['settings'] ?? array(),
 						array(
-							'protect'         => false,
-							'disabled'        => false,
-							'tags'            => array(),
+							'protect'  => false,
+							'disabled' => false,
+							'tags'     => array(),
 						)
 					);
 				} else {
@@ -663,9 +663,9 @@ class RoutesPolicyRepository {
 			'route'      => $route['route'],
 			'params'     => $route['params'],
 			'settings'   => array(
-				'protect'         => false,
-				'disabled'        => false,
-				'tags'            => array(),
+				'protect'  => false,
+				'disabled' => false,
+				'tags'     => array(),
 			),
 			'callback'   => $route['callback'],
 			'permission' => array(

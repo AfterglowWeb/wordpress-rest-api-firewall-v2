@@ -104,20 +104,20 @@ class WordPressObjects {
 	}
 
 	public static function list_authors(): array {
-        return [
-            [
-                'id' => 0,
-                'display_name' => __('Author', 'bromate-rest-api-firewall'),
-            ],
-        ];
-    }
+		return array(
+			array(
+				'id'           => 0,
+				'display_name' => __( 'Author', 'bromate-rest-api-firewall' ),
+			),
+		);
+	}
 
 
-    public static function list_rest_api_object_types(): array {
-        return array_merge(
-            WordPressObjects::list_post_types(),
-            WordPressObjects::list_taxonomies(),
-            WordPressObjects::list_authors()
-        );
-    }
+	public static function list_rest_api_object_types(): array {
+		return array_merge(
+			self::list_post_types(),
+			self::list_taxonomies(),
+			self::list_authors()
+		);
+	}
 }
