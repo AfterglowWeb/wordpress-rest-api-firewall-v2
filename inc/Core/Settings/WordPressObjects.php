@@ -1,4 +1,4 @@
-<?php namespace Bromate\RestApiFirewall\Models;
+<?php namespace Bromate\RestApiFirewall\Core\Settings;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -102,4 +102,22 @@ class WordPressObjects {
 
 		return array_values( $list );
 	}
+
+	public static function list_authors(): array {
+        return [
+            [
+                'id' => 0,
+                'display_name' => __('Author', 'bromate-rest-api-firewall'),
+            ],
+        ];
+    }
+
+
+    public static function list_rest_api_object_types(): array {
+        return array_merge(
+            WordPressObjects::list_post_types(),
+            WordPressObjects::list_taxonomies(),
+            WordPressObjects::list_authors()
+        );
+    }
 }

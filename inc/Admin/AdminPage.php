@@ -106,6 +106,7 @@ class AdminPage {
 					'login' => $user->user_login,
 				),
 				'panels'      => SettingsConfig::groups_config(),
+				'has_rest_api_models' => defined( 'BROMATE_REST_API_MODELS_VERSION' ),
 			)
 		);
 	}
