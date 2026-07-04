@@ -11,10 +11,12 @@ use Bromate\RestApiFirewall\Core\Settings\SettingsAjaxController;
 use Bromate\RestApiFirewall\Core\Schema\SchemaManager;
 use Bromate\RestApiFirewall\Admin\AdminPage;
 use Bromate\RestApiFirewall\Admin\Documentation;
+use Bromate\RestApiFirewall\Logs\LogEntryAjaxController;
 
 final class Bootstrap {
 
 	private function __construct() {}
+
 
 	public static function register(): void {
 		add_action( 'plugins_loaded', array( SchemaManager::class, 'install' ), 1 );
@@ -30,6 +32,8 @@ final class Bootstrap {
 			IpEntryAjaxController::register();
 			Documentation::register();
 		}
+
+		LogEntryAjaxController::register();
 		
 	}
 
@@ -84,8 +88,8 @@ final class Bootstrap {
 
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}bromate_firewall_ip_entries" );
+		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}bromate_rest_api_firewall_ip_entries" );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}bromate_firewall_logs" );
+		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}bromate_rest_api_firewall_logs" );
 	}
 }

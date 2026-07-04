@@ -1,5 +1,9 @@
 import { useEffect, useRef } from '@wordpress/element';
+import { __ } from '@wordpress/i18n';
 import { useAdminData } from '@contexts/AdminDataContext';
+
+import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
 
 export default function Models() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -30,6 +34,18 @@ export default function Models() {
       }
     };
   }, [adminData]);
+
+  if (!adminData.has_rest_api_models) {
+    return (
+      <Alert severity="info" sx={{ maxWidth: 600 }}>
+        <AlertTitle>{__('Models', 'bromate-rest-api-firewall')}</AlertTitle>
+        {__(
+          'Install and activate the Bromate REST API Models plugin to define and manage custom models for your REST API.',
+          'bromate-rest-api-firewall'
+        )}
+      </Alert>
+    );
+  }
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%' }} />

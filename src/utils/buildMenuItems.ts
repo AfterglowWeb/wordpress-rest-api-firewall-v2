@@ -8,7 +8,7 @@ import LockOutlinedIcon          from '@mui/icons-material/LockOutlined';
 import SpeedOutlinedIcon         from '@mui/icons-material/SpeedOutlined';
 import AccountTreeOutlinedIcon   from '@mui/icons-material/AccountTreeOutlined';
 import ShieldOutlinedIcon        from '@mui/icons-material/ShieldOutlined';
-import DataObjectOutlinedIcon    from '@mui/icons-material/DataObjectOutlined';
+import DataObjectIcon from '@mui/icons-material/DataObject';
 import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import SpaceDashboardOutlinedIcon from '@mui/icons-material/SpaceDashboardOutlined';
 import VpnLockIcon from '@mui/icons-material/VpnLock';
@@ -22,7 +22,7 @@ const ICON_MAP: Record<string, IconComponent> = {
     speed:         SpeedOutlinedIcon,
     route:         AccountTreeOutlinedIcon,
     shield:        ShieldOutlinedIcon,
-    data_object:   DataObjectOutlinedIcon,
+    data_object:   DataObjectIcon,
     wordpress:     AdminPanelSettingsOutlinedIcon,
     world:         VpnLockIcon,
     logs: ManageHistoryOutlinedIcon,
