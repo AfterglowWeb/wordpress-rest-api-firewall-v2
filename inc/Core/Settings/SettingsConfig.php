@@ -353,6 +353,24 @@ final class SettingsConfig {
 				'group'             => 'login-hardening',
 			),
 
+			'login_2fa_policy'                       => array(
+				'label'             => esc_html__( '2FA Enforcement Policy', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Determines how users are required to set up two-factor authentication.', 'bromate-rest-api-firewall' ),
+				'default_value'     => 'free',
+				'type'              => 'string',
+				'sanitize_callback' => array( SettingsRepository::class, 'sanitize_2fa_policy' ),
+				'group'             => 'login-hardening',
+			),
+
+			'login_2fa_grace_period'                 => array(
+				'label'             => esc_html__( '2FA Grace Period (days)', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Number of days users have to enable 2FA before it becomes mandatory.', 'bromate-rest-api-firewall' ),
+				'default_value'     => 7,
+				'type'              => 'integer',
+				'sanitize_callback' => array( SettingsRepository::class, 'sanitize_2fa_grace_period' ),
+				'group'             => 'login-hardening',
+			),
+
 			'wordpress_application_only_mode'        => array(
 				'label'             => esc_html__( 'Application-only mode', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Redirect front-end pages and use WordPress primarily as a REST API backend.', 'bromate-rest-api-firewall' ),
