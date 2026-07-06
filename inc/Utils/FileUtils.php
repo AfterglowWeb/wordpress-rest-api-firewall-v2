@@ -5,10 +5,17 @@ defined( 'ABSPATH' ) || exit;
 use Exception;
 use WP_Error;
 
-/**
- * FileUtils handles all file system operations using WP_Filesystem.
- */
 class FileUtils {
+
+	public static function load_script_config( $file_path ): array {
+		$config = array();
+		if ( self::is_readable( $file_path ) ) {
+			$raw_config             = include realpath( $file_path );
+			$config['dependencies'] = isset( $raw_config['dependencies'] ) ? array_map( 'sanitize_text_field', $raw_config['dependencies'] ) : array();
+			$config['version']      = isset( $raw_config['version'] ) ? sanitize_text_field( $raw_config['version'] ) : wp_rand();
+		}
+		return $config;
+	}
 
 	/**
 	 * Get the WordPress filesystem instance.

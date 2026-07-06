@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from '@wordpress/element';
+import { useState, useEffect, useCallback, useMemo } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { SettingsAPI } from '@services/settings';
-import { apiRequest } from '@services/api';
+import { useNavigation } from '@contexts/NavigationContext';
 
 import {
   Paper,
@@ -13,7 +13,6 @@ import {
   Button,
   Alert,
   Snackbar,
-  Divider,
   Box,
   FormControl,
   InputLabel,
@@ -22,13 +21,8 @@ import {
   Chip,
   Tooltip,
 } from '@mui/material';
-import {
-  DataGrid,
-  GridColDef,
-  GridRowSelectionModel,
-} from '@mui/x-data-grid';
-import DeleteIcon from '@mui/icons-material/Delete';
 import InfoIcon from '@mui/icons-material/Info';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 
 import { useDialog, DIALOG_TYPES } from '@contexts/DialogContext';
 import ConfirmDialog from '@components/ConfirmDialog';
@@ -41,27 +35,13 @@ interface LoginSettings {
   login_rate_limit_blacklist_time: number;
   login_rate_limit_promote_after: number;
   
-  // reCAPTCHA
   login_recaptcha_enabled: boolean;
   login_recaptcha_site_key: string;
   login_recaptcha_secret_key: string;
   login_recaptcha_threshold: number;
   
-  // 2FA
   login_2fa_enabled: boolean;
-  login_2fa_methods: string[];
   login_2fa_issuer: string;
-  login_2fa_algorithm: string;
-  login_2fa_digits: number;
-  login_2fa_period: number;
-}
-
-interface BlockedIp {
-  id: number;
-  ip: string;
-  blocked_until: string;
-  reason: string;
-  attempts: number;
 }
 
 const DEFAULT_SETTINGS: LoginSettings = {
@@ -77,36 +57,28 @@ const DEFAULT_SETTINGS: LoginSettings = {
   login_recaptcha_threshold: 0.5,
   
   login_2fa_enabled: false,
-  login_2fa_methods: ['totp'],
   login_2fa_issuer: 'Bromate REST API',
-  login_2fa_algorithm: 'SHA1',
-  login_2fa_digits: 6,
-  login_2fa_period: 30,
 };
 
 export default function LoginHardening(): JSX.Element {
   const portalContainer = usePortalContainer();
   const { openDialog } = useDialog();
-  
+  const { navigateGuarded } = useNavigation();
   const [settings, setSettings] = useState<LoginSettings>(DEFAULT_SETTINGS);
+  const [loadedSettings, setLoadedSettings] = useState<LoginSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
-  const [blockedIps, setBlockedIps] = useState<BlockedIp[]>([]);
-  const [loadingIps, setLoadingIps] = useState(false);
-  const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
-    type: 'include',
-    ids: new Set(),
-  });
+  const isDirty = useMemo(
+    () => JSON.stringify(settings) !== JSON.stringify(loadedSettings),
+    [settings, loadedSettings]
+  );
 
-  // Load settings
   useEffect(() => {
     const loadSettings = async () => {
       try {
         const response = await SettingsAPI.readOptions();
-        // Merge with defaults
         const loadedSettings = { ...DEFAULT_SETTINGS };
         Object.keys(loadedSettings).forEach((key) => {
           if (key in response) {
@@ -114,6 +86,8 @@ export default function LoginHardening(): JSX.Element {
           }
         });
         setSettings(loadedSettings);
+        setLoadedSettings(loadedSettings);
+
         setError(null);
       } catch (err) {
         setError(__('Failed to load login settings.', 'bromate-rest-api-firewall'));
@@ -124,27 +98,6 @@ export default function LoginHardening(): JSX.Element {
 
     loadSettings();
   }, []);
-
-  // Load blocked IPs
-  useEffect(() => {
-    const loadBlockedIps = async () => {
-      setLoadingIps(true);
-      try {
-        const response = await apiRequest<{ entries: BlockedIp[] }>(
-          'bromate_get_blocked_ips'
-        );
-        setBlockedIps(response.entries || []);
-      } catch (err) {
-        // Silent fail for IP list
-      } finally {
-        setLoadingIps(false);
-      }
-    };
-
-    if (settings.login_rate_limit_enabled) {
-      loadBlockedIps();
-    }
-  }, [settings.login_rate_limit_enabled]);
 
   const updateSetting = <K extends keyof LoginSettings>(
     key: K,
@@ -157,10 +110,10 @@ export default function LoginHardening(): JSX.Element {
     setSaving(true);
     setError(null);
     setSuccess(null);
-    
+
     try {
-      // Save all settings
       await SettingsAPI.updateOptions(settings);
+      setLoadedSettings(settings);
       setSuccess(__('Settings saved successfully.', 'bromate-rest-api-firewall'));
     } catch (err) {
       setError(__('Failed to save settings.', 'bromate-rest-api-firewall'));
@@ -169,90 +122,15 @@ export default function LoginHardening(): JSX.Element {
     }
   }, [settings]);
 
-  const handleUnblockIp = useCallback((id: number) => {
+  const handleSaveConfirm = useCallback(() => {
     openDialog({
       type: DIALOG_TYPES.CONFIRM,
-      title: __('Unblock IP', 'bromate-rest-api-firewall'),
-      content: __('Are you sure you want to unblock this IP address?', 'bromate-rest-api-firewall'),
-      confirmLabel: __('Unblock', 'bromate-rest-api-firewall'),
-      onConfirm: async () => {
-        try {
-          await apiRequest('bromate_unblock_ip', { id });
-          setBlockedIps((prev) => prev.filter((ip) => ip.id !== id));
-          setSuccess(__('IP unblocked successfully.', 'bromate-rest-api-firewall'));
-        } catch (err) {
-          setError(__('Failed to unblock IP.', 'bromate-rest-api-firewall'));
-        }
-      },
+      title: __('Save login settings', 'bromate-rest-api-firewall'),
+      content: __('Apply these login hardening changes now?', 'bromate-rest-api-firewall'),
+      confirmLabel: __('Save', 'bromate-rest-api-firewall'),
+      onConfirm: handleSave,
     });
-  }, [openDialog]);
-
-  const handleBulkUnblock = useCallback(() => {
-    const selectedIds = Array.from((rowSelectionModel as any).ids || []);
-    if (!selectedIds.length) return;
-
-    openDialog({
-      type: DIALOG_TYPES.CONFIRM,
-      title: __('Unblock IPs', 'bromate-rest-api-firewall'),
-      content: `${__('Unblock', 'bromate-rest-api-firewall')} ${selectedIds.length} ${__('IP addresses?', 'bromate-rest-api-firewall')}`,
-      confirmLabel: __('Unblock All', 'bromate-rest-api-firewall'),
-      onConfirm: async () => {
-        try {
-          await apiRequest('bromate_unblock_ips', { ids: JSON.stringify(selectedIds) });
-          setBlockedIps((prev) => prev.filter((ip) => !selectedIds.includes(ip.id)));
-          setRowSelectionModel({ type: 'include', ids: new Set() });
-          setSuccess(__('IPs unblocked successfully.', 'bromate-rest-api-firewall'));
-        } catch (err) {
-          setError(__('Failed to unblock IPs.', 'bromate-rest-api-firewall'));
-        }
-      },
-    });
-  }, [rowSelectionModel, openDialog]);
-
-  const columns: GridColDef<BlockedIp>[] = [
-    {
-      field: 'ip',
-      headerName: __('IP Address', 'bromate-rest-api-firewall'),
-      flex: 1,
-      minWidth: 130,
-      renderCell: ({ value }) => (
-        <Chip label={value} size="small" sx={{ fontFamily: 'monospace' }} />
-      ),
-    },
-    {
-      field: 'attempts',
-      headerName: __('Attempts', 'bromate-rest-api-firewall'),
-      width: 100,
-    },
-    {
-      field: 'blocked_until',
-      headerName: __('Blocked Until', 'bromate-rest-api-firewall'),
-      width: 180,
-      valueFormatter: (value: string) => {
-        if (!value) return '—';
-        const date = new Date(value);
-        return date.toLocaleString();
-      },
-    },
-    {
-      field: 'reason',
-      headerName: __('Reason', 'bromate-rest-api-firewall'),
-      flex: 1,
-    },
-    {
-      field: 'actions',
-      type: 'actions',
-      width: 80,
-      getActions: ({ row }) => [
-        <Tooltip key="unblock" title={__('Unblock IP', 'bromate-rest-api-firewall')}>
-          <DeleteIcon
-            sx={{ cursor: 'pointer', color: 'error.main' }}
-            onClick={() => handleUnblockIp(row.id)}
-          />
-        </Tooltip>,
-      ],
-    },
-  ];
+  }, [openDialog, handleSave]);
 
   if (loading) {
     return (
@@ -266,6 +144,18 @@ export default function LoginHardening(): JSX.Element {
 
   return (
     <Stack spacing={3} p={2}>
+
+      <Stack direction="row" justifyContent="flex-end">
+        <Button
+          variant="contained"
+          disableElevation
+          onClick={handleSaveConfirm}
+          disabled={saving || !isDirty}
+        >
+          {saving ? __('Saving...', 'bromate-rest-api-firewall') : __('Save', 'bromate-rest-api-firewall')}
+        </Button>
+      </Stack>
+
       {/* Rate Limiting Section */}
       <Paper sx={{ p: 2 }} elevation={0}>
         <Stack flexDirection="column" gap={2}>
@@ -294,7 +184,6 @@ export default function LoginHardening(): JSX.Element {
                 onChange={(e) =>
                   updateSetting('login_rate_limit_attempts', Number(e.target.value))
                 }
-                disabled={!settings.login_rate_limit_enabled}
                 helperText={__('Number of failed attempts before blocking', 'bromate-rest-api-firewall')}
                 sx={{ minWidth: 150 }}
               />
@@ -306,7 +195,6 @@ export default function LoginHardening(): JSX.Element {
                 onChange={(e) =>
                   updateSetting('login_rate_limit_window', Number(e.target.value))
                 }
-                disabled={!settings.login_rate_limit_enabled}
                 helperText={__('Time window for counting attempts', 'bromate-rest-api-firewall')}
                 sx={{ minWidth: 150 }}
               />
@@ -318,7 +206,6 @@ export default function LoginHardening(): JSX.Element {
                 onChange={(e) =>
                   updateSetting('login_rate_limit_blacklist_time', Number(e.target.value))
                 }
-                disabled={!settings.login_rate_limit_enabled}
                 helperText={__('How long to block the IP', 'bromate-rest-api-firewall')}
                 sx={{ minWidth: 150 }}
               />
@@ -330,59 +217,36 @@ export default function LoginHardening(): JSX.Element {
                 onChange={(e) =>
                   updateSetting('login_rate_limit_promote_after', Number(e.target.value))
                 }
-                disabled={!settings.login_rate_limit_enabled}
                 helperText={__('0 = never promote to global blacklist', 'bromate-rest-api-firewall')}
                 sx={{ minWidth: 150 }}
               />
             </Stack>
           </Stack>
+
+
+          {/* Blocked IPs Section */}
+          {settings.login_rate_limit_enabled && (
+              <Stack direction="column" gap={1}>
+                <Typography variant="subtitle1" color="text.secondary">
+                  {__('View and manage IPs blocked by login rate limiting in the Firewall tab.', 'bromate-rest-api-firewall')}
+                </Typography>
+                <Box>
+                <Button
+                    size="small"
+                    disableElevation
+                    variant="contained"
+                    onClick={() => navigateGuarded('firewall', { entry_origin: 'login_rate_limit' })}
+                    endIcon={<KeyboardArrowRightIcon fontSize="inherit" />}
+                  >
+                  {__('View blocked login IPs', 'bromate-rest-api-firewall')}
+                  </Button>
+                </Box>
+              </Stack>
+          )}
+
         </Stack>
+
       </Paper>
-
-      {/* Blocked IPs Section */}
-      {settings.login_rate_limit_enabled && (
-        <Paper sx={{ p: 2 }} elevation={0}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
-            <Typography variant="h6">
-              {__('Blocked IPs', 'bromate-rest-api-firewall')}
-            </Typography>
-            {(rowSelectionModel as any).ids?.size > 0 && (
-              <Button
-                size="small"
-                color="error"
-                variant="contained"
-                disableElevation
-                startIcon={<DeleteIcon />}
-                onClick={handleBulkUnblock}
-              >
-                {__('Unblock Selected', 'bromate-rest-api-firewall')} ({(rowSelectionModel as any).ids.size})
-              </Button>
-            )}
-          </Stack>
-          <DataGrid
-            rows={blockedIps}
-            columns={columns}
-            loading={loadingIps}
-            checkboxSelection
-            disableRowSelectionOnClick
-            rowSelectionModel={rowSelectionModel}
-            onRowSelectionModelChange={(newSelection) => {
-              setRowSelectionModel(newSelection);
-            }}
-            autoHeight
-            pageSizeOptions={[10, 25, 50]}
-            getRowId={(row) => row.id}
-            sx={{
-              '& .MuiDataGrid-cell': {
-                display: 'flex',
-                alignItems: 'center',
-              },
-            }}
-          />
-        </Paper>
-      )}
-
-      <Divider />
 
       {/* reCAPTCHA Section */}
       <Paper sx={{ p: 2 }} elevation={0}>
@@ -390,7 +254,7 @@ export default function LoginHardening(): JSX.Element {
           <FormControlLabel
             label={
               <Stack direction="row" alignItems="center" gap={1}>
-                <Typography>{__('Enable reCAPTCHA', 'bromate-rest-api-firewall')}</Typography>
+                <Typography>{__('Enable reCAPTCHA v3', 'bromate-rest-api-firewall')}</Typography>
                 <Tooltip title={__('Google reCAPTCHA v3 protection for login', 'bromate-rest-api-firewall')}>
                   <InfoIcon fontSize="small" color="info" />
                 </Tooltip>
@@ -414,7 +278,6 @@ export default function LoginHardening(): JSX.Element {
               onChange={(e) =>
                 updateSetting('login_recaptcha_site_key', e.target.value)
               }
-              disabled={!settings.login_recaptcha_enabled}
               helperText={__('reCAPTCHA v3 site key from Google', 'bromate-rest-api-firewall')}
             />
             <TextField
@@ -425,27 +288,23 @@ export default function LoginHardening(): JSX.Element {
               onChange={(e) =>
                 updateSetting('login_recaptcha_secret_key', e.target.value)
               }
-              disabled={!settings.login_recaptcha_enabled}
               helperText={__('reCAPTCHA v3 secret key from Google', 'bromate-rest-api-firewall')}
             />
             <TextField
               label={__('Score Threshold', 'bromate-rest-api-firewall')}
               type="number"
               size="small"
-              inputProps={{ min: 0, max: 1, step: 0.1 }}
+              slotProps={{ htmlInput:{min: 0, max: 1, step: 0.1} }}
               value={settings.login_recaptcha_threshold}
               onChange={(e) =>
                 updateSetting('login_recaptcha_threshold', Number(e.target.value))
               }
-              disabled={!settings.login_recaptcha_enabled}
               helperText={__('Minimum score (0.0 - 1.0) to pass verification', 'bromate-rest-api-firewall')}
               sx={{ maxWidth: 200 }}
             />
           </Stack>
         </Stack>
       </Paper>
-
-      <Divider />
 
       {/* 2FA Section */}
       <Paper sx={{ p: 2 }} elevation={0}>
@@ -454,9 +313,6 @@ export default function LoginHardening(): JSX.Element {
             label={
               <Stack direction="row" alignItems="center" gap={1}>
                 <Typography>{__('Enable Two-Factor Authentication', 'bromate-rest-api-firewall')}</Typography>
-                <Tooltip title={__('TOTP-based 2FA for login', 'bromate-rest-api-firewall')}>
-                  <InfoIcon fontSize="small" color="info" />
-                </Tooltip>
               </Stack>
             }
             control={
@@ -469,100 +325,42 @@ export default function LoginHardening(): JSX.Element {
             }
           />
 
-          <Stack spacing={2}>
-            <TextField
-              label={__('Issuer', 'bromate-rest-api-firewall')}
-              size="small"
-              value={settings.login_2fa_issuer}
-              onChange={(e) =>
-                updateSetting('login_2fa_issuer', e.target.value)
-              }
-              disabled={!settings.login_2fa_enabled}
-              helperText={__('Organization name shown in authenticator apps', 'bromate-rest-api-firewall')}
-            />
-
-            <FormControl size="small" disabled={!settings.login_2fa_enabled}>
-              <InputLabel>{__('Algorithm', 'bromate-rest-api-firewall')}</InputLabel>
-              <Select
-                MenuProps={{ container: portalContainer }}
-                value={settings.login_2fa_algorithm}
-                label={__('Algorithm', 'bromate-rest-api-firewall')}
-                onChange={(e) =>
-                  updateSetting('login_2fa_algorithm', e.target.value)
-                }
-              >
-                <MenuItem value="SHA1">SHA1</MenuItem>
-                <MenuItem value="SHA256">SHA256</MenuItem>
-                <MenuItem value="SHA512">SHA512</MenuItem>
-              </Select>
-            </FormControl>
-
-            <Stack direction="row" flexWrap="wrap" gap={2}>
+            <Stack spacing={2} sx={{ mt: 1 }}>
               <TextField
-                label={__('Digits', 'bromate-rest-api-firewall')}
-                type="number"
+                label={__('Issuer Name', 'bromate-rest-api-firewall')}
                 size="small"
-                inputProps={{ min: 6, max: 8 }}
-                value={settings.login_2fa_digits}
+                value={settings.login_2fa_issuer}
                 onChange={(e) =>
-                  updateSetting('login_2fa_digits', Number(e.target.value))
+                  updateSetting('login_2fa_issuer', e.target.value)
                 }
-                disabled={!settings.login_2fa_enabled}
-                helperText={__('6 or 8 digits', 'bromate-rest-api-firewall')}
-                sx={{ maxWidth: 120 }}
-              />
-              <TextField
-                label={__('Period (seconds)', 'bromate-rest-api-firewall')}
-                type="number"
-                size="small"
-                inputProps={{ min: 15, max: 60 }}
-                value={settings.login_2fa_period}
-                onChange={(e) =>
-                  updateSetting('login_2fa_period', Number(e.target.value))
-                }
-                disabled={!settings.login_2fa_enabled}
-                helperText={__('Token validity period', 'bromate-rest-api-firewall')}
-                sx={{ maxWidth: 150 }}
+                sx={{ maxWidth: 400 }}
+                helperText={__('Name shown in your authentication app', 'bromate-rest-api-firewall')}
               />
             </Stack>
 
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                {__('Supported 2FA methods:', 'bromate-rest-api-firewall')}
+            <Alert severity="info" sx={{ mt: 1 }}>
+              <Typography variant="body2" gutterBottom>
+                <strong>{__('How it works:', 'bromate-rest-api-firewall')}</strong>
               </Typography>
-              <Stack direction="row" flexWrap="wrap" gap={1} mt={1}>
-                {settings.login_2fa_methods.map((method) => (
-                  <Chip
-                    key={method}
-                    label={method.toUpperCase()}
-                    size="small"
-                    color="primary"
-                    variant="outlined"
-                  />
-                ))}
-                <Chip
-                  label="+ TOTP"
-                  size="small"
-                  color="info"
-                  variant="outlined"
-                />
-              </Stack>
-            </Box>
-          </Stack>
-        </Stack>
-      </Paper>
-
-      {/* Save Button */}
-      <Paper sx={{ p: 2 }} elevation={0}>
-        <Stack direction="row" justifyContent="flex-end">
-          <Button
-            variant="contained"
-            disableElevation
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? __('Saving...', 'bromate-rest-api-firewall') : __('Save Settings', 'bromate-rest-api-firewall')}
-          </Button>
+              <Typography variant="body2" component="ul" sx={{ pl: 2, m: 0 }}>
+                <li>
+                  {__('Users can set up 2FA from their profile page using Google Authenticator or any TOTP-compatible app.', 'bromate-rest-api-firewall')}
+                </li>
+                <li>
+                  {__('After enabling, users will be required to enter a verification code during login.', 'bromate-rest-api-firewall')}
+                </li>
+                <li>
+                  {__('Backup codes are generated during setup for account recovery if the authenticator app is lost.', 'bromate-rest-api-firewall')}
+                </li>
+                <li>
+                  {__('Users can manage their 2FA settings (enable/disable, regenerate backup codes) from their profile page.', 'bromate-rest-api-firewall')}
+                </li>
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                {__('Note: Users must enable 2FA in their profile for this feature to take effect.', 'bromate-rest-api-firewall')}
+              </Typography>
+            </Alert>
+      
         </Stack>
       </Paper>
 

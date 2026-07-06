@@ -34,7 +34,7 @@ class IpEntryRepository {
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
 				'default'           => 'manual',
-				'allowed_values'    => array( 'manual', 'rate_limit' ),
+				'allowed_values'    => array( 'manual', 'auth_user_ip', 'public_rate_limit', 'login_rate_limit', 'country' ),
 				'sortable'          => true,
 			),
 			'entry_type'   => array(
@@ -200,6 +200,16 @@ class IpEntryRepository {
 			'total_pages' => ceil( $total / $per_page ),
 		);
 	}
+
+	public static function get_login_ip_entries( string $list_type = 'blacklist' ): array {
+    return self::get_entries(
+        array(
+            'list_type'    => 'blacklist' === $list_type ? 'blacklist' : 'whitelist',
+            'entry_origin' => 'login_rate_limit',
+            'per_page'     => 100,
+        )
+    );
+}
 
 	public static function find_by_id( int $id ): ?array {
 		global $wpdb;

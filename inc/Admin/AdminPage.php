@@ -57,7 +57,7 @@ class AdminPage {
 			return;
 		}
 
-		$mui_config       = self::load_script_config( BROMATE_REST_API_FIREWALL_DIR . 'build/mui.asset.php' );
+		$mui_config       = FileUtils::load_script_config( BROMATE_REST_API_FIREWALL_DIR . 'build/mui.asset.php' );
 		$mui_dependencies = ! empty( $mui_config ) && isset( $mui_config['dependencies'] ) ? $mui_config['dependencies'] : array();
 		$mui_dependencies = array_unique( $mui_dependencies );
 		wp_enqueue_script(
@@ -68,7 +68,7 @@ class AdminPage {
 			true
 		);
 
-		$mui_datagrid_config       = self::load_script_config( BROMATE_REST_API_FIREWALL_DIR . 'build/mui-datagrid.asset.php' );
+		$mui_datagrid_config       = FileUtils::load_script_config( BROMATE_REST_API_FIREWALL_DIR . 'build/mui-datagrid.asset.php' );
 		$mui_datagrid_dependencies = ! empty( $mui_datagrid_config ) && isset( $mui_datagrid_config['dependencies'] ) ? $mui_datagrid_config['dependencies'] : array();
 		$mui_datagrid_dependencies = array_unique( array_merge( array( 'bromate-rest-api-firewall-mui' ), $mui_datagrid_dependencies ) );
 		wp_enqueue_script(
@@ -79,7 +79,7 @@ class AdminPage {
 			true
 		);
 
-		$index_script_config = self::load_script_config( BROMATE_REST_API_FIREWALL_DIR . 'build/index.asset.php' );
+		$index_script_config = FileUtils::load_script_config( BROMATE_REST_API_FIREWALL_DIR . 'build/index.asset.php' );
 		$index_dependencies  = ! empty( $index_script_config ) && isset( $index_script_config['dependencies'] ) ? $index_script_config['dependencies'] : array();
 		$index_dependencies  = array_unique( array_merge( array( 'bromate-rest-api-firewall-mui' ), $index_dependencies ) );
 		wp_enqueue_script(
@@ -171,13 +171,5 @@ class AdminPage {
 		}
 	}
 
-	private static function load_script_config( $file_path ): array {
-		$config = array();
-		if ( FileUtils::is_readable( $file_path ) ) {
-			$raw_config             = include realpath( $file_path );
-			$config['dependencies'] = isset( $raw_config['dependencies'] ) ? array_map( 'sanitize_text_field', $raw_config['dependencies'] ) : array();
-			$config['version']      = isset( $raw_config['version'] ) ? sanitize_text_field( $raw_config['version'] ) : wp_rand();
-		}
-		return $config;
-	}
+	
 }

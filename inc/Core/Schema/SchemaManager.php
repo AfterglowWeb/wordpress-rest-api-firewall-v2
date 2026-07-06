@@ -4,7 +4,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class SchemaManager {
 
-	const SCHEMA_VERSION = '1.7.0';
+	const SCHEMA_VERSION = '1.7.1';
 	const OPTION_KEY     = 'bromate_firewall_schema_version';
 
 	public static function install(): void {
@@ -33,7 +33,7 @@ final class SchemaManager {
 			ip           VARCHAR(45)     NOT NULL,
 			list_type    ENUM('whitelist','blacklist') NOT NULL DEFAULT 'blacklist',
 			entry_type   ENUM('ip','cidr')             NOT NULL DEFAULT 'ip',
-			entry_origin ENUM('manual','rate_limit')   NOT NULL DEFAULT 'manual',
+			entry_origin ENUM('manual','auth_user_ip','public_rate_limit','login_rate_limit','country') NOT NULL DEFAULT 'manual',
 			agent        VARCHAR(255)    NULL DEFAULT NULL,
 			user_id      BIGINT UNSIGNED NULL DEFAULT NULL,
 			referrer     VARCHAR(255)    NULL DEFAULT NULL,

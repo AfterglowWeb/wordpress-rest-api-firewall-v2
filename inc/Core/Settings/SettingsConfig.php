@@ -299,6 +299,60 @@ final class SettingsConfig {
 				'group'             => 'login-hardening',
 			),
 
+			'login_recaptcha_enabled'                => array(
+				'label'             => esc_html__( 'Enable reCAPTCHA v3', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Require Google reCAPTCHA v3 verification on login.', 'bromate-rest-api-firewall' ),
+				'default_value'     => false,
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'group'             => 'login-hardening',
+			),
+
+			'login_recaptcha_site_key'               => array(
+				'label'             => esc_html__( 'reCAPTCHA site key', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Public site key issued by Google reCAPTCHA.', 'bromate-rest-api-firewall' ),
+				'default_value'     => '',
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'group'             => 'login-hardening',
+			),
+
+			'login_recaptcha_secret_key'             => array(
+				'label'             => esc_html__( 'reCAPTCHA secret key', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Private secret key issued by Google reCAPTCHA.', 'bromate-rest-api-firewall' ),
+				'default_value'     => '',
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'group'             => 'login-hardening',
+			),
+
+			'login_recaptcha_threshold'              => array(
+				'label'             => esc_html__( 'reCAPTCHA score threshold', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Minimum score (0.0–1.0) required to pass verification.', 'bromate-rest-api-firewall' ),
+				'default_value'     => 0.5,
+				'type'              => 'float',
+				'sanitize_callback' => array( SettingsRepository::class, 'sanitize_recaptcha_threshold' ),
+				'group'             => 'login-hardening',
+			),
+
+			'login_2fa_enabled'                      => array(
+				'label'             => esc_html__( 'Enable Two-Factor Authentication', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Require a TOTP code in addition to the password on login.', 'bromate-rest-api-firewall' ),
+				'default_value'     => false,
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'group'             => 'login-hardening',
+			),
+
+			'login_2fa_issuer'                       => array(
+				'label'             => esc_html__( '2FA issuer name', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Organization name shown in authenticator apps.', 'bromate-rest-api-firewall' ),
+				'default_value'     => 'Bromate REST API Firewall',
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'group'             => 'login-hardening',
+			),
+
 			'wordpress_application_only_mode'        => array(
 				'label'             => esc_html__( 'Application-only mode', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Redirect front-end pages and use WordPress primarily as a REST API backend.', 'bromate-rest-api-firewall' ),
