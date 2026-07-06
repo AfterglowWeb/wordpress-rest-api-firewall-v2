@@ -14,6 +14,7 @@ module.exports = {
 		// Main app entry (default from @wordpress/scripts)
 		...defaultConfig.entry,
 		// TOTP app entry - standalone
+		'index': path.resolve(__dirname, './src/index.tsx'),
 		'totp': path.resolve(__dirname, './src-totp/index.tsx'),
 	},
 	optimization: {
