@@ -1,4 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from '@wordpress/element';
+import { useNavigation } from '@contexts/NavigationContext';
+import { useDialog, DIALOG_TYPES } from '@contexts/DialogContext';
+import { usePortalContainer } from '@contexts/PortalContainerContext';
 
 import {
   Box, Paper, Typography, Switch,
@@ -27,8 +30,6 @@ import type { RateLimitSettings } from '@app-types/rate-limiting';
 import type { AuthorizedUser } from '@app-types/auth';
 
 import { IpAPI, type IpEntry, type ListType } from '@services/ip';
-import { useDialog, DIALOG_TYPES } from '@contexts/DialogContext';
-import { usePortalContainer } from '@contexts/PortalContainerContext';
 import { apiRequest } from '@services/api';
 import { SettingsAPI } from '@services/settings';
 import ConfirmDialog from '@components/ConfirmDialog';
@@ -395,20 +396,6 @@ export default function Firewall(): JSX.Element {
     setRows([...black.entries, ...white.entries]);
   }, []);
 
-  const [wpUsers, setWpUsers] = useState<AuthorizedUser[]>([]);
-  const [wpUsersLoading, setWpUsersLoading] = useState(false);
-
-  useEffect(() => {
-    setWpUsersLoading(true);
-    apiRequest<AuthorizedUser[]>('bromate_authorized_users_options')
-      .then(setWpUsers)
-      .catch(() => {/* optionally show snackbar */})
-      .finally(() => setWpUsersLoading(false));
-  }, []);
-
-
-  useEffect(() => { void load(); }, [load]);
-
   const handleAddEntries = async (form: AddEntryForm): Promise<LineResult[]> => {
     if (editingIp) {
       await IpAPI.updateEntry(editingIp.id, {
@@ -480,6 +467,31 @@ export default function Firewall(): JSX.Element {
     items: [],
     quickFilterExcludeHiddenColumns: false,
   });
+
+  const { consumePanelParams } = useNavigation();
+
+  useEffect(() => {
+    const params = consumePanelParams();
+    if (params?.entry_origin) {
+      setFilterModel({
+        items: [{ id: 1, field: 'entry_origin', operator: 'equals', value: params.entry_origin }],
+        quickFilterExcludeHiddenColumns: false,
+      });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [wpUsers, setWpUsers] = useState<AuthorizedUser[]>([]);
+  const [wpUsersLoading, setWpUsersLoading] = useState(false);
+
+  useEffect(() => {
+    setWpUsersLoading(true);
+    apiRequest<AuthorizedUser[]>('bromate_authorized_users_options')
+      .then(setWpUsers)
+      .catch(() => {/* optionally show snackbar */})
+      .finally(() => setWpUsersLoading(false));
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
 
   const ipColumns = useMemo<GridColDef<IpEntry>[]>(() => [
     { field: 'ip', headerName: 'IP / CIDR', width: 150},

@@ -83,6 +83,9 @@ class SettingsRepository {
 
 			case 'integer':
 				return (int) call_user_func( $callback, $option_value );
+				
+			case 'float':
+        		return (float) call_user_func( $callback, $option_value );
 
 			case 'array':
 				if ( ! is_array( $option_value ) ) {
@@ -179,4 +182,10 @@ class SettingsRepository {
 			'expires_at'    => sanitize_text_field( $user['expires_at'] ?? '' ),
 		);
 	}
+
+	public static function sanitize_recaptcha_threshold( $value ): float {
+		$value = is_numeric( $value ) ? (float) $value : 0.5;
+		return max( 0.0, min( 1.0, $value ) );
+	}
+
 }

@@ -1,3 +1,4 @@
+// webpack.config.js (updated)
 const path = require('path');
 const defaultConfig = require( '@wordpress/scripts/config/webpack.config' );
 
@@ -9,6 +10,9 @@ if ( process.env.ANALYZE ) {
 
 module.exports = {
 	...defaultConfig,
+	entry: {
+		...defaultConfig.entry
+	},
 	optimization: {
 		...defaultConfig.optimization,
 		splitChunks: {

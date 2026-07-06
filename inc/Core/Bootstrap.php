@@ -7,11 +7,13 @@ use Bromate\RestApiFirewall\Api\PublicRequestBootstrap;
 use Bromate\RestApiFirewall\Api\AdminLoginBootstrap;
 use Bromate\RestApiFirewall\Security\WordPress\WordPressSecurityBootstrap;
 use Bromate\RestApiFirewall\Security\Ip\IpEntryAjaxController;
+
 use Bromate\RestApiFirewall\Core\Settings\SettingsAjaxController;
 use Bromate\RestApiFirewall\Core\Schema\SchemaManager;
 use Bromate\RestApiFirewall\Admin\AdminPage;
 use Bromate\RestApiFirewall\Admin\Documentation;
 use Bromate\RestApiFirewall\Logs\LogEntryAjaxController;
+
 
 final class Bootstrap {
 

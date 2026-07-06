@@ -9,7 +9,9 @@ type NavigationContextValue = {
     setPanel: ( panel: PanelKey ) => void;
     panels: PanelDefinition[];
     menuItems: MenuItem[];
-    navigateGuarded: ( key: PanelKey ) => void;
+    navigateGuarded: ( key: PanelKey, params?: Record<string, string> ) => void;
+    panelParams: Record<string, string> | null;
+    consumePanelParams: () => Record<string, string> | null;
 };
 
 const NavigationContext = createContext<NavigationContextValue | undefined>( undefined );
@@ -23,17 +25,25 @@ export function NavigationProvider( { children }: NavigationProviderProps ): JSX
     const firstKey = panels[ 0 ]?.key ?? 'auth';
 
     const [ panel, setPanel ] = useState<PanelKey>( firstKey );
+    const [ panelParams, setPanelParams ] = useState<Record<string, string> | null>( null );
 
-    function navigateGuarded( key: PanelKey ): void {
+    function navigateGuarded( key: PanelKey, params?: Record<string, string> ): void {
         if ( panels.some( ( p ) => p.key === key ) ) {
+            setPanelParams( params ?? null );
             setPanel( key );
         }
+    }
+
+    function consumePanelParams(): Record<string, string> | null {
+        const current = panelParams;
+        setPanelParams( null );
+        return current;
     }
 
     const menuItems = buildMenuItems( panels );
 
     return (
-        <NavigationContext.Provider value={ { panel, setPanel, panels, menuItems, navigateGuarded } }>
+        <NavigationContext.Provider value={ { panel, setPanel, panels, menuItems, navigateGuarded, panelParams, consumePanelParams } }>
             { children }
         </NavigationContext.Provider>
     );
