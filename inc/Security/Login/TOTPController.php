@@ -4,7 +4,7 @@ defined( 'ABSPATH' ) || exit;
 
 use Bromate\RestApiFirewall\Utils\FileUtils;
 use Bromate\RestApiFirewall\Security\Login\TOTPRepository;
-use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
+use Bromate\RestApiModels\Core\Settings\SettingsRepository;
 
 final class TOTPController {
 
@@ -18,21 +18,45 @@ final class TOTPController {
 
 	public static function register() {
 
-		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue_scripts' ) );
-		add_action( 'show_user_profile', array( self::class, 'render_profile_section' ) );
-		add_action( 'edit_user_profile', array( self::class, 'render_profile_section' ) );
-		add_action( 'admin_footer', array( self::class, 'render_dialog' ) );
+		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue_2fa_dialog' ) );
+		add_action( 'show_user_profile', array( self::class, 'render_profile_mount' ) );
+		add_action( 'edit_user_profile', array( self::class, 'render_profile_mount' ) );
+		add_action( 'admin_footer', array( self::class, 'render_2fa_dialog' ) );
 
-		add_action( 'personal_options_update', array( self::class, 'handle_profile_update' ) );
-		add_action( 'edit_user_profile_update', array( self::class, 'handle_profile_update' ) );
+		add_action( 'personal_options_update', array( self::class, 'handle_profile_2fa_update' ) );
+		add_action( 'edit_user_profile_update', array( self::class, 'handle_profile_2fa_update' ) );
 
 		add_action( 'wp_ajax_bromate_verify_login_code', array( self::class, 'ajax_verify_login_code' ) );
-		add_action( 'wp_ajax_bromate_generate_totp_secret', array( self::class, 'ajax_generate_secret' ) );
-		add_action( 'wp_ajax_bromate_verify_totp_enrollment', array( self::class, 'ajax_verify_enrollment' ) );
+		add_action( 'wp_ajax_bromate_generate_totp_secret', array( self::class, 'ajax_generate_totp_secret' ) );
+		add_action( 'wp_ajax_bromate_verify_totp_enrollment', array( self::class, 'ajax_verify_totp_enrollment' ) );
 		add_action( 'wp_ajax_bromate_disable_totp', array( self::class, 'ajax_disable_totp' ) );
 		add_action( 'wp_ajax_bromate_regenerate_backup_codes', array( self::class, 'ajax_regenerate_backup_codes' ) );
-		add_action( 'wp_ajax_bromate_get_totp_status', array( self::class, 'ajax_get_status' ) );
-		add_action( 'wp_ajax_bromate_dismiss_totp_reminder', array( self::class, 'ajax_dismiss_reminder' ) );
+		add_action( 'wp_ajax_bromate_get_totp_status', array( self::class, 'ajax_get_totp_status' ) );
+	} 
+
+	private static function get_global_settings(): array {
+		$defaults = array(
+			'enabled'        => false,
+			'issuer'         => sanitize_text_field( get_bloginfo('sitename') ),
+			'policy'         => 'grace',
+			'grace_period'   => 7,
+		);
+
+		$settings = array(
+			'enabled'        => SettingsRepository::read_option( 'login_2fa_enabled' ),
+			'issuer'         => SettingsRepository::read_option( 'login_2fa_issuer' ),
+			'policy'         => SettingsRepository::read_option( 'login_2fa_policy' ),
+			'grace_period'   => SettingsRepository::read_option( 'login_2fa_grace_period' ),
+		);
+
+		return wp_parse_args( $settings, $defaults );
+	}
+
+	private static function validate_ajax_nonce(): bool {
+		if ( ! isset( $_POST['nonce'] ) ) {
+			return false;
+		}
+		return wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'bromate_totp_enrollment' );
 	}
 
 	public static function ajax_get_status(): void {
@@ -221,39 +245,54 @@ final class TOTPController {
 		}
 	}
 
-	public static function ajax_dismiss_reminder(): void {
-		if ( ! self::validate_ajax_nonce() ) {
-			wp_send_json_error( array( 'message' => 'Invalid security token' ), 403 );
+	public static function render_profile_mount(): void {
+		global $pagenow;
+		if ( 'profile.php' !== $pagenow || ! get_current_user_id() ) {
+			return;
+		}
+		echo '<div id="bromate-rest-api-firewall-totp-shadow-host"></div>';
+	}
+
+	public static function render_2fa_dialog(): void {
+
+		global $pagenow;
+
+		if ( 'profile.php' === $pagenow ) {
 			return;
 		}
 
 		$user_id = get_current_user_id();
 		if ( ! $user_id ) {
-			wp_send_json_error( array( 'message' => 'User not logged in' ), 401 );
 			return;
 		}
 
-		$settings = self::get_global_settings();
+		$is_enrolled = (bool) get_user_meta( $user_id, self::ENABLED_META_KEY, true );
 
-		if ( 'mandatory' === $settings['policy'] ) {
-			wp_send_json_error( array( 'message' => 'Reminder cannot be dismissed under mandatory policy' ), 403 );
+		if ( ! $is_enrolled ) {
+			echo '<div id="bromate-rest-api-firewall-totp-shadow-host" data-mode="enroll"></div>';
 			return;
 		}
 
-		$dismissed_at = time();
-		update_user_meta( $user_id, self::REMINDER_DISMISSED_META_KEY, $dismissed_at );
-
-		wp_send_json_success( array( 'dismissed_at' => $dismissed_at ) );
-	}
-
-	private static function validate_ajax_nonce(): bool {
-		if ( ! isset( $_POST['nonce'] ) ) {
-			return false;
+		if ( get_user_meta( $user_id, self::SESSION_VERIFIED_META_KEY, true ) ) {
+			return;
 		}
-		return wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'bromate_totp_enrollment' );
+
+		$settings = get_user_meta( $user_id, self::USER_SETTINGS_META_KEY, true );
+		if ( ! is_array( $settings ) ) {
+			$settings = array(
+				'require_on_login' => true,
+				'remember_device'  => true,
+			);
+		}
+
+		if ( empty( $settings['require_on_login'] ) ) {
+			return;
+		}
+
+		echo '<div id="bromate-rest-api-firewall-totp-shadow-host" data-mode="verify"></div>';
 	}
 
-	public static function enqueue_scripts(): void {
+	public static function enqueue_2fa_dialog(): void {
 		if ( ! is_user_logged_in() ) {
 			return;
 		}
@@ -268,8 +307,9 @@ final class TOTPController {
 		$current_user    = wp_get_current_user();
 		$user_id         = absint( $current_user->ID );
 		$is_user_enabled = (bool) get_user_meta( $user_id, self::ENABLED_META_KEY, true );
-		$is_profile_page = 'profile.php' === $pagenow;
-		$show_dialog     = self::should_show_dialog( $user_id, $settings, $is_user_enabled );
+		$is_profile_page = $pagenow === 'profile.php';
+		$show_dialog = ! $is_user_enabled;
+
 
 		$mui_script_config = FileUtils::load_script_config( BROMATE_REST_API_FIREWALL_DIR . 'build/mui.asset.php' );
 		$mui_dependencies  = ! empty( $mui_script_config ) && isset( $mui_script_config['dependencies'] ) ? $mui_script_config['dependencies'] : array();
@@ -293,30 +333,44 @@ final class TOTPController {
 			true
 		);
 
+		$settings = self::get_global_settings();
+
 		wp_localize_script(
 			'bromate-rest-api-firewall-totp',
 			'bromate_totp_data',
 			array(
-				'nonce'           => wp_create_nonce( 'bromate_totp_enrollment' ),
-				'ajaxurl'         => admin_url( 'admin-ajax.php' ),
-				'sitename'        => sanitize_text_field( get_bloginfo( 'sitename' ) ),
-				'username'        => $current_user->user_login,
-				'enabled'         => $settings['enabled'],
-				'issuer'          => $settings['issuer'],
-				'show_dialog'     => $show_dialog,
+				'nonce' => wp_create_nonce( 'bromate_totp_enrollment' ),
+				'ajaxurl' => admin_url( 'admin-ajax.php' ),
+				'username' => $current_user->user_login,
+				'enabled' => $settings['enabled'],
+				'issuer' => $settings['issuer'],
+				'show_dialog' => $show_dialog,
 				'is_profile_page' => $is_profile_page,
 				'is_user_enabled' => $is_user_enabled,
-				'policy'          => $settings['policy'],
-				'grace_period'    => $settings['grace_period'],
-				'remaining_days'  => self::calculate_remaining_days( $settings ),
+				'policy' => $settings['policy'],
+				'grace_period' => $settings['grace_period'],
+				'remaining_days' => self::calculate_remaining_days( $user_id, $settings ),
 			)
 		);
 	}
 
-	private static function calculate_remaining_days( array $settings ): ?int {
-		if ( 'grace' !== $settings['policy'] ) {
+	private static function calculate_remaining_days( int $user_id, array $settings ): ?int {
+		if ( $settings['policy'] !== 'grace' ) {
 			return null;
 		}
+		
+		$prompt_time = get_user_meta( $user_id, '_bromate_2fa_prompt_time', true );
+		
+		if ( ! $prompt_time ) {
+			$prompt_time = time();
+			update_user_meta( $user_id, '_bromate_2fa_prompt_time', $prompt_time );
+		}
+		
+		$elapsed_days = floor( ( time() - $prompt_time ) / DAY_IN_SECONDS );
+		$remaining = max( 0, $settings['grace_period'] - $elapsed_days );
+		
+		return $remaining;
+	}
 
 		$activated_at = (int) SettingsRepository::read_option( 'login_2fa_enabled_timestamp' );
 		if ( ! $activated_at ) {
