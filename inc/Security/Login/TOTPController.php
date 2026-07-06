@@ -293,24 +293,24 @@ public static function render_2fa_dialog(): void {
 		$is_profile_page = $pagenow === 'profile.php';
 		$show_dialog = ! $is_user_enabled;
 
-		$mui_script_config = FileUtils::load_script_config( BROMATE_TOTP_DIR . 'build/mui.asset.php' );
+		$mui_script_config = FileUtils::load_script_config( BROMATE_REST_API_FIREWALL_DIR . 'build/mui.asset.php' );
 		$mui_dependencies  = ! empty( $mui_script_config ) && isset( $mui_script_config['dependencies'] ) ? $mui_script_config['dependencies'] : array();
 
 		wp_enqueue_script(
 			'bromate-totp-mui',
-			BROMATE_TOTP_URL . 'build/mui.js',
+			BROMATE_REST_API_FIREWALL_URL . 'build/mui.js',
 			$mui_dependencies,
 			$mui_script_config['version'],
 			true
 		);
 
 
-		$totp_script_config = FileUtils::load_script_config( BROMATE_TOTP_DIR . 'build/index.asset.php' );
+		$totp_script_config = FileUtils::load_script_config( BROMATE_REST_API_FIREWALL_DIR . 'build/index.asset.php' );
 		$totp_dependencies  = ! empty( $totp_script_config ) && isset( $totp_script_config['dependencies'] ) ? $totp_script_config['dependencies'] : array();
 
 		wp_enqueue_script(
 			'bromate-totp',
-			BROMATE_TOTP_URL . 'build/totp.js',
+			BROMATE_REST_API_FIREWALL_URL . 'build/totp.js',
 			array_merge( $totp_dependencies, array( 'bromate-totp-mui' ) ),
 			$totp_script_config['version'],
 			true
