@@ -58,7 +58,7 @@ export default function CopyButton({ toCopy, sx = {} }: CopyButtonProps) {
 
   return (
     <>
-      <Tooltip slotProps={{ popper: { container: portalContainer } }} title={__('Copy', 'bromate-totp')}>
+      <Tooltip slotProps={{ popper: { container: portalContainer } }} title={__('Copy', 'bromate-rest-api-firewall')}>
         <IconButton size="small" onClick={handleCopy} sx={{ p: 0.25, ...sx }}>
           <ContentCopyIcon sx={{ fontSize: 'inherit' }} />
         </IconButton>
@@ -75,8 +75,8 @@ export default function CopyButton({ toCopy, sx = {} }: CopyButtonProps) {
           sx={{ width: '100%' }}
         >
           {copyFailed
-            ? __('Copy failed — please select and copy manually.', 'bromate-totp')
-            : __('Copied to clipboard', 'bromate-totp')}
+            ? __('Copy failed — please select and copy manually.', 'bromate-rest-api-firewall')
+            : __('Copied to clipboard', 'bromate-rest-api-firewall')}
         </Alert>
       </Snackbar>
     </>
