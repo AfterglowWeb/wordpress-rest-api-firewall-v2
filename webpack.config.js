@@ -1,4 +1,4 @@
-// webpack.config.js (updated)
+// webpack.config.js
 const path = require('path');
 const defaultConfig = require( '@wordpress/scripts/config/webpack.config' );
 
@@ -11,7 +11,10 @@ if ( process.env.ANALYZE ) {
 module.exports = {
 	...defaultConfig,
 	entry: {
-		...defaultConfig.entry
+		// Main app entry (default from @wordpress/scripts)
+		...defaultConfig.entry,
+		// TOTP app entry - standalone
+		'totp': path.resolve(__dirname, './src-totp/index.tsx'),
 	},
 	optimization: {
 		...defaultConfig.optimization,
@@ -44,6 +47,7 @@ module.exports = {
 		...defaultConfig.resolve,
 		alias: {
 			...defaultConfig.resolve.alias,
+			// Main app aliases
 			'@components': path.resolve(__dirname, './src/components'),
 			'@contexts': path.resolve(__dirname, './src/contexts'),
 			'@features': path.resolve(__dirname, './src/features'),
@@ -53,6 +57,11 @@ module.exports = {
 			'@app-types': path.resolve(__dirname, './src/app-types'),
 			'@app-utils': path.resolve(__dirname, './src/utils'),
 			'@hooks': path.resolve(__dirname, './src/hooks'),
+			// TOTP app aliases (with totp- prefix)
+			'@totp-components': path.resolve(__dirname, './src-totp/components'),
+			'@totp-contexts': path.resolve(__dirname, './src-totp/contexts'),
+			'@totp-services': path.resolve(__dirname, './src-totp/services'),
+			'@totp-types': path.resolve(__dirname, './src-totp/types'),
 		},
 	},
 };
