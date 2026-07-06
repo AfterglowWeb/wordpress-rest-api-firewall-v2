@@ -13,7 +13,7 @@ use Bromate\RestApiFirewall\Core\Schema\SchemaManager;
 use Bromate\RestApiFirewall\Admin\AdminPage;
 use Bromate\RestApiFirewall\Admin\Documentation;
 use Bromate\RestApiFirewall\Logs\LogEntryAjaxController;
-
+use Bromate\RestApiFirewall\Security\Login\TOTPController;
 
 final class Bootstrap {
 
@@ -27,6 +27,7 @@ final class Bootstrap {
 		PublicRequestBootstrap::register();
 		AdminLoginBootstrap::register();
 		WordPressSecurityBootstrap::register();
+		TOTPController::register();
 
 		if ( is_admin() ) {
 			AdminPage::register();

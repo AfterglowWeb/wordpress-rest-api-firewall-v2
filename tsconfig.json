@@ -15,6 +15,7 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "paths": {
+      // Main app aliases
       "@components/*": ["./src/components/*"],
       "@contexts/*": ["./src/contexts/*"],
       "@features/*": ["./src/features/*"],
@@ -24,8 +25,23 @@
       "@app-types/*": ["./src/app-types/*"],
       "@app-utils/*": ["./src/utils/*"],
       "@constants/*": ["./src/constants/*"],
-      "@hooks/*": ["./src/hooks/*"]
+      "@hooks/*": ["./src/hooks/*"],
+      
+      // TOTP app aliases (with totp- prefix)
+      "@totp-components/*": ["./src-totp/components/*"],
+      "@totp-contexts/*": ["./src-totp/contexts/*"],
+      "@totp-services/*": ["./src-totp/services/*"],
+      "@totp-types/*": ["./src-totp/types/*"]
     }
   },
-  "include": ["./src/**/*"]
+  "include": [
+    "./src/**/*",
+    "./src-totp/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    "vendor"
+  ]
 }

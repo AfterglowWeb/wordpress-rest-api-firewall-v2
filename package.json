@@ -10,10 +10,7 @@
     "format": "wp-scripts format",
     "lint:css": "wp-scripts lint-style",
     "lint:js": "wp-scripts lint-js",
-    "packages-update": "wp-scripts packages-update",
-    "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "packages-update": "wp-scripts packages-update"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
