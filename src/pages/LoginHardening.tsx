@@ -15,11 +15,9 @@ import {
   Snackbar,
   Box,
   FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
   Tooltip,
+  RadioGroup,
+  Radio,
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
@@ -42,6 +40,8 @@ interface LoginSettings {
   
   login_2fa_enabled: boolean;
   login_2fa_issuer: string;
+  login_2fa_policy: 'grace' | 'mandatory' | 'free';
+  login_2fa_grace_period: number;
 }
 
 const DEFAULT_SETTINGS: LoginSettings = {
@@ -58,6 +58,8 @@ const DEFAULT_SETTINGS: LoginSettings = {
   
   login_2fa_enabled: false,
   login_2fa_issuer: 'Bromate REST API',
+  login_2fa_policy: 'grace',
+  login_2fa_grace_period: 7,
 };
 
 export default function LoginHardening(): JSX.Element {
@@ -325,42 +327,117 @@ export default function LoginHardening(): JSX.Element {
             }
           />
 
-            <Stack spacing={2} sx={{ mt: 1 }}>
-              <TextField
-                label={__('Issuer Name', 'bromate-rest-api-firewall')}
-                size="small"
-                value={settings.login_2fa_issuer}
-                onChange={(e) =>
-                  updateSetting('login_2fa_issuer', e.target.value)
-                }
-                sx={{ maxWidth: 400 }}
-                helperText={__('Name shown in your authentication app', 'bromate-rest-api-firewall')}
-              />
-            </Stack>
+          {settings.login_2fa_enabled && (
+            <>
+              <Stack spacing={2} sx={{ mt: 1 }}>
+                <TextField
+                  label={__('Issuer Name', 'bromate-rest-api-firewall')}
+                  size="small"
+                  value={settings.login_2fa_issuer}
+                  onChange={(e) =>
+                    updateSetting('login_2fa_issuer', e.target.value)
+                  }
+                  sx={{ maxWidth: 400 }}
+                  helperText={__('Name shown in your authentication app', 'bromate-rest-api-firewall')}
+                />
+              </Stack>
 
-            <Alert severity="info" sx={{ mt: 1 }}>
-              <Typography variant="body2" gutterBottom>
-                <strong>{__('How it works:', 'bromate-rest-api-firewall')}</strong>
-              </Typography>
-              <Typography variant="body2" component="ul" sx={{ pl: 2, m: 0 }}>
-                <li>
-                  {__('Users can set up 2FA from their profile page using Google Authenticator or any TOTP-compatible app.', 'bromate-rest-api-firewall')}
-                </li>
-                <li>
-                  {__('After enabling, users will be required to enter a verification code during login.', 'bromate-rest-api-firewall')}
-                </li>
-                <li>
-                  {__('Backup codes are generated during setup for account recovery if the authenticator app is lost.', 'bromate-rest-api-firewall')}
-                </li>
-                <li>
-                  {__('Users can manage their 2FA settings (enable/disable, regenerate backup codes) from their profile page.', 'bromate-rest-api-firewall')}
-                </li>
-              </Typography>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                {__('Note: Users must enable 2FA in their profile for this feature to take effect.', 'bromate-rest-api-firewall')}
-              </Typography>
-            </Alert>
-      
+              {/* Enforcement Policy */}
+              <FormControl component="fieldset" sx={{ mt: 1 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  {__('Enforcement Policy', 'bromate-rest-api-firewall')}
+                </Typography>
+                <RadioGroup
+                  value={settings.login_2fa_policy || 'free'}
+                  onChange={(e) =>
+                    updateSetting('login_2fa_policy', e.target.value as 'grace' | 'mandatory' | 'free')
+                  }
+                >
+                  <FormControlLabel
+                    value="free"
+                    control={<Radio />}
+                    label={
+                      <Stack>
+                        <Typography variant="body2">
+                          {__('Free', 'bromate-rest-api-firewall')}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {__('Users can optionally enable 2FA from their profile.', 'bromate-rest-api-firewall')}
+                        </Typography>
+                      </Stack>
+                    }
+                  />
+                  <FormControlLabel
+                    value="grace"
+                    control={<Radio />}
+                    label={
+                      <Stack>
+                        <Typography variant="body2">
+                          {__('Grace Period', 'bromate-rest-api-firewall')}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {__('Users have a grace period to enable 2FA before it becomes mandatory.', 'bromate-rest-api-firewall')}
+                        </Typography>
+                      </Stack>
+                    }
+                  />
+                  {settings.login_2fa_policy === 'grace' && (
+                    <Box sx={{ pl: 4, pt: 1 }}>
+                      <TextField
+                        label={__('Grace Period (days)', 'bromate-rest-api-firewall')}
+                        type="number"
+                        size="small"
+                        value={settings.login_2fa_grace_period || 7}
+                        onChange={(e) =>
+                          updateSetting('login_2fa_grace_period', Number(e.target.value))
+                        }
+                        slotProps={{ htmlInput: { min: 1, max: 30 } }}
+                        helperText={__('Number of days before 2FA becomes mandatory', 'bromate-rest-api-firewall')}
+                        sx={{ maxWidth: 200 }}
+                      />
+                    </Box>
+                  )}
+                  <FormControlLabel
+                    value="mandatory"
+                    control={<Radio />}
+                    label={
+                      <Stack>
+                        <Typography variant="body2">
+                          {__('Mandatory', 'bromate-rest-api-firewall')}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {__('All users must enable 2FA. No cancellation allowed.', 'bromate-rest-api-firewall')}
+                        </Typography>
+                      </Stack>
+                    }
+                  />
+                </RadioGroup>
+              </FormControl>
+            </>
+          )}
+
+          <Alert severity="info" sx={{ mt: 1 }}>
+            <Typography variant="body2" gutterBottom>
+              <strong>{__('How it works:', 'bromate-rest-api-firewall')}</strong>
+            </Typography>
+            <Typography variant="body2" component="ul" sx={{ pl: 2, m: 0 }}>
+              <li>
+                {__('Users can set up 2FA from their profile page using Google Authenticator or any TOTP-compatible app.', 'bromate-rest-api-firewall')}
+              </li>
+              <li>
+                {__('After enabling, users will be required to enter a verification code during login.', 'bromate-rest-api-firewall')}
+              </li>
+              <li>
+                {__('Backup codes are generated during setup for account recovery if the authenticator app is lost.', 'bromate-rest-api-firewall')}
+              </li>
+              <li>
+                {__('Users can manage their 2FA settings (enable/disable, regenerate backup codes) from their profile page.', 'bromate-rest-api-firewall')}
+              </li>
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+              {__('Note: Users must enable 2FA in their profile for this feature to take effect.', 'bromate-rest-api-firewall')}
+            </Typography>
+          </Alert>
         </Stack>
       </Paper>
 

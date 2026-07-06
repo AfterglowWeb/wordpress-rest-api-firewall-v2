@@ -234,7 +234,7 @@ public static function render_profile_mount(): void {
     if ( 'profile.php' !== $pagenow || ! get_current_user_id() ) {
         return;
     }
-    echo '<div id="bromate-totp-shadow-host"></div>';
+    echo '<div id="bromate-rest-api-firewall-totp-shadow-host"></div>';
 }
 
 /**
@@ -256,7 +256,7 @@ public static function render_2fa_dialog(): void {
     $is_enrolled = (bool) get_user_meta( $user_id, self::ENABLED_META_KEY, true );
 
     if ( ! $is_enrolled ) {
-        echo '<div id="bromate-totp-shadow-host" data-mode="enroll"></div>';
+        echo '<div id="bromate-rest-api-firewall-totp-shadow-host" data-mode="enroll"></div>';
         return;
     }
 
@@ -276,7 +276,7 @@ public static function render_2fa_dialog(): void {
         return;
     }
 
-    echo '<div id="bromate-totp-shadow-host" data-mode="verify"></div>';
+    echo '<div id="bromate-rest-api-firewall-totp-shadow-host" data-mode="verify"></div>';
 }
 
 	public static function enqueue_2fa_dialog(): void {
@@ -297,7 +297,7 @@ public static function render_2fa_dialog(): void {
 		$mui_dependencies  = ! empty( $mui_script_config ) && isset( $mui_script_config['dependencies'] ) ? $mui_script_config['dependencies'] : array();
 
 		wp_enqueue_script(
-			'bromate-totp-mui',
+			'bromate-rest-api-firewall-totp-mui',
 			BROMATE_REST_API_FIREWALL_URL . 'build/mui.js',
 			$mui_dependencies,
 			$mui_script_config['version'],
@@ -309,15 +309,15 @@ public static function render_2fa_dialog(): void {
 		$totp_dependencies  = ! empty( $totp_script_config ) && isset( $totp_script_config['dependencies'] ) ? $totp_script_config['dependencies'] : array();
 
 		wp_enqueue_script(
-			'bromate-totp',
+			'bromate-rest-api-firewall-totp',
 			BROMATE_REST_API_FIREWALL_URL . 'build/totp.js',
-			array_merge( $totp_dependencies, array( 'bromate-totp-mui' ) ),
+			array_merge( $totp_dependencies, array( 'bromate-rest-api-firewall-totp-mui' ) ),
 			$totp_script_config['version'],
 			true
 		);
 
 		wp_localize_script(
-			'bromate-totp',
+			'bromate-rest-api-firewall-totp',
 			'bromate_totp_data',
 			array(
 				'nonce' => wp_create_nonce( 'bromate_totp_enrollment' ),

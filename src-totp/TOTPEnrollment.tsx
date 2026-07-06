@@ -1,7 +1,7 @@
 import { useState, useEffect } from '@wordpress/element';
 import { usePortalContainer } from '@totp-contexts/PortalContainerContext';
 
-import { __ } from '@wordpress/i18n';
+import { __, sprintf} from '@wordpress/i18n';
 import {
   Dialog,
   DialogTitle,
@@ -28,6 +28,7 @@ import {
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloseIcon from '@mui/icons-material/Close';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import InfoIcon from '@mui/icons-material/Info';
 
 import { apiRequest } from '@totp-services/api';
 import CopyButton from '@totp-components/CopyButton';
@@ -41,6 +42,9 @@ interface TOTPEnrollmentProps {
   issuer: string;
   onSetupComplete?: () => void;
   initialStep?: number;
+  policy?: 'mandatory' | 'grace' | 'free';
+  gracePeriodDays?: number;
+  remainingDays?: number | null;
 }
 
 interface TOTPData {
@@ -76,6 +80,9 @@ export default function TOTPEnrollment({
   issuer,
   onSetupComplete,
   initialStep = 0,
+  policy = 'free',
+  gracePeriodDays = 7,
+  remainingDays = null,
 }: TOTPEnrollmentProps): JSX.Element | null {
   const [activeStep, setActiveStep] = useState(initialStep);
   const [loading, setLoading] = useState(false);
@@ -89,6 +96,7 @@ export default function TOTPEnrollment({
   const [isEnabled, setIsEnabled] = useState(false);
   const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
   const [statusChecked, setStatusChecked] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   const portalContainer = usePortalContainer();
 
@@ -239,6 +247,11 @@ export default function TOTPEnrollment({
           backup_codes_remaining: backupCodesRemaining,
         }));
         
+        // Show success dialog after a short delay
+        setTimeout(() => {
+          setShowSuccessDialog(true);
+        }, 500);
+        
         onSetupComplete?.();
       } else {
         setIsEnabled(true);
@@ -256,9 +269,9 @@ export default function TOTPEnrollment({
 
   const handleDisable2FA = () => {
     showConfirm({
-      title: __('Disable Two-Factor Authentication', 'bromate-totp'),
-      message: __('Are you sure you want to disable 2FA? This will remove all 2FA protection and make your account less secure.', 'bromate-totp'),
-      confirmLabel: __('Disable 2FA', 'bromate-totp'),
+      title: __('Disable Two-Factor Authentication', 'bromate-rest-api-firewall'),
+      message: __('Are you sure you want to disable 2FA? This will remove all 2FA protection and make your account less secure.', 'bromate-rest-api-firewall'),
+      confirmLabel: __('Disable 2FA', 'bromate-rest-api-firewall'),
       confirmColor: 'error',
       onConfirm: async () => {
         try {
@@ -280,9 +293,9 @@ export default function TOTPEnrollment({
 
   const handleRegenerateBackupCodes = () => {
     showConfirm({
-      title: __('Regenerate Backup Codes', 'bromate-totp'),
-      message: __('This will invalidate all existing backup codes and generate new ones. Make sure to save the new codes securely.', 'bromate-totp'),
-      confirmLabel: __('Regenerate', 'bromate-totp'),
+      title: __('Regenerate Backup Codes', 'bromate-rest-api-firewall'),
+      message: __('This will invalidate all existing backup codes and generate new ones. Make sure to save the new codes securely.', 'bromate-rest-api-firewall'),
+      confirmLabel: __('Regenerate', 'bromate-rest-api-firewall'),
       confirmColor: 'info',
       onConfirm: async () => {
         try {
@@ -311,21 +324,82 @@ export default function TOTPEnrollment({
     }
   };
 
+  const handleCloseDialog = () => {
+    // If mandatory, don't allow closing
+    if (policy === 'mandatory') {
+      return;
+    }
+    onClose?.();
+  };
+
+  const handleCancelEnrollment = () => {
+    if (policy === 'mandatory') {
+      return;
+    }
+
+    let message = '';
+    if (policy === 'grace' && remainingDays !== null) {
+      message = sprintf(
+        __('You can always enable 2FA later from your profile. You have %d days remaining to complete setup.', 'bromate-rest-api-firewall'),
+        remainingDays
+      );
+    } else if (policy === 'grace') {
+      message = __('You can always enable 2FA later from your profile.', 'bromate-rest-api-firewall');
+    } else {
+      message = __('You can always enable 2FA later from your profile.', 'bromate-rest-api-firewall');
+    }
+
+    showConfirm({
+      title: __('Reminder', 'bromate-rest-api-firewall'),
+      message: message,
+      confirmLabel: __('OK, I understand', 'bromate-rest-api-firewall'),
+      confirmColor: 'info',
+      onConfirm: () => {
+        onClose?.();
+      },
+    });
+  };
+
   const renderQRCode = () => {
     if (!totpData?.qr_code_svg) return null;
     return <div dangerouslySetInnerHTML={{ __html: totpData.qr_code_svg }} />;
+  };
+
+  const renderPolicyBanner = () => {
+    if (policy === 'free') return null;
+
+    let message = '';
+    let severity: 'info' | 'warning' = 'info';
+
+    if (policy === 'mandatory') {
+      message = __('Two-factor authentication is mandatory for your account. Please complete setup to continue.', 'bromate-rest-api-firewall');
+    } else if (policy === 'grace' && remainingDays !== null) {
+      message = sprintf(
+        __('Two-factor authentication is required. You have %d days remaining to complete setup.', 'bromate-rest-api-firewall'),
+        remainingDays
+      );
+      if (remainingDays <= 3) {
+        severity = 'warning';
+      }
+    }
+
+    return (
+      <Alert severity={severity} icon={<InfoIcon />}>
+        {message}
+      </Alert>
+    );
   };
 
   const renderSetupSteps = () => (
     <Stepper activeStep={activeStep} orientation="vertical">
       <Step>
         <StepLabel>
-          {__('Scan QR Code', 'bromate-totp')}
+          {__('Scan QR Code', 'bromate-rest-api-firewall')}
         </StepLabel>
         <StepContent>
           <Stack spacing={2}>
             <Typography variant="body2">
-              {__('Scan the QR code below with Google Authenticator, Authy, or any TOTP app.', 'bromate-totp')}
+              {__('Scan the QR code below with Google Authenticator, Authy, or any TOTP app.', 'bromate-rest-api-firewall')}
             </Typography>
 
             {loading ? (
@@ -347,7 +421,7 @@ export default function TOTPEnrollment({
                 
                 <Box display="flex" flexDirection="column" alignItems="center" mt={2}>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
-                    {__('Or enter this secret key manually:', 'bromate-totp')}
+                    {__('Or enter this secret key manually:', 'bromate-rest-api-firewall')}
                   </Typography>
                   <Box display="flex" alignItems="center" gap={1}>
                     <Chip 
@@ -366,13 +440,13 @@ export default function TOTPEnrollment({
                     onClick={() => handleStepChange(1)}
                     disabled={!totpData}
                   >
-                    {__('I\'ve scanned the code', 'bromate-totp')}
+                    {__('I\'ve scanned the code', 'bromate-rest-api-firewall')}
                   </Button>
                 </Box>
               </Box>
             ) : (
               <Button disableElevation onClick={generateTOTPSecret} variant="outlined">
-                {__('Retry QR Generation', 'bromate-totp')}
+                {__('Retry QR Generation', 'bromate-rest-api-firewall')}
               </Button>
             )}
           </Stack>
@@ -381,16 +455,16 @@ export default function TOTPEnrollment({
 
       <Step>
         <StepLabel>
-          {__('Verify TOTP Code', 'bromate-totp')}
+          {__('Verify TOTP Code', 'bromate-rest-api-firewall')}
         </StepLabel>
         <StepContent>
           <Stack spacing={2} maxWidth={500} mx={'auto'}>
             <Typography variant="body2">
-              {__('Enter the 6-digit code from your authenticator app to verify setup.', 'bromate-totp')}
+              {__('Enter the 6-digit code from your authenticator app to verify setup.', 'bromate-rest-api-firewall')}
             </Typography>
 
             <TextField
-              label={__('Verification Code', 'bromate-totp')}
+              label={__('Verification Code', 'bromate-rest-api-firewall')}
               value={verificationCode}
               onChange={(e) => {
                 const value = e.target.value.replace(/\D/g, '');
@@ -420,11 +494,11 @@ export default function TOTPEnrollment({
               disabled={verifying || verificationCode.length !== 6}
               fullWidth
             >
-              {verifying ? <CircularProgress size={24} /> : __('Verify', 'bromate-totp')}
+              {verifying ? <CircularProgress size={24} /> : __('Verify', 'bromate-rest-api-firewall')}
             </Button>
 
             <Typography variant="caption" color="text.secondary" align="center">
-              {__('Code expires every 30 seconds. If the code doesn\'t work, wait for the next one.', 'bromate-totp')}
+              {__('Code expires every 30 seconds. If the code doesn\'t work, wait for the next one.', 'bromate-rest-api-firewall')}
             </Typography>
           </Stack>
         </StepContent>
@@ -432,12 +506,80 @@ export default function TOTPEnrollment({
     </Stepper>
   );
 
+  // Success Dialog
+  const renderSuccessDialog = () => (
+    <Dialog 
+      open={showSuccessDialog} 
+      onClose={() => {}} 
+      maxWidth="sm" 
+      fullWidth 
+      container={portalContainer}
+    >
+      <DialogTitle sx={{ textAlign: 'center' }}>
+        <CheckCircleIcon sx={{ fontSize: 64, color: '#46b450', display: 'block', margin: '0 auto 16px' }} />
+        {__('Two-Factor Authentication Enabled!', 'bromate-rest-api-firewall')}
+      </DialogTitle>
+      <DialogContent>
+        <Stack spacing={2}>
+          <Typography variant="body1" align="center">
+            {__('Your account is now protected with two-factor authentication.', 'bromate-rest-api-firewall')}
+          </Typography>
+          
+          {backupCodes && backupCodes.length > 0 && (
+            <Alert severity="info">
+              <Typography variant="subtitle2" gutterBottom>
+                {__('Save your backup codes', 'bromate-rest-api-firewall')}
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                {__('These codes can be used to access your account if you lose your authenticator device. Store them securely.', 'bromate-rest-api-firewall')}
+              </Typography>
+              <Box 
+                sx={{ 
+                  bgcolor: 'grey.50', 
+                  p: 2, 
+                  borderRadius: 1, 
+                  my: 2,
+                  fontFamily: 'monospace',
+                  fontSize: '0.875rem',
+                  position: 'relative'
+                }}
+              >
+                {backupCodes.map((code, index) => (
+                  <div key={index}>{code}</div>
+                ))}
+                <Box sx={{ position: 'absolute', right: 6, top: 6, zIndex: 10 }}>
+                  <CopyButton toCopy={backupCodes.join('\n')} sx={{ fontSize: '18px' }} />
+                </Box>
+              </Box>
+            </Alert>
+          )}
+
+          <Typography variant="caption" color="text.secondary" align="center">
+            {__('You can manage your 2FA settings anytime from your profile page.', 'bromate-rest-api-firewall')}
+          </Typography>
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+        <Button 
+          variant="contained" 
+          disableElevation
+          onClick={() => {
+            setShowSuccessDialog(false);
+            if (mode === 'dialog') onClose?.();
+          }}
+        >
+          {__('Done', 'bromate-rest-api-firewall')}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
   if (mode === 'inline') {
     return (
       <>
         <Stack spacing={3} py={4}>
           <Typography variant="subtitle1">
-            {__('Two-Factor Authentication', 'bromate-totp')}
+            {__('Two-Factor Authentication', 'bromate-rest-api-firewall')}
           </Typography>
 
           {error && (
@@ -456,20 +598,20 @@ export default function TOTPEnrollment({
             <TableBody>
               <TableRow>
                 <TableCell component="th" scope="row" sx={{ width: '30%', fontWeight: 'bold' }}>
-                  {__('Status', 'bromate-totp')}
+                  {__('Status', 'bromate-rest-api-firewall')}
                 </TableCell>
                 <TableCell>
                   {isEnabled ? (
                     <Box sx={{ color: '#46b450' }}>
-                      {__('Enabled', 'bromate-totp')}
+                      {__('Enabled', 'bromate-rest-api-firewall')}
                     </Box>
                   ) : totpData ? (
                     <Box sx={{ color: '#f0ad4e' }}>
-                      {__('Pending Setup', 'bromate-totp')}
+                      {__('Pending Setup', 'bromate-rest-api-firewall')}
                     </Box>
                   ) : (
                     <Box sx={{ color: '#999' }}>
-                      {__('Disabled', 'bromate-totp')}
+                      {__('Disabled', 'bromate-rest-api-firewall')}
                     </Box>
                   )}
                 </TableCell>
@@ -478,7 +620,7 @@ export default function TOTPEnrollment({
               {isEnabled && status?.enabled_time && (
                 <TableRow>
                   <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>
-                    {__('Enabled Since', 'bromate-totp')}
+                    {__('Enabled Since', 'bromate-rest-api-firewall')}
                   </TableCell>
                   <TableCell>{status.enabled_time}</TableCell>
                 </TableRow>
@@ -487,15 +629,15 @@ export default function TOTPEnrollment({
               {isEnabled && (
                 <TableRow>
                   <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>
-                    {__('Backup Codes', 'bromate-totp')}
+                    {__('Backup Codes', 'bromate-rest-api-firewall')}
                   </TableCell>
                   <TableCell>
                     {status?.has_backup_codes && status.backup_codes_remaining > 0 ? (
                       <span>
-                        {status.backup_codes_remaining} {__('remaining', 'bromate-totp')}
+                        {status.backup_codes_remaining} {__('remaining', 'bromate-rest-api-firewall')}
                       </span>
                     ) : (
-                      <span style={{ color: '#dc3232' }}>{__('None available', 'bromate-totp')}</span>
+                      <span style={{ color: '#dc3232' }}>{__('None available', 'bromate-rest-api-firewall')}</span>
                     )}
                   </TableCell>
                 </TableRow>
@@ -512,7 +654,7 @@ export default function TOTPEnrollment({
                 disabled={loading}
                 disableElevation
               >
-                {loading ? <CircularProgress size={24} /> : __('Setup', 'bromate-totp')}
+                {loading ? <CircularProgress size={24} /> : __('Setup', 'bromate-rest-api-firewall')}
               </Button>
             )}
 
@@ -529,7 +671,7 @@ export default function TOTPEnrollment({
                   }}
                   startIcon={<RefreshIcon />}
                 >
-                  {__('Reset Setup', 'bromate-totp')}
+                  {__('Reset Setup', 'bromate-rest-api-firewall')}
                 </Button>
               </Stack>
             )}
@@ -542,7 +684,7 @@ export default function TOTPEnrollment({
                 onClick={handleRegenerateBackupCodes}
                 startIcon={<RefreshIcon />}
               >
-                {__('Regenerate Backup Codes', 'bromate-totp')}
+                {__('Regenerate Backup Codes', 'bromate-rest-api-firewall')}
               </Button>
             )}
 
@@ -555,7 +697,7 @@ export default function TOTPEnrollment({
                 onClick={handleDisable2FA}
                 startIcon={<CloseIcon />}
               >
-                {__('Disable Two-Factor Authentication', 'bromate-totp')}
+                {__('Disable Two-Factor Authentication', 'bromate-rest-api-firewall')}
               </Button>
             )}
           </Stack>
@@ -564,7 +706,7 @@ export default function TOTPEnrollment({
           {totpData && !isEnabled && (
             <Box mt={2}>
               <Typography variant="subtitle1" gutterBottom>
-                {__('Setup Two-Factor Authentication', 'bromate-totp')}
+                {__('Setup Two-Factor Authentication', 'bromate-rest-api-firewall')}
               </Typography>
               {renderSetupSteps()}
             </Box>
@@ -575,7 +717,7 @@ export default function TOTPEnrollment({
             <Box mt={2}>
               <Alert severity="info">
                 <Typography variant="subtitle2" gutterBottom>
-                  {__('Save your backup codes.', 'bromate-totp')}
+                  {__('Save your backup codes.', 'bromate-rest-api-firewall')}
                 </Typography>
                 <Box sx={{ position: 'relative', bgcolor: 'grey.50', p: 2, borderRadius: 1, my: 2, fontFamily: 'monospace', fontSize: '0.875rem' }}>
                   {backupCodes.map((code, index) => (
@@ -602,6 +744,9 @@ export default function TOTPEnrollment({
           onCancel={handleConfirmCancel}
           portalContainer={portalContainer}
         />
+
+        {/* Success Dialog */}
+        {renderSuccessDialog()}
       </>
     );
   }
@@ -610,12 +755,14 @@ export default function TOTPEnrollment({
     return (
       <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth container={portalContainer}>
         <DialogTitle>
-          {__('Two-Factor Authentication Required', 'bromate-totp')}
+          {__('Two-Factor Authentication Required', 'bromate-rest-api-firewall')}
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
+            {renderPolicyBanner()}
+            
             <Typography variant="body2">
-              {__('Enter the 6-digit code from your authenticator app to continue.', 'bromate-totp')}
+              {__('Enter the 6-digit code from your authenticator app to continue.', 'bromate-rest-api-firewall')}
             </Typography>
             
             {error && (
@@ -625,7 +772,7 @@ export default function TOTPEnrollment({
             )}
 
             <TextField
-              label={__('Verification Code', 'bromate-totp')}
+              label={__('Verification Code', 'bromate-rest-api-firewall')}
               value={verificationCode}
               onChange={(e) => {
                 const value = e.target.value.replace(/\D/g, '');
@@ -651,7 +798,7 @@ export default function TOTPEnrollment({
         </DialogContent>
         <DialogActions>
           <Button disableElevation onClick={onClose}>
-            {__('Cancel', 'bromate-totp')}
+            {__('Cancel', 'bromate-rest-api-firewall')}
           </Button>
           <Button 
             variant="contained" 
@@ -659,7 +806,7 @@ export default function TOTPEnrollment({
             disableElevation
             disabled={verifying || verificationCode.length !== 6}
           >
-            {verifying ? <CircularProgress size={24} /> : __('Verify', 'bromate-totp')}
+            {verifying ? <CircularProgress size={24} /> : __('Verify', 'bromate-rest-api-firewall')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -667,11 +814,26 @@ export default function TOTPEnrollment({
   }
 
   if (mode === 'dialog') {
+    // Determine if we can show the cancel button
+    const canCancel = policy !== 'mandatory';
+
     return (
       <>
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth container={portalContainer}>
+        <Dialog 
+          open={open} 
+          onClose={handleCloseDialog} 
+          maxWidth="sm" 
+          fullWidth 
+          container={portalContainer}
+          disableEscapeKeyDown={policy === 'mandatory'}
+        >
           <DialogTitle>
-            {__('Set Up Two-Factor Authentication', 'bromate-totp')}
+            <Stack spacing={1}>
+              <Typography variant="h6">
+                {__('Set Up Two-Factor Authentication', 'bromate-rest-api-firewall')}
+              </Typography>
+              {renderPolicyBanner()}
+            </Stack>
           </DialogTitle>
           <DialogContent>
             <Stack spacing={3} sx={{ mt: 1 }}>
@@ -694,10 +856,10 @@ export default function TOTPEnrollment({
                   <Divider sx={{ my: 2 }} />
                   <Alert severity="info">
                     <Typography variant="subtitle2" gutterBottom>
-                      {__('Save your backup codes!', 'bromate-totp')}
+                      {__('Save your backup codes!', 'bromate-rest-api-firewall')}
                     </Typography>
                     <Typography variant="body2" gutterBottom>
-                      {__('These backup codes can be used to access your account if you lose your authenticator device. Store them securely.', 'bromate-totp')}
+                      {__('These backup codes can be used to access your account if you lose your authenticator device. Store them securely.', 'bromate-rest-api-firewall')}
                     </Typography>
                     <Box 
                       sx={{ 
@@ -720,9 +882,11 @@ export default function TOTPEnrollment({
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button variant="contained" color="inherit" disableElevation onClick={onClose}>
-              {__('Cancel', 'bromate-totp')}
-            </Button>
+            {canCancel ? (
+              <Button disableElevation onClick={handleCancelEnrollment}>
+                {__('Cancel', 'bromate-rest-api-firewall')}
+              </Button>
+            ) : null}
           </DialogActions>
         </Dialog>
 
@@ -738,6 +902,9 @@ export default function TOTPEnrollment({
           onCancel={handleConfirmCancel}
           portalContainer={portalContainer}
         />
+
+        {/* Success Dialog */}
+        {renderSuccessDialog()}
       </>
     );
   }

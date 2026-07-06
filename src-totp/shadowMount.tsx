@@ -11,7 +11,7 @@ import AppTheme from '@totp-contexts/AppTheme';
 import App from './App';
 
 export function createShadowRootMount(adminData: AdminData) {
-  const host = document.getElementById('bromate-totp-shadow-host');
+  const host = document.getElementById('bromate-rest-api-firewall-totp-shadow-host');
   if (!host) return;
 
   const shadowRoot = host.attachShadow({ mode: 'open' });
@@ -20,17 +20,17 @@ export function createShadowRootMount(adminData: AdminData) {
   shadowRoot.appendChild(emotionContainer);
 
   const cache = createCache({
-    key: 'bromate-totp-mui',
+    key: 'bromate-rest-api-firewall-totp-mui',
     container: emotionContainer,
     prepend: true,
   });
 
   const portalContainer = document.createElement('div');
-  portalContainer.id = 'bromate-totp-portal-root';
+  portalContainer.id = 'bromate-rest-api-firewall-totp-portal-root';
   shadowRoot.appendChild(portalContainer);
 
   const mountPoint = document.createElement('div');
-  mountPoint.id = 'bromate-totp-react-root';
+  mountPoint.id = 'bromate-rest-api-firewall-totp-react-root';
   shadowRoot.appendChild(mountPoint);
 
   createRoot(mountPoint).render(
