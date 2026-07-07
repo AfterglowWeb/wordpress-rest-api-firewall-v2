@@ -2,6 +2,9 @@ import { createRoot } from '@wordpress/element';
 import { CacheProvider } from '@emotion/react';
 import createCache from '@emotion/cache';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+
+import AppTheme from '@contexts/AppTheme';
+
 import CssBaseline from '@mui/material/CssBaseline';
 
 import { AdminDataProvider } from '@contexts/AdminDataContext';
@@ -42,7 +45,9 @@ export function createShadowRootMount(adminData: AdminData) {
           <CssBaseline />
           <PortalContainerContext.Provider value={portalContainer}>
             <AdminDataProvider adminData={adminData}>
+              <AppTheme>
               <App />
+              </AppTheme>
             </AdminDataProvider>
           </PortalContainerContext.Provider>
         </ThemeProvider>

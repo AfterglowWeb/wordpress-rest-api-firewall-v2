@@ -170,6 +170,4 @@ class AdminPage {
 			echo '</p></div>';
 		}
 	}
-
-	
 }

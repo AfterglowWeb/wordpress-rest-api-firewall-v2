@@ -202,14 +202,14 @@ class IpEntryRepository {
 	}
 
 	public static function get_login_ip_entries( string $list_type = 'blacklist' ): array {
-    return self::get_entries(
-        array(
-            'list_type'    => 'blacklist' === $list_type ? 'blacklist' : 'whitelist',
-            'entry_origin' => 'login_rate_limit',
-            'per_page'     => 100,
-        )
-    );
-}
+		return self::get_entries(
+			array(
+				'list_type'    => 'blacklist' === $list_type ? 'blacklist' : 'whitelist',
+				'entry_origin' => 'login_rate_limit',
+				'per_page'     => 100,
+			)
+		);
+	}
 
 	public static function find_by_id( int $id ): ?array {
 		global $wpdb;

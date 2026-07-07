@@ -83,9 +83,9 @@ class SettingsRepository {
 
 			case 'integer':
 				return (int) call_user_func( $callback, $option_value );
-				
+
 			case 'float':
-        		return (float) call_user_func( $callback, $option_value );
+				return (float) call_user_func( $callback, $option_value );
 
 			case 'array':
 				if ( ! is_array( $option_value ) ) {
@@ -190,26 +190,25 @@ class SettingsRepository {
 
 	public static function sanitize_2fa_policy( $value ): string {
 		$allowed = array( 'free', 'grace', 'mandatory' );
-		$value = sanitize_text_field( $value );
-		
+		$value   = sanitize_text_field( $value );
+
 		if ( ! in_array( $value, $allowed, true ) ) {
 			return 'free';
 		}
-		
+
 		return $value;
 	}
 
 	public static function sanitize_2fa_grace_period( $value ): int {
 		$value = absint( $value );
-		
+
 		if ( $value < 1 ) {
 			return 1;
 		}
 		if ( $value > 30 ) {
 			return 30;
 		}
-		
+
 		return $value;
 	}
-
 }

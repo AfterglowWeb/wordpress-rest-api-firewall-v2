@@ -24,7 +24,6 @@ import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 
 import { useDialog, DIALOG_TYPES } from '@contexts/DialogContext';
 import ConfirmDialog from '@components/ConfirmDialog';
-import { usePortalContainer } from '@contexts/PortalContainerContext';
 
 interface LoginSettings {
   login_rate_limit_enabled: boolean;
@@ -63,7 +62,6 @@ const DEFAULT_SETTINGS: LoginSettings = {
 };
 
 export default function LoginHardening(): JSX.Element {
-  const portalContainer = usePortalContainer();
   const { openDialog } = useDialog();
   const { navigateGuarded } = useNavigation();
   const [settings, setSettings] = useState<LoginSettings>(DEFAULT_SETTINGS);
@@ -145,7 +143,7 @@ export default function LoginHardening(): JSX.Element {
   }
 
   return (
-    <Stack spacing={3} p={2}>
+    <Stack spacing={3} p={0}>
 
       <Stack direction="row" justifyContent="flex-end">
         <Button
@@ -327,95 +325,89 @@ export default function LoginHardening(): JSX.Element {
             }
           />
 
-          {settings.login_2fa_enabled && (
-            <>
-              <Stack spacing={2} sx={{ mt: 1 }}>
-                <TextField
-                  label={__('Issuer Name', 'bromate-rest-api-firewall')}
-                  size="small"
-                  value={settings.login_2fa_issuer}
-                  onChange={(e) =>
-                    updateSetting('login_2fa_issuer', e.target.value)
-                  }
-                  sx={{ maxWidth: 400 }}
-                  helperText={__('Name shown in your authentication app', 'bromate-rest-api-firewall')}
-                />
-              </Stack>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label={__('Issuer Name', 'bromate-rest-api-firewall')}
+              size="small"
+              value={settings.login_2fa_issuer}
+              onChange={(e) =>
+                updateSetting('login_2fa_issuer', e.target.value)
+              }
+              sx={{ maxWidth: 400 }}
+              helperText={__('Name shown in your authentication app', 'bromate-rest-api-firewall')}
+            />
+          </Stack>
 
-              {/* Enforcement Policy */}
-              <FormControl component="fieldset" sx={{ mt: 1 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  {__('Enforcement Policy', 'bromate-rest-api-firewall')}
-                </Typography>
-                <RadioGroup
-                  value={settings.login_2fa_policy || 'free'}
-                  onChange={(e) =>
-                    updateSetting('login_2fa_policy', e.target.value as 'grace' | 'mandatory' | 'free')
-                  }
-                >
-                  <FormControlLabel
-                    value="free"
-                    control={<Radio />}
-                    label={
-                      <Stack>
-                        <Typography variant="body2">
-                          {__('Free', 'bromate-rest-api-firewall')}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {__('Users can optionally enable 2FA from their profile.', 'bromate-rest-api-firewall')}
-                        </Typography>
-                      </Stack>
+          <FormControl component="fieldset" sx={{ mt: 1 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              {__('Enforcement Policy', 'bromate-rest-api-firewall')}
+            </Typography>
+            <RadioGroup
+              value={settings.login_2fa_policy || 'grace'}
+              onChange={(e) =>
+                updateSetting('login_2fa_policy', e.target.value as 'grace' | 'mandatory' | 'free')
+              }
+            >
+              <FormControlLabel
+                value="free"
+                control={<Radio />}
+                label={
+                  <Stack>
+                    <Typography variant="body2">
+                      {__('Free', 'bromate-rest-api-firewall')}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {__('Users can optionally enable 2FA from their profile.', 'bromate-rest-api-firewall')}
+                    </Typography>
+                  </Stack>
+                }
+              />
+              <FormControlLabel
+                value="grace"
+                control={<Radio />}
+                label={
+                  <Stack>
+                    <Typography variant="body2">
+                      {__('Grace Period', 'bromate-rest-api-firewall')}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {__('Users have a grace period to enable 2FA before it becomes mandatory.', 'bromate-rest-api-firewall')}
+                    </Typography>
+                  </Stack>
+                }
+              />
+                <Box sx={{ pl: 4, pt: 1 }}>
+                  <TextField
+                    label={__('Grace Period (days)', 'bromate-rest-api-firewall')}
+                    type="number"
+                    size="small"
+                    value={settings.login_2fa_grace_period || 7}
+                    onChange={(e) =>
+                      updateSetting('login_2fa_grace_period', Number(e.target.value))
                     }
+                    slotProps={{ htmlInput: { min: 1, max: 30 } }}
+                    helperText={__('Number of days before 2FA becomes mandatory', 'bromate-rest-api-firewall')}
+                    sx={{ maxWidth: 200 }}
                   />
-                  <FormControlLabel
-                    value="grace"
-                    control={<Radio />}
-                    label={
-                      <Stack>
-                        <Typography variant="body2">
-                          {__('Grace Period', 'bromate-rest-api-firewall')}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {__('Users have a grace period to enable 2FA before it becomes mandatory.', 'bromate-rest-api-firewall')}
-                        </Typography>
-                      </Stack>
-                    }
-                  />
-                  {settings.login_2fa_policy === 'grace' && (
-                    <Box sx={{ pl: 4, pt: 1 }}>
-                      <TextField
-                        label={__('Grace Period (days)', 'bromate-rest-api-firewall')}
-                        type="number"
-                        size="small"
-                        value={settings.login_2fa_grace_period || 7}
-                        onChange={(e) =>
-                          updateSetting('login_2fa_grace_period', Number(e.target.value))
-                        }
-                        slotProps={{ htmlInput: { min: 1, max: 30 } }}
-                        helperText={__('Number of days before 2FA becomes mandatory', 'bromate-rest-api-firewall')}
-                        sx={{ maxWidth: 200 }}
-                      />
-                    </Box>
-                  )}
-                  <FormControlLabel
-                    value="mandatory"
-                    control={<Radio />}
-                    label={
-                      <Stack>
-                        <Typography variant="body2">
-                          {__('Mandatory', 'bromate-rest-api-firewall')}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {__('All users must enable 2FA. No cancellation allowed.', 'bromate-rest-api-firewall')}
-                        </Typography>
-                      </Stack>
-                    }
-                  />
-                </RadioGroup>
-              </FormControl>
-            </>
-          )}
-
+                </Box>
+          
+              <FormControlLabel
+                value="mandatory"
+                control={<Radio />}
+                label={
+                  <Stack>
+                    <Typography variant="body2">
+                      {__('Mandatory', 'bromate-rest-api-firewall')}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {__('All users must enable 2FA. No cancellation allowed.', 'bromate-rest-api-firewall')}
+                    </Typography>
+                  </Stack>
+                }
+              />
+            </RadioGroup>
+          </FormControl>
+  
           <Alert severity="info" sx={{ mt: 1 }}>
             <Typography variant="body2" gutterBottom>
               <strong>{__('How it works:', 'bromate-rest-api-firewall')}</strong>

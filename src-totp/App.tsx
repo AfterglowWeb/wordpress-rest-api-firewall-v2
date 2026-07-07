@@ -18,9 +18,13 @@ export default function App() {
       <TOTPEnrollment
         mode="inline"
         username={adminData.username || ''}
-        issuer={adminData.plugin_name || 'Bromate REST API'}
+        issuer={adminData.sitename || 'Bromate REST API Firewall'}
+        sitename={adminData.sitename || 'Bromate REST API Firewall'}
         onSetupComplete={handleSetupComplete}
         onClose={handleClose}
+        policy={adminData.policy}
+        gracePeriodDays={adminData.grace_period}
+        remainingDays={adminData.remaining_days}
       />
     );
   }
@@ -34,9 +38,13 @@ export default function App() {
       mode={adminData.is_user_enabled ? 'verify' : 'dialog'}
       open={adminData.show_dialog}
       username={adminData.username || ''}
-      issuer={adminData.plugin_name || 'Bromate REST API'}
+      issuer={adminData.sitename || 'Bromate REST API Firewall'}
+      sitename={adminData.sitename || 'Bromate REST API Firewall'}
       onSetupComplete={handleSetupComplete}
       onClose={handleClose}
+      policy={adminData.policy}
+      gracePeriodDays={adminData.grace_period}
+      remainingDays={adminData.remaining_days}
     />
   );
 }
