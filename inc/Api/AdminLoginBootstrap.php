@@ -1,22 +1,16 @@
-<?php namespace Bromate\RestApiFirewall\Api;
+<?php 
+namespace Bromate\RestApiFirewall\Api;
 
 defined( 'ABSPATH' ) || exit;
 
-use Bromate\RestApiFirewall\Logs\FirewallLogger;
-use WP_User;
+use Bromate\RestApiFirewall\Security\Login\LoginRateLimiter;
+use Bromate\RestApiFirewall\Security\Login\TOTPLoginService;
 
 final class AdminLoginBootstrap {
 
 	public static function register(): void {
-		add_action( 'wp_login', array( self::class, 'on_login_success' ), 10, 2 );
-		add_action( 'wp_login_failed', array( self::class, 'on_login_failed' ), 10, 1 );
+		LoginRateLimiter::get_instance();
+		TOTPLoginService::register();
 	}
 
-	public static function on_login_success( string $user_login, WP_User $user ): void {
-		FirewallLogger::admin_login_success( $user->ID );
-	}
-
-	public static function on_login_failed( string $username ): void {
-		FirewallLogger::admin_login_failed( $username );
-	}
 }
