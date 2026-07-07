@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Bromate\RestApiFirewall\Api;
 
 defined( 'ABSPATH' ) || exit;
@@ -12,5 +12,4 @@ final class AdminLoginBootstrap {
 		LoginRateLimiter::get_instance();
 		TOTPLoginService::register();
 	}
-
 }

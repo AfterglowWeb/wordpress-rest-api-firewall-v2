@@ -1,5 +1,4 @@
 jQuery(document).ready(function($) {
-    // Check if we're on a login page with TOTP
     var codeInput = document.getElementById('bromate-totp-code');
     var verifyButton = document.getElementById('bromate-totp-verify-button');
     var errorDiv = document.getElementById('bromate-totp-error');
@@ -9,7 +8,6 @@ jQuery(document).ready(function($) {
         return;
     }
 
-    // Auto-submit when 6 digits are entered
     $(codeInput).on('input', function() {
         this.value = this.value.replace(/\D/g, '').slice(0, 6);
         
@@ -18,7 +16,6 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // Handle Enter key
     $(codeInput).on('keydown', function(e) {
         if (e.key === 'Enter' && this.value.length === 6) {
             e.preventDefault();
@@ -26,7 +23,6 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // Handle verify button click
     $(verifyButton).on('click', function(e) {
         e.preventDefault();
         var code = $(codeInput).val().trim();
@@ -40,7 +36,6 @@ jQuery(document).ready(function($) {
     function verifyTotp(code) {
         hideError();
         
-        // Get the nonce from the hidden field
         var nonceField = document.querySelector('input[name="bromate_totp_nonce"]');
         var sessionField = document.querySelector('input[name="bromate_totp_session"]');
         
@@ -51,7 +46,6 @@ jQuery(document).ready(function($) {
         formData.append('remember_device', rememberCheckbox && rememberCheckbox.checked ? '1' : '0');
         formData.append('nonce', nonceField ? nonceField.value : bromateTotp.nonce);
 
-        // Show loading state
         $(codeInput).prop('disabled', true);
         $(verifyButton).prop('disabled', true).text('Verifying...');
 
@@ -63,7 +57,6 @@ jQuery(document).ready(function($) {
             contentType: false,
             success: function(response) {
                 if (response.success) {
-                    // Verification successful - now complete the login
                     finishLogin();
                 } else {
                     showError(response.data.message || 'Verification failed. Please try again.');
@@ -86,7 +79,6 @@ jQuery(document).ready(function($) {
     }
 
     function finishLogin() {
-        // Get the nonce and session
         var nonceField = document.querySelector('input[name="bromate_totp_nonce"]');
         var sessionField = document.querySelector('input[name="bromate_totp_session"]');
         
@@ -103,7 +95,6 @@ jQuery(document).ready(function($) {
             contentType: false,
             success: function(response) {
                 if (response.success) {
-                    // Redirect to the dashboard
                     window.location.href = response.data.redirect_url || bromateTotp.redirectUrl;
                 } else {
                     showError(response.data.message || 'Login failed. Please try again.');
@@ -131,6 +122,5 @@ jQuery(document).ready(function($) {
         }
     }
 
-    // Focus the TOTP input
     $(codeInput).focus();
 });
