@@ -332,6 +332,80 @@ final class TOTPLoginService {
 		);
 	}
 
+	/**
+	 * Handle failed login attempts for TOTP
+	 * 
+	 * @param string $username Username that failed login
+	 */
+	public function on_login_failed( string $username ): void {
+		if ( ! $this->is_totp_globally_enabled() ) {
+			return;
+		}
+
+		$session_id = $this->get_session_id();
+		
+		// Check if this session had TOTP verification pending
+		$pending = get_transient( 'bromate_totp_pending_' . $session_id );
+		if ( ! $pending || ! isset( $pending['user_id'] ) ) {
+			return;
+		}
+
+		$user_id = (int) $pending['user_id'];
+		$user = get_user_by( 'id', $user_id );
+		
+		if ( ! $user || $user->user_login !== $username ) {
+			return;
+		}
+
+		// Increment failed TOTP attempts for this session
+		$attempts_key = 'bromate_totp_attempts_' . $session_id;
+		$attempts = (int) get_transient( $attempts_key );
+		++$attempts;
+		set_transient( $attempts_key, $attempts, self::TRANSIENT_EXPIRY );
+
+		// Log the failed TOTP attempt
+		error_log( sprintf(
+			'[TOTP] Failed verification attempt - Username: %s, Attempt: %d/%d, Session: %s, IP: %s',
+			$username,
+			$attempts,
+			self::MAX_ATTEMPTS,
+			substr( $session_id, 0, 8 ),
+			$this->get_client_ip()
+		) );
+
+		// If max attempts reached, clear the pending session
+		if ( $attempts >= self::MAX_ATTEMPTS ) {
+			delete_transient( 'bromate_totp_pending_' . $session_id );
+			delete_transient( $attempts_key );
+			
+			error_log( sprintf(
+				'[TOTP] Max attempts reached - Username: %s, Session: %s, IP: %s',
+				$username,
+				substr( $session_id, 0, 8 ),
+				$this->get_client_ip()
+			) );
+		}
+
+		// Store failed attempt for user meta (for audit purposes)
+		$failed_log = get_user_meta( $user_id, '_bromate_totp_failed_attempts', true );
+		if ( ! is_array( $failed_log ) ) {
+			$failed_log = array();
+		}
+		
+		// Keep only last 10 failures
+		$failed_log[] = array(
+			'time' => time(),
+			'ip'   => $this->get_client_ip(),
+			'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
+		);
+		
+		if ( count( $failed_log ) > 10 ) {
+			$failed_log = array_slice( $failed_log, -10 );
+		}
+		
+		update_user_meta( $user_id, '_bromate_totp_failed_attempts', $failed_log );
+	}
+
 	public function validate_totp( $user ) {
 		if ( is_wp_error( $user ) ) {
 			return $user;
@@ -598,6 +672,31 @@ final class TOTPLoginService {
 
 		delete_transient( 'bromate_totp_pending_' . $session_id );
 		delete_transient( 'bromate_totp_attempts_' . $session_id );
+	}
+
+	/**
+	 * Get client IP address
+	 * 
+	 * @return string Client IP address
+	 */
+	private function get_client_ip(): string {
+		$ip_address = '';
+		
+		if ( isset( $_SERVER['HTTP_CLIENT_IP'] ) ) {
+			$ip_address = $_SERVER['HTTP_CLIENT_IP'];
+		} elseif ( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+			$ip_address = $_SERVER['HTTP_X_FORWARDED_FOR'];
+		} elseif ( isset( $_SERVER['HTTP_X_FORWARDED'] ) ) {
+			$ip_address = $_SERVER['HTTP_X_FORWARDED'];
+		} elseif ( isset( $_SERVER['HTTP_FORWARDED_FOR'] ) ) {
+			$ip_address = $_SERVER['HTTP_FORWARDED_FOR'];
+		} elseif ( isset( $_SERVER['HTTP_FORWARDED'] ) ) {
+			$ip_address = $_SERVER['HTTP_FORWARDED'];
+		} elseif ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
+			$ip_address = $_SERVER['REMOTE_ADDR'];
+		}
+		
+		return sanitize_text_field( $ip_address );
 	}
 
 	private function is_totp_globally_enabled(): bool {

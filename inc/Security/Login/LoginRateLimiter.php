@@ -59,8 +59,6 @@ final class LoginRateLimiter {
 
 		$hash = self::ip_hash( $ip );
 
-		// If check_before_auth already set a block (i.e., this failure was caused
-		// by our own WP_Error), do not double-count it.
 		if ( get_transient( self::BLOCK_PREFIX . $hash ) ) {
 			return;
 		}
@@ -71,11 +69,9 @@ final class LoginRateLimiter {
 		++$count;
 
 		if ( $count >= $opts['attempts'] ) {
-			// Threshold reached: store the IP as the value (enables block listing in the UI).
 			set_transient( self::BLOCK_PREFIX . $hash, $ip, $opts['blacklist_time'] );
 			delete_transient( $count_key );
 
-			// Escalation: promote to the shared global IP blacklist after N block cycles.
 			if ( $opts['promote_after'] > 0 ) {
 				$strike_key = self::STRIKE_PREFIX . $hash;
 				$strikes    = (int) get_transient( $strike_key ) + 1;
@@ -84,12 +80,10 @@ final class LoginRateLimiter {
 					$this->promote_to_global_blacklist( $ip, $opts['blacklist_time'] );
 					delete_transient( $strike_key );
 				} else {
-					// Keep strike counter alive across multiple block windows.
 					set_transient( $strike_key, $strikes, $opts['blacklist_time'] * ( $opts['promote_after'] + 1 ) );
 				}
 			}
 		} else {
-			// Still accumulating — refresh the sliding window.
 			set_transient( $count_key, $count, $opts['window'] );
 		}
 	}
