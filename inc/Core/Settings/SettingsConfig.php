@@ -366,7 +366,7 @@ final class SettingsConfig {
 			'login_2fa_policy'                       => array(
 				'label'             => esc_html__( '2FA Enforcement Policy', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Determines how users are required to set up two-factor authentication.', 'bromate-rest-api-firewall' ),
-				'default_value'     => 'free',
+				'default_value'     => 'grace',
 				'type'              => 'string',
 				'sanitize_callback' => array( SettingsRepository::class, 'sanitize_2fa_policy' ),
 				'group'             => 'login-hardening',
