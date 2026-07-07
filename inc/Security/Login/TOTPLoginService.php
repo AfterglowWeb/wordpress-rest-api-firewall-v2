@@ -10,9 +10,12 @@ use WP_Error;
 final class TOTPLoginService {
 
 	private const TRUSTED_COOKIE_NAME       = 'bromate_totp_trusted';
+	private const TRUSTED_TOKEN_META_KEY    = '_bromate_totp_trusted_token';
 	private const VERIFIED_TRANSIENT_PREFIX = 'bromate_totp_verified_';
+	private const SESSION_ID_COOKIE_NAME    = 'bromate_totp_session';
 	private const MAX_ATTEMPTS              = 5;
 	private const TRANSIENT_EXPIRY          = 300;
+	private const TOKEN_EXPIRY_DAYS         = 30;
 	private TOTPRepository $totp_repo;
 
 	public function __construct() {
@@ -41,6 +44,38 @@ final class TOTPLoginService {
 
 		add_action( 'login_enqueue_scripts', array( $service, 'enqueue_scripts' ) );
 		add_action( 'wp_enqueue_scripts', array( $service, 'enqueue_scripts' ) );
+	}
+
+	private function generate_session_id(): string {
+		try {
+			$bytes = random_bytes( 32 );
+			return bin2hex( $bytes );
+		} catch ( \Exception $e ) {
+			return md5( uniqid( 'bromate_totp_', true ) );
+		}
+	}
+
+	private function get_session_id(): string {
+		if ( isset( $_COOKIE[ self::SESSION_ID_COOKIE_NAME ] ) ) {
+			$session_id = sanitize_text_field( wp_unslash( $_COOKIE[ self::SESSION_ID_COOKIE_NAME ] ) );
+			if ( preg_match( '/^[a-f0-9]{64}$/', $session_id ) ) {
+				return $session_id;
+			}
+		}
+
+		$session_id = $this->generate_session_id();
+
+		setcookie(
+			self::SESSION_ID_COOKIE_NAME,
+			$session_id,
+			0,
+			COOKIEPATH,
+			COOKIE_DOMAIN,
+			true,
+			true
+		);
+
+		return $session_id;
 	}
 
 	private function get_verified_transient_key( string $session_id ): string {
@@ -343,6 +378,83 @@ final class TOTPLoginService {
 		);
 	}
 
+	private function generate_trusted_token(): string {
+		try {
+			$bytes = random_bytes( 32 );
+			return bin2hex( $bytes );
+		} catch ( \Exception $e ) {
+			return bin2hex( openssl_random_pseudo_bytes( 32 ) );
+		}
+	}
+
+	private function store_trusted_token( int $user_id, string $token ): void {
+		$tokens = get_user_meta( $user_id, self::TRUSTED_TOKEN_META_KEY, true );
+		if ( ! is_array( $tokens ) ) {
+			$tokens = array();
+		}
+
+		$tokens[ $token ] = array(
+			'token'      => $token,
+			'created'    => time(),
+			'expires'    => time() + ( self::TOKEN_EXPIRY_DAYS * DAY_IN_SECONDS ),
+			'user_agent' => isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '',
+		);
+
+		if ( count( $tokens ) > 10 ) {
+			uasort(
+				$tokens,
+				function ( $a, $b ) {
+					return $a['created'] - $b['created'];
+				}
+			);
+			$tokens = array_slice( $tokens, -10, 10, true );
+		}
+
+		update_user_meta( $user_id, self::TRUSTED_TOKEN_META_KEY, $tokens );
+	}
+
+	private function verify_trusted_token( int $user_id, string $token ): bool {
+		$tokens = get_user_meta( $user_id, self::TRUSTED_TOKEN_META_KEY, true );
+		if ( ! is_array( $tokens ) || ! isset( $tokens[ $token ] ) ) {
+			return false;
+		}
+
+		$token_data = $tokens[ $token ];
+
+		if ( $token_data['expires'] < time() ) {
+			unset( $tokens[ $token ] );
+			update_user_meta( $user_id, self::TRUSTED_TOKEN_META_KEY, $tokens );
+			return false;
+		}
+
+		$current_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
+		if ( $token_data['user_agent'] !== $current_agent ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	private function cleanup_expired_tokens( int $user_id ): void {
+		$tokens = get_user_meta( $user_id, self::TRUSTED_TOKEN_META_KEY, true );
+		if ( ! is_array( $tokens ) ) {
+			return;
+		}
+
+		$now     = time();
+		$changed = false;
+		foreach ( $tokens as $key => $data ) {
+			if ( $data['expires'] < $now ) {
+				unset( $tokens[ $key ] );
+				$changed = true;
+			}
+		}
+
+		if ( $changed ) {
+			update_user_meta( $user_id, self::TRUSTED_TOKEN_META_KEY, $tokens );
+		}
+	}
+
 	public function ajax_verify_totp(): void {
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'bromate_totp_verify' ) ) {
 			wp_send_json_error( array( 'message' => 'Invalid security token' ), 403 );
@@ -414,8 +526,20 @@ final class TOTPLoginService {
 		$verified_key = $this->get_verified_transient_key( $session_id );
 		set_transient( $verified_key, true, self::TRANSIENT_EXPIRY );
 
-		if ( isset( $_POST['remember_device'] ) && filter_var( wp_unslash( $_POST['remember_device'] ), FILTER_VALIDATE_BOOLEAN ) ) {
-			$this->set_trusted_cookie( $user_id );
+		$remember_device = isset( $_POST['remember_device'] ) && filter_var( wp_unslash( $_POST['remember_device'] ), FILTER_VALIDATE_BOOLEAN );
+		if ( $remember_device ) {
+			$token = $this->generate_trusted_token();
+			$this->store_trusted_token( $user_id, $token );
+
+			setcookie(
+				self::TRUSTED_COOKIE_NAME,
+				$token,
+				time() + ( self::TOKEN_EXPIRY_DAYS * DAY_IN_SECONDS ),
+				COOKIEPATH,
+				COOKIE_DOMAIN,
+				true,
+				true
+			);
 		}
 
 		wp_send_json_success(
@@ -427,7 +551,6 @@ final class TOTPLoginService {
 	}
 
 	public function handle_login_actions(): void {
-
 		$session_id = $this->get_session_id();
 		delete_transient( 'bromate_totp_pending_' . $session_id );
 		delete_transient( 'bromate_totp_attempts_' . $session_id );
@@ -435,8 +558,31 @@ final class TOTPLoginService {
 
 	public function clear_trusted_cookie(): void {
 		if ( isset( $_COOKIE[ self::TRUSTED_COOKIE_NAME ] ) ) {
+			$token = sanitize_text_field( wp_unslash( $_COOKIE[ self::TRUSTED_COOKIE_NAME ] ) );
+
+			$user_id = get_current_user_id();
+			if ( $user_id ) {
+				$tokens = get_user_meta( $user_id, self::TRUSTED_TOKEN_META_KEY, true );
+				if ( is_array( $tokens ) && isset( $tokens[ $token ] ) ) {
+					unset( $tokens[ $token ] );
+					update_user_meta( $user_id, self::TRUSTED_TOKEN_META_KEY, $tokens );
+				}
+			}
+
 			setcookie(
 				self::TRUSTED_COOKIE_NAME,
+				'',
+				time() - 3600,
+				COOKIEPATH,
+				COOKIE_DOMAIN,
+				is_ssl(),
+				true
+			);
+		}
+
+		if ( isset( $_COOKIE[ self::SESSION_ID_COOKIE_NAME ] ) ) {
+			setcookie(
+				self::SESSION_ID_COOKIE_NAME,
 				'',
 				time() - 3600,
 				COOKIEPATH,
@@ -463,36 +609,10 @@ final class TOTPLoginService {
 			return false;
 		}
 
-		$cookie   = sanitize_text_field( wp_unslash( $_COOKIE[ self::TRUSTED_COOKIE_NAME ] ) );
-		$expected = wp_hash( $user_id . ':' . wp_salt() );
+		$token = sanitize_text_field( wp_unslash( $_COOKIE[ self::TRUSTED_COOKIE_NAME ] ) );
 
-		return hash_equals( $expected, $cookie );
-	}
+		$this->cleanup_expired_tokens( $user_id );
 
-	private function set_trusted_cookie( int $user_id ): void {
-		$expires = time() + 30 * DAY_IN_SECONDS;
-		$value   = wp_hash( $user_id . ':' . wp_salt() );
-
-		setcookie(
-			self::TRUSTED_COOKIE_NAME,
-			$value,
-			$expires,
-			COOKIEPATH,
-			COOKIE_DOMAIN,
-			is_ssl(),
-			true
-		);
-	}
-
-	private function get_session_id(): string {
-		if ( session_id() ) {
-			return session_id();
-		}
-
-		if ( ! headers_sent() && session_status() !== PHP_SESSION_ACTIVE ) {
-			session_start();
-		}
-
-		return session_id() ? session_id() : md5( uniqid( 'bromate_totp_', true ) );
+		return $this->verify_trusted_token( $user_id, $token );
 	}
 }
