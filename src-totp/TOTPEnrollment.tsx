@@ -40,9 +40,10 @@ interface TOTPEnrollmentProps {
   onClose?: () => void;
   username: string;
   issuer: string;
+  sitename: string;
   onSetupComplete?: () => void;
   initialStep?: number;
-  policy?: 'mandatory' | 'grace' | 'free';
+  policy: 'mandatory' | 'grace' | 'free';
   gracePeriodDays?: number;
   remainingDays?: number | null;
 }
@@ -78,9 +79,10 @@ export default function TOTPEnrollment({
   onClose,
   username,
   issuer,
+  sitename,
   onSetupComplete,
   initialStep = 0,
-  policy = 'free',
+  policy = 'grace',
   gracePeriodDays = 7,
   remainingDays = null,
 }: TOTPEnrollmentProps): JSX.Element | null {
@@ -96,17 +98,15 @@ export default function TOTPEnrollment({
   const [isEnabled, setIsEnabled] = useState(false);
   const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
   const [statusChecked, setStatusChecked] = useState(false);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   const portalContainer = usePortalContainer();
 
-  // Confirm Dialog state
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [confirmDialogConfig, setConfirmDialogConfig] = useState<{
     title: string;
-    message: string;
+    message: string | JSX.Element;
     confirmLabel?: string;
-    confirmColor?: 'primary' | 'error' | 'info';
+    confirmColor?: 'primary' | 'error' | 'success';
     onConfirm: () => void | Promise<void>;
   } | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
@@ -137,7 +137,6 @@ export default function TOTPEnrollment({
     setConfirmLoading(false);
   };
 
-  // Reset state when 2FA is disabled
   const resetSetupState = () => {
     setActiveStep(0);
     setTotpData(null);
@@ -231,13 +230,14 @@ export default function TOTPEnrollment({
         return;
       }
 
+      // Enrollment successful
       setSuccess('2FA successfully enabled!');
+      setIsEnabled(true);
 
       if (result.backup_codes) {
         setBackupCodes(result.backup_codes);
         setTotpData((prev) => (prev ? { ...prev, backup_codes: result.backup_codes } : null));
         setShowBackupCodes(true);
-        setIsEnabled(true);
         
         const backupCodesRemaining = result?.backup_codes ? result.backup_codes.length : 0;
         setStatus((prev) => ({
@@ -246,20 +246,63 @@ export default function TOTPEnrollment({
           has_backup_codes: true,
           backup_codes_remaining: backupCodesRemaining,
         }));
-        
-        // Show success dialog after a short delay
-        setTimeout(() => {
-          setShowSuccessDialog(true);
-        }, 500);
-        
-        onSetupComplete?.();
-      } else {
-        setIsEnabled(true);
-        setTimeout(() => {
-          onSetupComplete?.();
-          if (mode === 'dialog') onClose?.();
-        }, 1500);
       }
+
+      // Show success confirm dialog
+      const successMessage = (
+        <Stack spacing={2}>
+          <Typography variant="body1">
+            {__('Your account is now protected with two-factor authentication.', 'bromate-rest-api-firewall')}
+          </Typography>
+          
+          {backupCodes && backupCodes.length > 0 && (
+            <Alert severity="info">
+              <Typography variant="subtitle2" gutterBottom>
+                {__('Save your backup codes', 'bromate-rest-api-firewall')}
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                {__('These codes can be used to access your account if you lose your authenticator device. Store them securely.', 'bromate-rest-api-firewall')}
+              </Typography>
+              <Box 
+                sx={{ 
+                  bgcolor: 'grey.50', 
+                  p: 2, 
+                  borderRadius: 1, 
+                  my: 2,
+                  fontFamily: 'monospace',
+                  fontSize: '0.875rem',
+                  position: 'relative'
+                }}
+              >
+                {backupCodes.map((code, index) => (
+                  <div key={index}>{code}</div>
+                ))}
+                <Box sx={{ position: 'absolute', right: 6, top: 6, zIndex: 10 }}>
+                  <CopyButton toCopy={backupCodes.join('\n')} sx={{ fontSize: '18px' }} />
+                </Box>
+              </Box>
+            </Alert>
+          )}
+
+          <Typography variant="caption" color="text.secondary" align="center">
+            {__('You can manage your 2FA settings anytime from your profile page.', 'bromate-rest-api-firewall')}
+          </Typography>
+        </Stack>
+      );
+
+      showConfirm({
+        title: __('Two-Factor Authentication Enabled!', 'bromate-rest-api-firewall'),
+        message: successMessage,
+        confirmLabel: __('Done', 'bromate-rest-api-firewall'),
+        confirmColor: 'success',
+        onConfirm: () => {
+          onSetupComplete?.();
+          if (mode === 'dialog') {
+            onClose?.();
+          }
+        },
+      });
+
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -296,7 +339,7 @@ export default function TOTPEnrollment({
       title: __('Regenerate Backup Codes', 'bromate-rest-api-firewall'),
       message: __('This will invalidate all existing backup codes and generate new ones. Make sure to save the new codes securely.', 'bromate-rest-api-firewall'),
       confirmLabel: __('Regenerate', 'bromate-rest-api-firewall'),
-      confirmColor: 'info',
+      confirmColor: 'primary',
       onConfirm: async () => {
         try {
           const result = await apiRequest<{ backup_codes: string[] }>('bromate_regenerate_backup_codes');
@@ -324,11 +367,22 @@ export default function TOTPEnrollment({
     }
   };
 
-  const handleCloseDialog = () => {
-    // If mandatory, don't allow closing
+  const persistDismissal = async () => {
     if (policy === 'mandatory') {
       return;
     }
+    try {
+      await apiRequest('bromate_dismiss_totp_reminder');
+    } catch (err) {
+      console.error('Failed to persist 2FA reminder dismissal', err);
+    }
+  };
+
+  const handleCloseDialog = () => {
+    if (policy === 'mandatory') {
+      return;
+    }
+    persistDismissal();
     onClose?.();
   };
 
@@ -353,8 +407,9 @@ export default function TOTPEnrollment({
       title: __('Reminder', 'bromate-rest-api-firewall'),
       message: message,
       confirmLabel: __('OK, I understand', 'bromate-rest-api-firewall'),
-      confirmColor: 'info',
-      onConfirm: () => {
+      confirmColor: 'primary',
+      onConfirm: async () => {
+        await persistDismissal();
         onClose?.();
       },
     });
@@ -372,7 +427,7 @@ export default function TOTPEnrollment({
     let severity: 'info' | 'warning' = 'info';
 
     if (policy === 'mandatory') {
-      message = __('Two-factor authentication is mandatory for your account. Please complete setup to continue.', 'bromate-rest-api-firewall');
+      message = __('Two-factor authentication is now mandatory for your account. Please complete setup to continue.', 'bromate-rest-api-firewall');
     } else if (policy === 'grace' && remainingDays !== null) {
       message = sprintf(
         __('Two-factor authentication is required. You have %d days remaining to complete setup.', 'bromate-rest-api-firewall'),
@@ -506,74 +561,6 @@ export default function TOTPEnrollment({
     </Stepper>
   );
 
-  // Success Dialog
-  const renderSuccessDialog = () => (
-    <Dialog 
-      open={showSuccessDialog} 
-      onClose={() => {}} 
-      maxWidth="sm" 
-      fullWidth 
-      container={portalContainer}
-    >
-      <DialogTitle sx={{ textAlign: 'center' }}>
-        <CheckCircleIcon sx={{ fontSize: 64, color: '#46b450', display: 'block', margin: '0 auto 16px' }} />
-        {__('Two-Factor Authentication Enabled!', 'bromate-rest-api-firewall')}
-      </DialogTitle>
-      <DialogContent>
-        <Stack spacing={2}>
-          <Typography variant="body1" align="center">
-            {__('Your account is now protected with two-factor authentication.', 'bromate-rest-api-firewall')}
-          </Typography>
-          
-          {backupCodes && backupCodes.length > 0 && (
-            <Alert severity="info">
-              <Typography variant="subtitle2" gutterBottom>
-                {__('Save your backup codes', 'bromate-rest-api-firewall')}
-              </Typography>
-              <Typography variant="body2" gutterBottom>
-                {__('These codes can be used to access your account if you lose your authenticator device. Store them securely.', 'bromate-rest-api-firewall')}
-              </Typography>
-              <Box 
-                sx={{ 
-                  bgcolor: 'grey.50', 
-                  p: 2, 
-                  borderRadius: 1, 
-                  my: 2,
-                  fontFamily: 'monospace',
-                  fontSize: '0.875rem',
-                  position: 'relative'
-                }}
-              >
-                {backupCodes.map((code, index) => (
-                  <div key={index}>{code}</div>
-                ))}
-                <Box sx={{ position: 'absolute', right: 6, top: 6, zIndex: 10 }}>
-                  <CopyButton toCopy={backupCodes.join('\n')} sx={{ fontSize: '18px' }} />
-                </Box>
-              </Box>
-            </Alert>
-          )}
-
-          <Typography variant="caption" color="text.secondary" align="center">
-            {__('You can manage your 2FA settings anytime from your profile page.', 'bromate-rest-api-firewall')}
-          </Typography>
-        </Stack>
-      </DialogContent>
-      <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
-        <Button 
-          variant="contained" 
-          disableElevation
-          onClick={() => {
-            setShowSuccessDialog(false);
-            if (mode === 'dialog') onClose?.();
-          }}
-        >
-          {__('Done', 'bromate-rest-api-firewall')}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-
   if (mode === 'inline') {
     return (
       <>
@@ -602,17 +589,11 @@ export default function TOTPEnrollment({
                 </TableCell>
                 <TableCell>
                   {isEnabled ? (
-                    <Box sx={{ color: '#46b450' }}>
-                      {__('Enabled', 'bromate-rest-api-firewall')}
-                    </Box>
+                    <Chip color="success" label={__('Enabled', 'bromate-rest-api-firewall')}/>
                   ) : totpData ? (
-                    <Box sx={{ color: '#f0ad4e' }}>
-                      {__('Pending Setup', 'bromate-rest-api-firewall')}
-                    </Box>
+                    <Chip color="warning" label={__('Pending Setup', 'bromate-rest-api-firewall')}/>
                   ) : (
-                    <Box sx={{ color: '#999' }}>
-                      {__('Disabled', 'bromate-rest-api-firewall')}
-                    </Box>
+                    <Chip color="default" label={__('Disabled', 'bromate-rest-api-firewall')}/>
                   )}
                 </TableCell>
               </TableRow>
@@ -678,7 +659,7 @@ export default function TOTPEnrollment({
 
             {isEnabled && status?.has_backup_codes && status.backup_codes_remaining > 0 && (
               <Button
-                variant="text"
+                variant="outlined"
                 disableElevation
                 size="small"
                 onClick={handleRegenerateBackupCodes}
@@ -690,7 +671,7 @@ export default function TOTPEnrollment({
 
             {isEnabled && (
               <Button
-                variant="text"
+                variant="outlined"
                 size="small"
                 disableElevation
                 color="error"
@@ -731,90 +712,97 @@ export default function TOTPEnrollment({
             </Box>
           )}
         </Stack>
-
-        {/* Confirm Dialog */}
         <ConfirmDialog
           open={confirmDialogOpen}
           title={confirmDialogConfig?.title || ''}
-          message={confirmDialogConfig?.message || ''}
+          message={ confirmDialogConfig?.message || ''}
           confirmLabel={confirmDialogConfig?.confirmLabel}
-          confirmColor={confirmDialogConfig?.confirmColor}
+          confirmColor={confirmDialogConfig?.confirmColor || 'primary'}
           loading={confirmLoading}
           onConfirm={handleConfirm}
           onCancel={handleConfirmCancel}
           portalContainer={portalContainer}
         />
-
-        {/* Success Dialog */}
-        {renderSuccessDialog()}
       </>
     );
   }
 
   if (mode === 'verify') {
     return (
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth container={portalContainer}>
-        <DialogTitle>
-          {__('Two-Factor Authentication Required', 'bromate-rest-api-firewall')}
-        </DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            {renderPolicyBanner()}
-            
-            <Typography variant="body2">
-              {__('Enter the 6-digit code from your authenticator app to continue.', 'bromate-rest-api-firewall')}
-            </Typography>
-            
-            {error && (
-              <Alert severity="error" onClose={() => setError(null)}>
-                {error}
-              </Alert>
-            )}
+      <>
+        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth container={portalContainer}>
+          <DialogTitle>
+            {__('Two-Factor Authentication Required', 'bromate-rest-api-firewall')}
+          </DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              {renderPolicyBanner()}
+              
+              <Typography variant="body2">
+                {__('Enter the 6-digit code from your authenticator app to continue.', 'bromate-rest-api-firewall')}
+              </Typography>
+              
+              {error && (
+                <Alert severity="error" onClose={() => setError(null)}>
+                  {error}
+                </Alert>
+              )}
 
-            <TextField
-              label={__('Verification Code', 'bromate-rest-api-firewall')}
-              value={verificationCode}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, '');
-                setVerificationCode(value.slice(0, 6));
-              }}
-              placeholder="123456"
-              slotProps={{
-                htmlInput: {
-                  maxLength: 6,
-                  pattern: '\\d{6}',
-                  style: { textAlign: 'center', fontSize: '1.25rem', letterSpacing: '0.5em' }
-                }
-              }}
-              fullWidth
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleVerifyCode();
-                }
-              }}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button disableElevation onClick={onClose}>
-            {__('Cancel', 'bromate-rest-api-firewall')}
-          </Button>
-          <Button 
-            variant="contained" 
-            onClick={handleVerifyCode}
-            disableElevation
-            disabled={verifying || verificationCode.length !== 6}
-          >
-            {verifying ? <CircularProgress size={24} /> : __('Verify', 'bromate-rest-api-firewall')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+              <TextField
+                label={__('Verification Code', 'bromate-rest-api-firewall')}
+                value={verificationCode}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '');
+                  setVerificationCode(value.slice(0, 6));
+                }}
+                placeholder="123456"
+                slotProps={{
+                  htmlInput: {
+                    maxLength: 6,
+                    pattern: '\\d{6}',
+                    style: { textAlign: 'center', fontSize: '1.25rem', letterSpacing: '0.5em' }
+                  }
+                }}
+                fullWidth
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleVerifyCode();
+                  }
+                }}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button disableElevation onClick={onClose}>
+              {__('Cancel', 'bromate-rest-api-firewall')}
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={handleVerifyCode}
+              disableElevation
+              disabled={verifying || verificationCode.length !== 6}
+            >
+              {verifying ? <CircularProgress size={24} /> : __('Verify', 'bromate-rest-api-firewall')}
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <ConfirmDialog
+          open={confirmDialogOpen}
+          title={confirmDialogConfig?.title || ''}
+          message={confirmDialogConfig?.message || ''}
+          confirmLabel={confirmDialogConfig?.confirmLabel}
+          confirmColor={confirmDialogConfig?.confirmColor || 'primary'}
+          loading={confirmLoading}
+          onConfirm={handleConfirm}
+          onCancel={handleConfirmCancel}
+          portalContainer={portalContainer}
+        />
+      </>
     );
   }
 
   if (mode === 'dialog') {
-    // Determine if we can show the cancel button
     const canCancel = policy !== 'mandatory';
 
     return (
@@ -889,22 +877,17 @@ export default function TOTPEnrollment({
             ) : null}
           </DialogActions>
         </Dialog>
-
-        {/* Confirm Dialog */}
         <ConfirmDialog
           open={confirmDialogOpen}
           title={confirmDialogConfig?.title || ''}
-          message={confirmDialogConfig?.message || ''}
+          message={ confirmDialogConfig?.message || ''}
           confirmLabel={confirmDialogConfig?.confirmLabel}
-          confirmColor={confirmDialogConfig?.confirmColor}
+          confirmColor={confirmDialogConfig?.confirmColor || 'primary'}
           loading={confirmLoading}
           onConfirm={handleConfirm}
           onCancel={handleConfirmCancel}
           portalContainer={portalContainer}
         />
-
-        {/* Success Dialog */}
-        {renderSuccessDialog()}
       </>
     );
   }

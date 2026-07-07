@@ -12,15 +12,16 @@ const appTheme = createTheme({
       light: '#c83030',
       main: '#cc1818',
       dark: '#b32d2e',
+      contrastText: '#ffffff'
     },
     warning: {
+      light: '#e2b22e',
       main: '#dba617',
+      dark: '#daa106',
+      contrastText: '#ffffff'
     },
     success: {
       main: '#00a32a',
-    },
-    info: {
-      main: '#72aee6',
     },
     background: {
       default: '#f0f0f1',

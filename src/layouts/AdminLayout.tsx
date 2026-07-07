@@ -15,28 +15,24 @@ export default function AdminLayout() {
 	const { panel } = useNavigation();
 
 	return (
-		<Stack>
-			<Navigation>
-				<Stack>
-					{panel === 'dashboard' && <Dashboard />}
+		<Navigation>
+			<Stack px={0}>
+				{panel === 'dashboard' && <Dashboard />}
 
-					{panel === 'authentication' && <Authentication />}
-					
-					{panel === 'routes' && <Routes />}
+				{panel === 'authentication' && <Authentication />}
+				
+				{panel === 'routes' && <Routes />}
 
-					{panel === 'models' && <Models />}
+				{panel === 'models' && <Models />}
 
-					{panel === 'firewall' && <Firewall />}
+				{panel === 'firewall' && <Firewall />}
 
-					{panel === 'login-hardening' && <LoginHardening />}
+				{panel === 'login-hardening' && <LoginHardening />}
 
-					{panel === 'wordpress' && <WordPress />}
+				{panel === 'wordpress' && <WordPress />}
 
-					{panel === 'logs' && <Logs />}
-				</Stack>
-			</Navigation>
-
-			
-		</Stack>
+				{panel === 'logs' && <Logs />}
+			</Stack>
+		</Navigation>
 	);
 }

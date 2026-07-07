@@ -3,6 +3,7 @@
 use Bromate\RestApiFirewall\Security\Ip\CidrMatcher;
 use Bromate\RestApiFirewall\Security\Ip\GeoIpApi;
 use Bromate\RestApiFirewall\Security\Routes\RoutesPolicyRepository;
+use Bromate\RestApiFirewall\Security\Login\TOTPController;
 
 final class SettingsConfig {
 
@@ -344,12 +345,39 @@ final class SettingsConfig {
 				'group'             => 'login-hardening',
 			),
 
+			'login_2fa_enabled_timestamp'            => array(
+				'label'             => esc_html__( 'Two-Factor Authentication Activation Timestamp', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Internal: records when 2FA was globally enabled, used to compute the grace period.', 'bromate-rest-api-firewall' ),
+				'default_value'     => 0,
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'group'             => 'login-hardening',
+			),
+
 			'login_2fa_issuer'                       => array(
 				'label'             => esc_html__( '2FA issuer name', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Organization name shown in authenticator apps.', 'bromate-rest-api-firewall' ),
-				'default_value'     => 'Bromate REST API Firewall',
+				'default_value'     => sanitize_text_field( get_bloginfo( 'sitename' ) ),
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
+				'group'             => 'login-hardening',
+			),
+
+			'login_2fa_policy'                       => array(
+				'label'             => esc_html__( '2FA Enforcement Policy', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Determines how users are required to set up two-factor authentication.', 'bromate-rest-api-firewall' ),
+				'default_value'     => 'grace',
+				'type'              => 'string',
+				'sanitize_callback' => array( SettingsRepository::class, 'sanitize_2fa_policy' ),
+				'group'             => 'login-hardening',
+			),
+
+			'login_2fa_grace_period'                 => array(
+				'label'             => esc_html__( '2FA Grace Period (days)', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Number of days users have to enable 2FA before it becomes mandatory.', 'bromate-rest-api-firewall' ),
+				'default_value'     => 7,
+				'type'              => 'integer',
+				'sanitize_callback' => array( SettingsRepository::class, 'sanitize_2fa_grace_period' ),
 				'group'             => 'login-hardening',
 			),
 

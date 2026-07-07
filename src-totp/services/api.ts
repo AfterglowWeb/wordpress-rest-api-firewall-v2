@@ -27,9 +27,13 @@ export async function apiRequest<T>(
 			...data,
 		}),
 	});
-
+	
 	if (!response.ok) {
-		throw new Error(`HTTP error ${response.status}`);
+		const body = await response.json().catch(() => null);
+		const message =
+			(body?.data as any)?.message ??
+			(typeof body?.data === 'string' ? body.data : null);
+		throw new Error(message ?? `HTTP error ${response.status}`);
 	}
 
 	const res: AjaxResponse<T> = await response.json();

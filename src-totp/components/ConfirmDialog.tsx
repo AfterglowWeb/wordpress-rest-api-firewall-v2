@@ -7,11 +7,13 @@ import {
   Button,
   CircularProgress,
 } from '@mui/material';
+import AppTheme from '@totp-contexts/AppTheme';
+
 
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
-  message: string;
+  message: string | JSX.Element;
   confirmLabel?: string;
   cancelLabel?: string;
   confirmColor?: 'primary' | 'error' | 'warning' | 'info' | 'success';
@@ -34,6 +36,7 @@ export default function ConfirmDialog({
   portalContainer,
 }: ConfirmDialogProps) {
   return (
+    <AppTheme>
     <Dialog
       open={open}
       onClose={onCancel}
@@ -55,7 +58,6 @@ export default function ConfirmDialog({
           onClick={onCancel}
           disabled={loading}
           variant="outlined"
-          sx={{ textTransform: 'none' }}
         >
           {cancelLabel}
         </Button>
@@ -64,11 +66,11 @@ export default function ConfirmDialog({
           disabled={loading}
           variant="contained"
           color={confirmColor}
-          sx={{ textTransform: 'none' }}
         >
           {loading ? <CircularProgress size={24} color="inherit" /> : confirmLabel}
         </Button>
       </DialogActions>
     </Dialog>
+    </AppTheme>
   );
 }
