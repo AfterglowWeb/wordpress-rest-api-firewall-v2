@@ -10,15 +10,15 @@ final class TOTPRepository {
 	private const PENDING_META_KEY      = '_bromate_totp_secret_pending';
 	private const PENDING_TIME_META_KEY = '_bromate_totp_secret_pending_time';
 	private const SECRET_META_KEY       = '_bromate_totp_secret';
-	private const ENABLED_META_KEY      = '_bromate_totp_enabled';
-	private const ENABLED_TIME_META_KEY = '_bromate_totp_enabled_time';
+	private const USER_ENROLLED_META_KEY      = '_bromate_rest_api_firewall_totp_user_enrolled';
+	private const ENABLED_TIME_META_KEY = '_bromate_rest_api_firewall_totp_user_is_enrolled_time';
 	private const BACKUP_CODES_META_KEY = '_bromate_backup_codes';
 	private const DIGITS_META_KEY       = '_bromate_totp_digits';
 	private const PERIOD_META_KEY       = '_bromate_totp_period';
 	private const ALGORITHM_META_KEY    = '_bromate_totp_algorithm';
 
 	private const TOTP_DIGITS    = 6;
-	private const TOTP_PERIOD    = 30;
+	private const TOKEN_EXPIRY_DAYS    = 30;
 	private const TOTP_ALGORITHM = 'SHA1';
 
 	private Google2FA $google2fa;
@@ -37,7 +37,7 @@ final class TOTPRepository {
 		$this->cleanup_expired_pending_secrets( $user_id );
 
 		$digits    = self::TOTP_DIGITS;
-		$period    = self::TOTP_PERIOD;
+		$period    = self::TOKEN_EXPIRY_DAYS;
 		$algorithm = self::TOTP_ALGORITHM;
 
 		$secret = $this->google2fa->generateSecretKey( 16 );
@@ -91,7 +91,7 @@ final class TOTPRepository {
 
 			if ( $verified ) {
 				update_user_meta( $user_id, self::SECRET_META_KEY, $secret );
-				update_user_meta( $user_id, self::ENABLED_META_KEY, true );
+				update_user_meta( $user_id, self::USER_ENROLLED_META_KEY, true );
 				update_user_meta( $user_id, self::ENABLED_TIME_META_KEY, time() );
 
 				$this->clear_pending_secret( $user_id );
@@ -150,13 +150,13 @@ final class TOTPRepository {
 	}
 
 	public function disable_totp( int $user_id ): bool {
-		$enabled = get_user_meta( $user_id, self::ENABLED_META_KEY, true );
+		$enabled = get_user_meta( $user_id, self::USER_ENROLLED_META_KEY, true );
 		if ( ! $enabled ) {
 			throw new Exception( '2FA is not enabled for this user' );
 		}
 
 		delete_user_meta( $user_id, self::SECRET_META_KEY );
-		delete_user_meta( $user_id, self::ENABLED_META_KEY );
+		delete_user_meta( $user_id, self::USER_ENROLLED_META_KEY );
 		delete_user_meta( $user_id, self::ENABLED_TIME_META_KEY );
 		delete_user_meta( $user_id, self::BACKUP_CODES_META_KEY );
 		delete_user_meta( $user_id, self::DIGITS_META_KEY );
@@ -177,7 +177,7 @@ final class TOTPRepository {
 	}
 
 	public function is_totp_enabled( int $user_id ): bool {
-		return (bool) get_user_meta( $user_id, self::ENABLED_META_KEY, true );
+		return (bool) get_user_meta( $user_id, self::USER_ENROLLED_META_KEY, true );
 	}
 
 	public function get_totp_status( int $user_id ): array {
@@ -221,4 +221,29 @@ final class TOTPRepository {
 			$this->clear_pending_secret( $user_id );
 		}
 	}
+
+	public function revoke_all_trusted_devices( int $user_id ): void {
+		delete_user_meta( $user_id, self::SECRET_META_KEY );
+		delete_user_meta( $user_id, self::USER_ENROLLED_META_KEY );
+		delete_user_meta( $user_id, self::ENABLED_TIME_META_KEY );
+    }
+
+    public function revoke_all_trusted_devices_everywhere(): void {
+        global $wpdb;
+		$current_user_id = get_current_user_id();
+
+		$wpdb->query(
+			$wpdb->prepare(
+				"
+				DELETE FROM {$wpdb->usermeta}
+				WHERE user_id != %d
+				AND meta_key IN (%s, %s, %s)
+				",
+				$current_user_id,
+				self::SECRET_META_KEY,
+				self::USER_ENROLLED_META_KEY,
+				self::ENABLED_TIME_META_KEY
+			)
+		);
+    }
 }

@@ -2,18 +2,18 @@
 
 defined( 'ABSPATH' ) || exit;
 
+use Bromate\RestApiFirewall\Core\Schema\SchemaManager;
+
 use Bromate\RestApiFirewall\Api\RestRequestBootstrap;
 use Bromate\RestApiFirewall\Api\PublicRequestBootstrap;
-use Bromate\RestApiFirewall\Api\AdminLoginBootstrap;
+use Bromate\RestApiFirewall\Api\LoginBootstrap;
 use Bromate\RestApiFirewall\Security\WordPress\WordPressSecurityBootstrap;
-use Bromate\RestApiFirewall\Security\Ip\IpEntryAjaxController;
+use Bromate\RestApiFirewall\Logs\LogEntryAjaxController;
 
+use Bromate\RestApiFirewall\Security\Ip\IpEntryAjaxController;
 use Bromate\RestApiFirewall\Core\Settings\SettingsAjaxController;
-use Bromate\RestApiFirewall\Core\Schema\SchemaManager;
 use Bromate\RestApiFirewall\Admin\AdminPage;
 use Bromate\RestApiFirewall\Admin\Documentation;
-use Bromate\RestApiFirewall\Logs\LogEntryAjaxController;
-use Bromate\RestApiFirewall\Security\Login\TOTPController;
 
 final class Bootstrap {
 
@@ -25,9 +25,9 @@ final class Bootstrap {
 
 		RestRequestBootstrap::register();
 		PublicRequestBootstrap::register();
-		AdminLoginBootstrap::register();
+		LoginBootstrap::register();
 		WordPressSecurityBootstrap::register();
-		TOTPController::register();
+		LogEntryAjaxController::register();
 
 		if ( is_admin() ) {
 			AdminPage::register();
@@ -36,7 +36,6 @@ final class Bootstrap {
 			Documentation::register();
 		}
 
-		LogEntryAjaxController::register();
 	}
 
 	public static function activate(): void {

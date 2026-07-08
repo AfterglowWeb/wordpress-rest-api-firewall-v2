@@ -24,6 +24,9 @@ final class TOTPLoginService {
 
 	public static function register(): void {
 		$service = new self();
+		if ( empty( SettingsRepository::read_option( 'login_2fa_enabled' ) ) ) {
+			return;
+		}
 
 		add_action( 'login_form', array( $service, 'add_totp_field_to_login' ) );
 		add_action( 'woocommerce_login_form', array( $service, 'add_totp_field_to_login' ) );
@@ -71,7 +74,7 @@ final class TOTPLoginService {
 			0,
 			COOKIEPATH,
 			COOKIE_DOMAIN,
-			true,
+			is_ssl(),
 			true
 		);
 
@@ -83,9 +86,6 @@ final class TOTPLoginService {
 	}
 
 	public function enqueue_scripts(): void {
-		if ( ! $this->is_totp_globally_enabled() ) {
-			return;
-		}
 
 		wp_enqueue_script(
 			'bromate-totp-login',
@@ -108,9 +108,6 @@ final class TOTPLoginService {
 	}
 
 	private function should_show_totp(): bool {
-		if ( ! $this->is_totp_globally_enabled() ) {
-			return false;
-		}
 
 		$session_id = $this->get_session_id();
 		$pending    = get_transient( 'bromate_totp_pending_' . $session_id );
@@ -196,9 +193,6 @@ final class TOTPLoginService {
 	}
 
 	public function add_totp_field_to_login(): void {
-		if ( ! $this->is_totp_globally_enabled() ) {
-			return;
-		}
 
 		$session_id = $this->get_session_id();
 		$pending    = get_transient( 'bromate_totp_pending_' . $session_id );
@@ -330,6 +324,50 @@ final class TOTPLoginService {
 				'redirect_url' => $redirect_to,
 			)
 		);
+	}
+
+	public function on_login_failed( string $username ): void {
+
+		$session_id = $this->get_session_id();
+		
+		$pending = get_transient( 'bromate_totp_pending_' . $session_id );
+		if ( ! $pending || ! isset( $pending['user_id'] ) ) {
+			return;
+		}
+
+		$user_id = (int) $pending['user_id'];
+		$user = get_user_by( 'id', $user_id );
+		
+		if ( ! $user || $user->user_login !== $username ) {
+			return;
+		}
+
+		$attempts_key = 'bromate_totp_attempts_' . $session_id;
+		$attempts = (int) get_transient( $attempts_key );
+		++$attempts;
+		set_transient( $attempts_key, $attempts, self::TRANSIENT_EXPIRY );
+
+		if ( $attempts >= self::MAX_ATTEMPTS ) {
+			delete_transient( 'bromate_totp_pending_' . $session_id );
+			delete_transient( $attempts_key );
+		}
+
+		$failed_log = get_user_meta( $user_id, '_bromate_totp_failed_attempts', true );
+		if ( ! is_array( $failed_log ) ) {
+			$failed_log = array();
+		}
+		
+		$failed_log[] = array(
+			'time' => time(),
+			'ip'   => $this->get_client_ip(),
+			'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
+		);
+		
+		if ( count( $failed_log ) > 10 ) {
+			$failed_log = array_slice( $failed_log, -10 );
+		}
+		
+		update_user_meta( $user_id, '_bromate_totp_failed_attempts', $failed_log );
 	}
 
 	public function validate_totp( $user ) {
@@ -537,7 +575,7 @@ final class TOTPLoginService {
 				time() + ( self::TOKEN_EXPIRY_DAYS * DAY_IN_SECONDS ),
 				COOKIEPATH,
 				COOKIE_DOMAIN,
-				true,
+				is_ssl(),
 				true
 			);
 		}
@@ -598,6 +636,26 @@ final class TOTPLoginService {
 
 		delete_transient( 'bromate_totp_pending_' . $session_id );
 		delete_transient( 'bromate_totp_attempts_' . $session_id );
+	}
+
+	private function get_client_ip(): string {
+		$ip_address = '';
+		
+		if ( isset( $_SERVER['HTTP_CLIENT_IP'] ) ) {
+			$ip_address = $_SERVER['HTTP_CLIENT_IP'];
+		} elseif ( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+			$ip_address = $_SERVER['HTTP_X_FORWARDED_FOR'];
+		} elseif ( isset( $_SERVER['HTTP_X_FORWARDED'] ) ) {
+			$ip_address = $_SERVER['HTTP_X_FORWARDED'];
+		} elseif ( isset( $_SERVER['HTTP_FORWARDED_FOR'] ) ) {
+			$ip_address = $_SERVER['HTTP_FORWARDED_FOR'];
+		} elseif ( isset( $_SERVER['HTTP_FORWARDED'] ) ) {
+			$ip_address = $_SERVER['HTTP_FORWARDED'];
+		} elseif ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
+			$ip_address = $_SERVER['REMOTE_ADDR'];
+		}
+		
+		return sanitize_text_field( $ip_address );
 	}
 
 	private function is_totp_globally_enabled(): bool {

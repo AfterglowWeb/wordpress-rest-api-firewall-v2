@@ -74,10 +74,6 @@ final class CidrMatcher {
 		return '';
 	}
 
-	public static function ip_in_cidr( string $ip, string $cidr ): bool {
-		return self::ip_matches( $ip, $cidr );
-	}
-
 	public static function is_valid_ip_or_cidr( string $entry ): bool {
 		if ( strpos( $entry, '/' ) !== false ) {
 			return self::is_valid_cidr( $entry );
