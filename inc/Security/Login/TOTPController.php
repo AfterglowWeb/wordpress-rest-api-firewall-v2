@@ -8,10 +8,9 @@ use Bromate\RestApiFirewall\Core\Settings\SettingsRepository;
 
 final class TOTPController {
 
-	private const ENABLED_META_KEY            = '_bromate_totp_enabled';
+	private const USER_ENROLLED_META_KEY            = '_bromate_rest_api_firewall_totp_user_enrolled';
 	private const USER_SETTINGS_META_KEY      = '_bromate_totp_settings';
-	private const SESSION_VERIFIED_META_KEY   = '_bromate_totp_session_verified';
-	private const ACTIVATION_OPTION_KEY       = 'bromate_login_2fa_activated_at';
+	private const CODE_VERIFIED_META_KEY   = '_bromate_rest_api_firewall_totp_code_verified';
 	private const REMINDER_DISMISSED_META_KEY = '_bromate_totp_reminder_dismissed_at';
 
 	public function __construct() {}
@@ -128,7 +127,7 @@ final class TOTPController {
 			wp_send_json_error( array( 'message' => 'Invalid verification code' ), 400 );
 		}
 
-		update_user_meta( $user_id, self::SESSION_VERIFIED_META_KEY, true );
+		update_user_meta( $user_id, self::CODE_VERIFIED_META_KEY, true );
 
 		$settings = get_user_meta( $user_id, self::USER_SETTINGS_META_KEY, true );
 		if ( is_array( $settings ) && ! empty( $settings['remember_device'] ) ) {
@@ -274,7 +273,7 @@ final class TOTPController {
 		$settings        = self::get_global_settings();
 		$current_user    = wp_get_current_user();
 		$user_id         = absint( $current_user->ID );
-		$is_user_enabled = (bool) get_user_meta( $user_id, self::ENABLED_META_KEY, true );
+		$is_user_enabled = (bool) get_user_meta( $user_id, self::USER_ENROLLED_META_KEY, true );
 		$is_profile_page = 'profile.php' === $pagenow;
 		$show_dialog     = self::should_show_dialog( $user_id, $settings, $is_user_enabled );
 
@@ -379,14 +378,14 @@ final class TOTPController {
 			return;
 		}
 
-		$is_enrolled = (bool) get_user_meta( $user_id, self::ENABLED_META_KEY, true );
+		$is_enrolled = (bool) get_user_meta( $user_id, self::USER_ENROLLED_META_KEY, true );
 
 		if ( ! $is_enrolled ) {
 			echo '<div id="bromate-rest-api-firewall-totp-shadow-host" data-mode="enroll"></div>';
 			return;
 		}
 
-		if ( get_user_meta( $user_id, self::SESSION_VERIFIED_META_KEY, true ) ) {
+		if ( get_user_meta( $user_id, self::CODE_VERIFIED_META_KEY, true ) ) {
 			return;
 		}
 

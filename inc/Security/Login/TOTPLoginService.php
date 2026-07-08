@@ -24,6 +24,9 @@ final class TOTPLoginService {
 
 	public static function register(): void {
 		$service = new self();
+		if ( empty( SettingsRepository::read_option( 'login_2fa_enabled' ) ) ) {
+			return;
+		}
 
 		add_action( 'login_form', array( $service, 'add_totp_field_to_login' ) );
 		add_action( 'woocommerce_login_form', array( $service, 'add_totp_field_to_login' ) );
@@ -71,7 +74,7 @@ final class TOTPLoginService {
 			0,
 			COOKIEPATH,
 			COOKIE_DOMAIN,
-			true,
+			is_ssl(),
 			true
 		);
 
@@ -83,9 +86,6 @@ final class TOTPLoginService {
 	}
 
 	public function enqueue_scripts(): void {
-		if ( ! $this->is_totp_globally_enabled() ) {
-			return;
-		}
 
 		wp_enqueue_script(
 			'bromate-totp-login',
@@ -108,9 +108,6 @@ final class TOTPLoginService {
 	}
 
 	private function should_show_totp(): bool {
-		if ( ! $this->is_totp_globally_enabled() ) {
-			return false;
-		}
 
 		$session_id = $this->get_session_id();
 		$pending    = get_transient( 'bromate_totp_pending_' . $session_id );
@@ -196,9 +193,6 @@ final class TOTPLoginService {
 	}
 
 	public function add_totp_field_to_login(): void {
-		if ( ! $this->is_totp_globally_enabled() ) {
-			return;
-		}
 
 		$session_id = $this->get_session_id();
 		$pending    = get_transient( 'bromate_totp_pending_' . $session_id );
@@ -332,19 +326,10 @@ final class TOTPLoginService {
 		);
 	}
 
-	/**
-	 * Handle failed login attempts for TOTP
-	 * 
-	 * @param string $username Username that failed login
-	 */
 	public function on_login_failed( string $username ): void {
-		if ( ! $this->is_totp_globally_enabled() ) {
-			return;
-		}
 
 		$session_id = $this->get_session_id();
 		
-		// Check if this session had TOTP verification pending
 		$pending = get_transient( 'bromate_totp_pending_' . $session_id );
 		if ( ! $pending || ! isset( $pending['user_id'] ) ) {
 			return;
@@ -357,42 +342,21 @@ final class TOTPLoginService {
 			return;
 		}
 
-		// Increment failed TOTP attempts for this session
 		$attempts_key = 'bromate_totp_attempts_' . $session_id;
 		$attempts = (int) get_transient( $attempts_key );
 		++$attempts;
 		set_transient( $attempts_key, $attempts, self::TRANSIENT_EXPIRY );
 
-		// Log the failed TOTP attempt
-		error_log( sprintf(
-			'[TOTP] Failed verification attempt - Username: %s, Attempt: %d/%d, Session: %s, IP: %s',
-			$username,
-			$attempts,
-			self::MAX_ATTEMPTS,
-			substr( $session_id, 0, 8 ),
-			$this->get_client_ip()
-		) );
-
-		// If max attempts reached, clear the pending session
 		if ( $attempts >= self::MAX_ATTEMPTS ) {
 			delete_transient( 'bromate_totp_pending_' . $session_id );
 			delete_transient( $attempts_key );
-			
-			error_log( sprintf(
-				'[TOTP] Max attempts reached - Username: %s, Session: %s, IP: %s',
-				$username,
-				substr( $session_id, 0, 8 ),
-				$this->get_client_ip()
-			) );
 		}
 
-		// Store failed attempt for user meta (for audit purposes)
 		$failed_log = get_user_meta( $user_id, '_bromate_totp_failed_attempts', true );
 		if ( ! is_array( $failed_log ) ) {
 			$failed_log = array();
 		}
 		
-		// Keep only last 10 failures
 		$failed_log[] = array(
 			'time' => time(),
 			'ip'   => $this->get_client_ip(),
@@ -611,7 +575,7 @@ final class TOTPLoginService {
 				time() + ( self::TOKEN_EXPIRY_DAYS * DAY_IN_SECONDS ),
 				COOKIEPATH,
 				COOKIE_DOMAIN,
-				true,
+				is_ssl(),
 				true
 			);
 		}
@@ -674,11 +638,6 @@ final class TOTPLoginService {
 		delete_transient( 'bromate_totp_attempts_' . $session_id );
 	}
 
-	/**
-	 * Get client IP address
-	 * 
-	 * @return string Client IP address
-	 */
 	private function get_client_ip(): string {
 		$ip_address = '';
 		

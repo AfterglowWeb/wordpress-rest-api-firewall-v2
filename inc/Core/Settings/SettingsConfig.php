@@ -381,6 +381,77 @@ final class SettingsConfig {
 				'group'             => 'login-hardening',
 			),
 
+			'login_2fa_grace_period'                 => array(
+				'label'             => esc_html__( '2FA Grace Period (days)', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Number of days users have to enable 2FA before it becomes mandatory.', 'bromate-rest-api-firewall' ),
+				'default_value'     => 7,
+				'type'              => 'integer',
+				'sanitize_callback' => array( SettingsRepository::class, 'sanitize_2fa_grace_period' ),
+				'group'             => 'login-hardening',
+			),
+
+			'cookie_hardening_samesite_enabled' => array(
+				'label'             => esc_html__( 'Protect Authentication Cookie', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Prevent the auth cookie to be exposed.', 'bromate-rest-api-firewall' ),
+				'default_value'     => false,
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'group'             => 'login-hardening',
+			),
+
+			'cookie_hardening_samesite_mode' => array(
+				'label'             => esc_html__( 'Authentication Cookie Policy', 'bromate-rest-api-firewall' ),
+				'options'           => array(
+					'Lax',
+					'Strict'
+				),
+				'default_value'     => 'Lax',
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'group'             => 'login-hardening',
+			),
+
+			'cookie_hardening_salt_rotation_enabled' => array(
+				'label'             => esc_html__( 'Rotate Salt Keys', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Salt Keys are used to sign authentication cookies and nonces. On rotation, all users are disconnected instantly.', 'bromate-rest-api-firewall' ),
+				'default_value'     => false,
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'group'             => 'login-hardening',
+			),
+
+			'cookie_hardening_salt_rotation_recurrence' => array(
+				'label'             => esc_html__( 'Rotation Reccurrence', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'How often salt keys are rotated.', 'bromate-rest-api-firewall' ),
+				'default_value'     => 'week',
+				'type'              => 'select',
+				'options'           => array(
+					'day'   => esc_html__( 'Daily', 'bromate-rest-api-firewall' ),
+					'week'  => esc_html__( 'Weekly', 'bromate-rest-api-firewall' ),
+					'month' => esc_html__( 'Monthly', 'bromate-rest-api-firewall' ),
+				),
+				'sanitize_callback' => 'sanitize_text_field',
+				'group'             => 'login-hardening',
+			),
+
+			'cookie_hardening_salt_rotation_time' => array(
+				'label'             => esc_html__( 'Rotation Time', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( 'Pick an off-peak time (e.g. 03:00) since rotation disconnects every logged-in user.', 'bromate-rest-api-firewall' ),
+				'default_value'     => '03:00',
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'group'             => 'login-hardening',
+			),
+
+			'cookie_hardening_max_concurrent_sessions' => array(
+				'label'             => esc_html__( 'Max Concurrent Sessions', 'bromate-rest-api-firewall' ),
+				'info'              => esc_html__( '0 = unlimited. If set, the oldest session is automatically closed when a user exceeds this number of simultaneous logins.', 'bromate-rest-api-firewall' ),
+				'default_value'     => 0,
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'group'             => 'login-hardening',
+			),
+
 			'wordpress_application_only_mode'        => array(
 				'label'             => esc_html__( 'Application-only mode', 'bromate-rest-api-firewall' ),
 				'info'              => esc_html__( 'Redirect front-end pages and use WordPress primarily as a REST API backend.', 'bromate-rest-api-firewall' ),

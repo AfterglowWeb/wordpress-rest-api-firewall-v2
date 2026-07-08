@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { SettingsAPI } from '@services/settings';
+import { UserSessionsAPI, SaltRotationStatus } from '@services/user-sessions';
 import { useNavigation } from '@contexts/NavigationContext';
+import { usePortalContainer } from '@contexts/PortalContainerContext';
 
 import {
   Paper,
@@ -18,9 +20,13 @@ import {
   Tooltip,
   RadioGroup,
   Radio,
+  Divider,
+  MenuItem,
+  CircularProgress,
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import ShieldIcon from '@mui/icons-material/Shield';
 
 import { useDialog, DIALOG_TYPES } from '@contexts/DialogContext';
 import ConfirmDialog from '@components/ConfirmDialog';
@@ -31,16 +37,25 @@ interface LoginSettings {
   login_rate_limit_window: number;
   login_rate_limit_blacklist_time: number;
   login_rate_limit_promote_after: number;
-  
+
   login_recaptcha_enabled: boolean;
   login_recaptcha_site_key: string;
   login_recaptcha_secret_key: string;
   login_recaptcha_threshold: number;
-  
+
   login_2fa_enabled: boolean;
   login_2fa_issuer: string;
   login_2fa_policy: 'grace' | 'mandatory' | 'free';
   login_2fa_grace_period: number;
+
+  cookie_hardening_samesite_enabled: boolean;
+  cookie_hardening_samesite_mode: 'Strict' | 'Lax';
+
+  cookie_hardening_salt_rotation_enabled: boolean;
+  cookie_hardening_salt_rotation_recurrence: 'day' | 'week' | 'month';
+  cookie_hardening_salt_rotation_time: string;
+
+  cookie_hardening_max_concurrent_sessions: number;
 }
 
 const DEFAULT_SETTINGS: LoginSettings = {
@@ -49,27 +64,54 @@ const DEFAULT_SETTINGS: LoginSettings = {
   login_rate_limit_window: 300,
   login_rate_limit_blacklist_time: 3600,
   login_rate_limit_promote_after: 0,
-  
+
   login_recaptcha_enabled: false,
   login_recaptcha_site_key: '',
   login_recaptcha_secret_key: '',
   login_recaptcha_threshold: 0.5,
-  
+
   login_2fa_enabled: false,
   login_2fa_issuer: 'Bromate REST API',
   login_2fa_policy: 'grace',
   login_2fa_grace_period: 7,
+
+  cookie_hardening_samesite_enabled: false,
+  cookie_hardening_samesite_mode: 'Strict',
+
+  cookie_hardening_salt_rotation_enabled: false,
+  cookie_hardening_salt_rotation_recurrence: 'week',
+  cookie_hardening_salt_rotation_time: '03:00',
+
+  cookie_hardening_max_concurrent_sessions: 0,
 };
+
+function formatDateTime(value: string | null): string {
+  if (!value) {
+    return __('Never', 'bromate-rest-api-firewall');
+  }
+  const parsed = new Date(value.replace(' ', 'T'));
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  return parsed.toLocaleString();
+}
 
 export default function LoginHardening(): JSX.Element {
   const { openDialog } = useDialog();
   const { navigateGuarded } = useNavigation();
+  const portalContainer = usePortalContainer();
+  
   const [settings, setSettings] = useState<LoginSettings>(DEFAULT_SETTINGS);
   const [loadedSettings, setLoadedSettings] = useState<LoginSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const [rotationStatus, setRotationStatus] = useState<SaltRotationStatus | null>(null);
+  const [rotatingNow, setRotatingNow] = useState(false);
+  const [revokingAll, setRevokingAll] = useState(false);
+
   const isDirty = useMemo(
     () => JSON.stringify(settings) !== JSON.stringify(loadedSettings),
     [settings, loadedSettings]
@@ -98,6 +140,21 @@ export default function LoginHardening(): JSX.Element {
 
     loadSettings();
   }, []);
+
+  const loadRotationStatus = useCallback(async () => {
+    try {
+      const status = await UserSessionsAPI.getSaltRotationStatus();
+      setRotationStatus(status);
+    } catch (err) {
+      // Non bloquant : l'affichage du statut est secondaire, on ne casse
+      // pas la page si cet appel échoue.
+      setRotationStatus(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRotationStatus();
+  }, [loadRotationStatus]);
 
   const updateSetting = <K extends keyof LoginSettings>(
     key: K,
@@ -132,6 +189,68 @@ export default function LoginHardening(): JSX.Element {
     });
   }, [openDialog, handleSave]);
 
+  const handleRotateSaltsNow = useCallback(async () => {
+    setRotatingNow(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await UserSessionsAPI.rotateSaltsNow();
+      setSuccess(
+        __('Salt keys rotated. Every logged-in user, including you, has been signed out.', 'bromate-rest-api-firewall')
+      );
+      await loadRotationStatus();
+    } catch (err) {
+      setError(__('Failed to rotate salt keys.', 'bromate-rest-api-firewall'));
+    } finally {
+      setRotatingNow(false);
+    }
+  }, [loadRotationStatus]);
+
+  const handleRotateSaltsConfirm = useCallback(() => {
+    openDialog({
+      type: DIALOG_TYPES.CONFIRM,
+      title: __('Rotate salt keys now', 'bromate-rest-api-firewall'),
+      content: __(
+        'This immediately signs out every logged-in user on this site, including you. Continue?',
+        'bromate-rest-api-firewall'
+      ),
+      confirmLabel: __('Rotate now', 'bromate-rest-api-firewall'),
+      onConfirm: handleRotateSaltsNow,
+    });
+  }, [openDialog, handleRotateSaltsNow]);
+
+  const handleRevokeAll = useCallback(async () => {
+    setRevokingAll(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await UserSessionsAPI.revokeAllTrustedDevices();
+      setSuccess(
+        result.message ||
+          __('All sessions and trusted 2FA devices have been revoked.', 'bromate-rest-api-firewall')
+      );
+    } catch (err) {
+      setError(__('Failed to revoke sessions and trusted devices.', 'bromate-rest-api-firewall'));
+    } finally {
+      setRevokingAll(false);
+    }
+  }, []);
+
+  const handleRevokeAllConfirm = useCallback(() => {
+    openDialog({
+      type: DIALOG_TYPES.CONFIRM,
+      title: __('Revoke all sessions & trusted devices', 'bromate-rest-api-firewall'),
+      content: __(
+        'This signs out every user on this site and clears every "remember this device" 2FA token. Users will need to log in (and pass 2FA again) on their next visit. Continue?',
+        'bromate-rest-api-firewall'
+      ),
+      confirmLabel: __('Revoke everything', 'bromate-rest-api-firewall'),
+      onConfirm: handleRevokeAll,
+    });
+  }, [openDialog, handleRevokeAll]);
+
   if (loading) {
     return (
       <Stack spacing={3} p={2}>
@@ -159,6 +278,9 @@ export default function LoginHardening(): JSX.Element {
       {/* Rate Limiting Section */}
       <Paper sx={{ p: 2 }} elevation={0}>
         <Stack flexDirection="column" gap={2}>
+        <Stack flexDirection="row" gap={0.5} alignItems={"center"}>
+          
+          
           <FormControlLabel
             label={__('Enable Login Rate Limiting', 'bromate-rest-api-firewall')}
             control={
@@ -171,10 +293,9 @@ export default function LoginHardening(): JSX.Element {
             }
           />
 
+          </Stack>
           <Stack>
-            <Typography variant="h6" mb={2}>
-              {__('Rate Limiting Settings', 'bromate-rest-api-firewall')}
-            </Typography>
+
             <Stack direction="row" flexWrap="wrap" gap={2} alignItems="flex-start">
               <TextField
                 label={__('Max Attempts', 'bromate-rest-api-firewall')}
@@ -223,8 +344,6 @@ export default function LoginHardening(): JSX.Element {
             </Stack>
           </Stack>
 
-
-          {/* Blocked IPs Section */}
           {settings.login_rate_limit_enabled && (
               <Stack direction="column" gap={1}>
                 <Typography variant="subtitle1" color="text.secondary">
@@ -278,7 +397,7 @@ export default function LoginHardening(): JSX.Element {
               onChange={(e) =>
                 updateSetting('login_recaptcha_site_key', e.target.value)
               }
-              helperText={__('reCAPTCHA v3 site key from Google', 'bromate-rest-api-firewall')}
+              helperText={__('reCAPTCHA v3 site key', 'bromate-rest-api-firewall')}
             />
             <TextField
               label={__('Secret Key', 'bromate-rest-api-firewall')}
@@ -288,10 +407,10 @@ export default function LoginHardening(): JSX.Element {
               onChange={(e) =>
                 updateSetting('login_recaptcha_secret_key', e.target.value)
               }
-              helperText={__('reCAPTCHA v3 secret key from Google', 'bromate-rest-api-firewall')}
+              helperText={__('reCAPTCHA v3 secret key', 'bromate-rest-api-firewall')}
             />
             <TextField
-              label={__('Score Threshold', 'bromate-rest-api-firewall')}
+              label={__('Minimum score', 'bromate-rest-api-firewall')}
               type="number"
               size="small"
               slotProps={{ htmlInput:{min: 0, max: 1, step: 0.1} }}
@@ -299,7 +418,6 @@ export default function LoginHardening(): JSX.Element {
               onChange={(e) =>
                 updateSetting('login_recaptcha_threshold', Number(e.target.value))
               }
-              helperText={__('Minimum score (0.0 - 1.0) to pass verification', 'bromate-rest-api-firewall')}
               sx={{ maxWidth: 200 }}
             />
           </Stack>
@@ -390,7 +508,7 @@ export default function LoginHardening(): JSX.Element {
                     sx={{ maxWidth: 200 }}
                   />
                 </Box>
-          
+
               <FormControlLabel
                 value="mandatory"
                 control={<Radio />}
@@ -407,29 +525,193 @@ export default function LoginHardening(): JSX.Element {
               />
             </RadioGroup>
           </FormControl>
-  
-          <Alert severity="info" sx={{ mt: 1 }}>
-            <Typography variant="body2" gutterBottom>
-              <strong>{__('How it works:', 'bromate-rest-api-firewall')}</strong>
+
+        </Stack>
+      </Paper>
+
+      {/* Cookie & Session Protection Section */}
+      <Paper sx={{ p: 2 }} elevation={0}>
+        <Stack flexDirection="column" gap={3} maxWidth={500}>
+          <Stack direction="row" alignItems="center" gap={1}>
+            <ShieldIcon fontSize="small" color="action" />
+            <Typography variant="h6">
+              {__('Cookie & Session Protection', 'bromate-rest-api-firewall')}
             </Typography>
-            <Typography variant="body2" component="ul" sx={{ pl: 2, m: 0 }}>
-              <li>
-                {__('Users can set up 2FA from their profile page using Google Authenticator or any TOTP-compatible app.', 'bromate-rest-api-firewall')}
-              </li>
-              <li>
-                {__('After enabling, users will be required to enter a verification code during login.', 'bromate-rest-api-firewall')}
-              </li>
-              <li>
-                {__('Backup codes are generated during setup for account recovery if the authenticator app is lost.', 'bromate-rest-api-firewall')}
-              </li>
-              <li>
-                {__('Users can manage their 2FA settings (enable/disable, regenerate backup codes) from their profile page.', 'bromate-rest-api-firewall')}
-              </li>
+          </Stack>
+
+          {/* SameSite */}
+          <Stack gap={1}>
+            <FormControlLabel
+              label={
+                <Stack direction="column" alignItems="center" gap={1}>
+                  <Typography>{__('Protect Session Cookie', 'bromate-rest-api-firewall')}</Typography>
+                </Stack>
+              }
+              control={
+                <Switch
+                  checked={settings.cookie_hardening_samesite_enabled}
+                  onChange={(e) =>
+                    updateSetting('cookie_hardening_samesite_enabled', e.target.checked)
+                  }
+                />
+              }
+            />
+            
+
+              <Box sx={{ pl: 4 }}>
+                <FormControl 
+                disabled={!settings.cookie_hardening_samesite_enabled}
+                component="fieldset">
+                  <RadioGroup
+                    row
+                    value={settings.cookie_hardening_samesite_mode}
+                    onChange={(e) =>
+                      updateSetting(
+                        'cookie_hardening_samesite_mode',
+                        e.target.value as 'Strict' | 'Lax'
+                      )
+                    }
+                  >
+                    <FormControlLabel value="Strict" control={<Radio size="small" />} label={__('Strict', 'bromate-rest-api-firewall')} />
+                    <FormControlLabel value="Lax" control={<Radio size="small" />} label={__('Lax', 'bromate-rest-api-firewall')} />
+                  </RadioGroup>
+                </FormControl>
+                
+              </Box>
+     
+          </Stack>
+
+          {/* Salt Rotation */}
+          <Stack gap={1}>
+            <FormControlLabel
+              label={
+                <Stack direction="row" alignItems="center" gap={1}>
+                  <Typography>{__('Rotate Salt Keys', 'bromate-rest-api-firewall')}</Typography>
+                </Stack>
+              }
+              control={
+                <Switch
+                  checked={settings.cookie_hardening_salt_rotation_enabled}
+                  onChange={(e) =>
+                    updateSetting('cookie_hardening_salt_rotation_enabled', e.target.checked)
+                  }
+                />
+              }
+            />
+
+              <Box sx={{ pl: 4 }}>
+                <Stack direction="row" flexWrap="wrap" gap={2} alignItems="flex-start">
+                  <TextField
+                    select
+                    slotProps={{select:{MenuProps:{container:portalContainer}}}}
+                    label={__('Recurrence', 'bromate-rest-api-firewall')}
+                    size="small"
+                    value={settings.cookie_hardening_salt_rotation_recurrence}
+                    onChange={(e) =>
+                      updateSetting(
+                        'cookie_hardening_salt_rotation_recurrence',
+                        e.target.value as 'day' | 'week' | 'month'
+                      )
+                    }
+                    sx={{ minWidth: 150 }}
+                  >
+                    <MenuItem value="day">{__('Every day', 'bromate-rest-api-firewall')}</MenuItem>
+                    <MenuItem value="week">{__('Every week', 'bromate-rest-api-firewall')}</MenuItem>
+                    <MenuItem value="month">{__('Every month', 'bromate-rest-api-firewall')}</MenuItem>
+                  </TextField>
+
+                  <TextField
+                    label={__('Rotation Time', 'bromate-rest-api-firewall')}
+                    type="time"
+                    size="small"
+                    value={settings.cookie_hardening_salt_rotation_time}
+                    onChange={(e) =>
+                      updateSetting('cookie_hardening_salt_rotation_time', e.target.value)
+                    }
+                    sx={{ minWidth: 150 }}
+                  />
+                </Stack>
+
+                <Alert severity="warning" sx={{ mt: 2 }} elevation={0}>
+                  {__(
+                    'Rotation signs out every logged-in user, you may chose an off-peak hour.',
+                    'bromate-rest-api-firewall'
+                  )}
+                </Alert>
+
+                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 2 }} flexWrap="wrap" gap={1}>
+                  <Stack>
+                    <Typography variant="caption" color="text.secondary">
+                      {__('Last rotation:', 'bromate-rest-api-firewall')} {formatDateTime(rotationStatus?.last_rotation ?? null)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {__('Next rotation:', 'bromate-rest-api-firewall')} {formatDateTime(rotationStatus?.next_rotation ?? null)}
+                    </Typography>
+                  </Stack>
+
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="warning"
+                    disabled={rotatingNow}
+                    startIcon={rotatingNow ? <CircularProgress size={16} /> : undefined}
+                    onClick={handleRotateSaltsConfirm}
+                  >
+                    {rotatingNow
+                      ? __('Rotating...', 'bromate-rest-api-firewall')
+                      : __('Rotate now', 'bromate-rest-api-firewall')}
+                  </Button>
+                </Stack>
+              </Box>
+       
+          </Stack>
+
+          {/* Session limit */}
+          <Stack gap={1} >
+            <Typography >
+              {__('Concurrent Sessions', 'bromate-rest-api-firewall')}
             </Typography>
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-              {__('Note: Users must enable 2FA in their profile for this feature to take effect.', 'bromate-rest-api-firewall')}
+            <TextField
+              label={__('Max Concurrent Sessions', 'bromate-rest-api-firewall')}
+              type="number"
+              size="small"
+              value={settings.cookie_hardening_max_concurrent_sessions}
+              onChange={(e) =>
+                updateSetting('cookie_hardening_max_concurrent_sessions', Number(e.target.value))
+              }
+              helperText={__('0 = unlimited. Oldest session is closed automatically beyond this number.', 'bromate-rest-api-firewall')}
+              slotProps={{ htmlInput: { min: 0 } }}
+              sx={{ maxWidth: 250 }}
+            />
+          </Stack>
+
+          {/* Global revoke */}
+          <Stack gap={1}>
+            <Typography >
+              {__('Emergency Action', 'bromate-rest-api-firewall')}
             </Typography>
-          </Alert>
+            <Typography variant="body2" color="text.secondary">
+              {__(
+                'Immediately signs out every user on this site and clears every "remember this device" 2FA token. Use this if you suspect an account compromise.',
+                'bromate-rest-api-firewall'
+              )}
+            </Typography>
+            <Box>
+              <Button
+                size="small"
+                variant="contained"
+                color="error"
+                disableElevation
+                disabled={revokingAll}
+                startIcon={revokingAll ? <CircularProgress size={16} color="inherit" /> : undefined}
+                onClick={handleRevokeAllConfirm}
+              >
+                {revokingAll
+                  ? __('Revoking...', 'bromate-rest-api-firewall')
+                  : __('Revoke all sessions & trusted devices', 'bromate-rest-api-firewall')}
+              </Button>
+            </Box>
+          </Stack>
         </Stack>
       </Paper>
 

@@ -24,9 +24,6 @@ final class Recaptcha {
 		add_action( 'wp_login_failed', array( $this, 'on_login_failed' ), 10 );
 	}
 
-	/**
-	 * Enqueue Google reCAPTCHA v3 script on login page
-	 */
 	public function enqueue_recaptcha_script(): void {
 		if ( ! $this->is_enabled() ) {
 			return;
@@ -46,9 +43,7 @@ final class Recaptcha {
 		);
 	}
 
-	/**
-	 * Render reCAPTCHA field and token input
-	 */
+
 	public function render_recaptcha_field(): void {
 		if ( ! $this->is_enabled() ) {
 			return;
@@ -80,32 +75,21 @@ final class Recaptcha {
 		<?php
 	}
 
-	/**
-	 * Check reCAPTCHA before authentication
-	 *
-	 * @param WP_User|WP_Error|null $user     Authenticated user, WP_Error, or null.
-	 * @param string                $username Username.
-	 * @param string                $password Password.
-	 * @return WP_User|WP_Error|null
-	 */
 	public function check_before_auth( $user, $username, $password ) {
 		if ( ! $this->is_enabled() ) {
 			return $user;
 		}
 
-		// Skip verification if already authenticated or if it's a REST API request
 		if ( $user instanceof WP_User || $this->is_rest_api_request() ) {
 			return $user;
 		}
 
-		// Skip if username or password is empty (WordPress will handle this)
 		if ( empty( $username ) || empty( $password ) ) {
 			return $user;
 		}
 
 		$options = $this->get_options();
 		
-		// Check if site key and secret key are configured
 		if ( empty( $options['site_key'] ) || empty( $options['secret_key'] ) ) {
 			return new WP_Error(
 				'recaptcha_misconfigured',
@@ -113,7 +97,6 @@ final class Recaptcha {
 			);
 		}
 
-		// Verify reCAPTCHA token
 		$token = isset( $_POST['g-recaptcha-token'] ) ? sanitize_text_field( wp_unslash( $_POST['g-recaptcha-token'] ) ) : '';
 		
 		if ( empty( $token ) ) {
@@ -129,7 +112,6 @@ final class Recaptcha {
 			return $verification_result;
 		}
 
-		// Check score threshold
 		if ( $verification_result['score'] < $options['threshold'] ) {
 			$this->log_failed_attempt( $username, $verification_result['score'] );
 			return new WP_Error(
@@ -138,7 +120,6 @@ final class Recaptcha {
 			);
 		}
 
-		// Store the token and score for later use if needed
 		add_filter( 'authenticate', array( $this, 'store_recaptcha_data' ), 999, 3 );
 
 		return $user;
